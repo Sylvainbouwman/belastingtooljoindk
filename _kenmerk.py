@@ -75,10 +75,24 @@ def rsin_uit(d8: str) -> str | None:
     return None if rest == 10 else d8 + str(rest)
 
 
-def reconstruct_year(digit: int) -> int:
-    current_last = date.today().year % 10
-    base = 2020 if digit <= current_last else 2010
-    return base + digit
+def reconstruct_year(digit: int, vandaag: date | None = None) -> int:
+    """Reconstrueert het viercijferige jaar uit één jaarcijfer in het kenmerk.
+
+    Het kenmerk bevat maar één cijfer, dus het decennium moet geraden worden.
+    Het venster loopt van negen jaar terug tot en met vólgend jaar: voorlopige
+    aanslagen worden in het najaar al voor het komende jaar verstuurd, en die
+    kwamen voorheen tien jaar te vroeg uit (cijfer 7 werd in 2026 gelezen als
+    2017 in plaats van 2027).
+    """
+    vandaag = vandaag or date.today()
+    bovengrens = vandaag.year + 1
+    ondergrens = bovengrens - 9          # venster van precies 10 jaar
+    decennium = (vandaag.year // 10) * 10
+    for basis in (decennium - 10, decennium, decennium + 10):
+        jaar = basis + digit
+        if ondergrens <= jaar <= bovengrens:
+            return jaar
+    raise AssertionError(f"geen jaar in venster voor cijfer {digit}")  # onbereikbaar
 
 
 def decode_tijdvak(code: str) -> str:

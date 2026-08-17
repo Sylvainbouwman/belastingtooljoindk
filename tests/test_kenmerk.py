@@ -202,6 +202,32 @@ def test_jaar_ligt_altijd_in_plausibel_venster():
         assert jaar % 10 == cijfer
 
 
+def test_jaar_kan_een_jaar_vooruit_kijken():
+    """Bug 10: een voorlopige aanslag voor volgend jaar kwam tien jaar te vroeg uit."""
+    assert reconstruct_year(7, date(2026, 8, 17)) == 2027
+    assert reconstruct_year(6, date(2026, 8, 17)) == 2026
+    assert reconstruct_year(8, date(2026, 8, 17)) == 2018
+
+
+def test_jaar_over_de_decenniumgrens():
+    """Bug 10: in 2029 hoort cijfer 0 bij 2030, niet bij 2020."""
+    assert reconstruct_year(0, date(2029, 11, 1)) == 2030
+    assert reconstruct_year(9, date(2029, 11, 1)) == 2029
+    assert reconstruct_year(1, date(2029, 11, 1)) == 2021
+
+
+@pytest.mark.parametrize("peiljaar", range(2015, 2046))
+def test_jaarvenster_is_sluitend_op_elke_peildatum(peiljaar):
+    """Elk cijfer levert precies één jaar op, alle tien vallen in het venster
+    [peiljaar-8, peiljaar+1] en er zijn geen dubbelingen."""
+    peildatum = date(peiljaar, 7, 1)
+    jaren = [reconstruct_year(c, peildatum) for c in range(10)]
+    assert len(set(jaren)) == 10
+    for cijfer, jaar in enumerate(jaren):
+        assert jaar % 10 == cijfer
+        assert peiljaar - 8 <= jaar <= peiljaar + 1
+
+
 # ── Omschrijving ────────────────────────────────────────────────────────────
 
 def test_omschrijving_naheffing_krijgt_ander_voorvoegsel():
