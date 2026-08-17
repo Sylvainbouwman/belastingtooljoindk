@@ -27,6 +27,49 @@ AANSLAG_WEKEN = 6
 # dan loopt de rente hoogstens tot dit aantal weken na ontvangst van de aangifte.
 MAXIMERING_WEKEN = 19
 
+# Bij een navorderingsaanslag loopt de rente tot één maand na de dagtekening.
+NAVORDERING_MAANDEN = 1
+
+# Is de navordering op verzoek van de belastingplichtige, dan geldt daarnaast een
+# wettelijk maximum van 12 weken na ontvangst van dat verzoek.
+NAVORDERING_VERZOEK_WEKEN = 12
+
+# De maand (geteld vanaf de maand ná het boekjaar) waarin de rente begint.
+# Voor een boekjaar t/m 31 december is dat juli, oftewel de 7e maand.
+STARTMAAND_RENTE = 7
+
+# De maand waarin de vrijstellingsgrens ligt: 1 juni bij VpB, dus de 6e maand.
+GRENSMAAND_VRIJSTELLING = 6
+
+# Voor het VpB-verzoek om een voorlopige aanslag: 1 mei, dus de 5e maand.
+GRENSMAAND_VOORLOPIGE_AANSLAG = 5
+
+
+def eerste_dag_van_maand_na(boekjaar_eind: date, maanden: int) -> date:
+    """Eerste dag van de n-de maand ná de maand waarin het boekjaar eindigt.
+
+    De Belastingdienst formuleert de VpB-termijnen in hele maanden ("vanaf de
+    7e maand na het boekjaar"), niet in dagen. Dat is hier bewust letterlijk
+    overgenomen. Rekenen met 'einddatum + 6 maanden + 1 dag' gaat namelijk mis
+    zodra het boekjaar op de laatste dag van een korte maand eindigt: bij een
+    boekjaar t/m 30-06-2025 levert dat 31-12-2025 op in plaats van 01-01-2026,
+    omdat 30 juni naar 30 december wordt afgebeeld. Het lost bovendien het
+    randgeval op van een boekjaar dat midden in een maand eindigt.
+    """
+    maand = boekjaar_eind.month + maanden
+    jaar = boekjaar_eind.year + (maand - 1) // 12
+    maand = (maand - 1) % 12 + 1
+    return date(jaar, maand, 1)
+
+
+def _tel_maanden_op(d: date, maanden: int) -> date:
+    """Zelfde dag, zoveel maanden later; korter wordende maanden worden gekapt."""
+    import calendar
+    maand = d.month + maanden
+    jaar = d.year + (maand - 1) // 12
+    maand = (maand - 1) % 12 + 1
+    return date(jaar, maand, min(d.day, calendar.monthrange(jaar, maand)[1]))
+
 
 def dagen_30_360(vanaf: date, tot_en_met: date) -> int:
     """Aantal dagen van 'vanaf' tot en met 'tot_en_met', 30 dagen per maand.
@@ -78,56 +121,97 @@ def bereken(bedrag: float, vanaf: date, tot_en_met: date, tarieven: list):
 
 
 def renteperiode(dagtekening: date,
-                 aangifte_ontvangen: date | None,
-                 afgeweken: bool,
-                 uiterste_aangiftedatum: date) -> tuple[date | None, str]:
-    """Bepaalt de einddatum van de renteperiode, of None als er geen rente is.
+                 aangifte_ontvangen: date | None = None,
+                 aangifte_gevolgd: bool = True,
+                 uiterste_aangiftedatum: date | None = None,
+                 aanslag_type: str = "regulier",
+                 verzoek_datum: date | None = None,
+                 voorlopige_aanslag_conform: bool = False) -> tuple[date | None, str, str]:
+    """Bepaalt de einddatum van de renteperiode.
 
-    Geeft (einddatum_inclusief, toelichting) terug. De drie situaties van de
-    Belastingdienst:
+    Geeft (einddatum_inclusief, reden, toelichting) terug. einddatum is None als
+    er geen belastingrente verschuldigd is. 'reden' is een korte code die op de
+    pagina wordt getoond, zodat een fiscalist kan zien welke regel is toegepast.
 
-      - aangifte op tijd én geen afwijking      -> geen belastingrente
-      - aangifte te laat én geen afwijking      -> tot 6 weken na de aanslag,
-                                                   maar hoogstens 19 weken na
-                                                   ontvangst van de aangifte
-      - afwijking van de aangifte               -> tot 6 weken na de aanslag
+    De situaties:
+
+      vrijstelling            aangifte op tijd én ongewijzigd gevolgd
+      vrijstelling-voorlopig  VpB: tijdig om een voorlopige aanslag verzocht en
+                              die is conform opgelegd
+      19-wekenregel           te laat maar ongewijzigd gevolgd, en 19 weken na
+                              de aangifte ligt vóór 6 weken na de aanslag
+      6-wekenregel            afgeweken van de aangifte, of de aanslag kwam
+                              binnen de 19 weken
+      navordering             tot 1 maand na de dagtekening
+      navordering-op-verzoek  idem, maar gemaximeerd op 12 weken na het verzoek
+      bovengrens              aangiftedatum onbekend; uitkomst is een maximum
+
+    Bij een navorderingsaanslag zijn de aangiftevragen niet van toepassing: die
+    aanslag volgt per definitie niet de oorspronkelijke aangifte. De volgorde
+    wijkt daarmee bewust af van de pseudocode in de specificatie, die de
+    vrijstelling vóór de navorderingscheck plaatst.
     """
+    if aanslag_type == "navordering":
+        normaal = _tel_maanden_op(dagtekening, NAVORDERING_MAANDEN)
+        if verzoek_datum is not None:
+            maximum = verzoek_datum + timedelta(weeks=NAVORDERING_VERZOEK_WEKEN)
+            if maximum < normaal:
+                return maximum, "navordering-op-verzoek", (
+                    f"Navordering op uw eigen verzoek. De rente is wettelijk "
+                    f"gemaximeerd op {NAVORDERING_VERZOEK_WEKEN} weken na ontvangst "
+                    f"van het verzoek ({nl_date(maximum)}), in plaats van "
+                    f"{NAVORDERING_MAANDEN} maand na de dagtekening ({nl_date(normaal)})."
+                )
+        return normaal, "navordering", (
+            f"Navorderingsaanslag: de rente loopt tot en met "
+            f"{NAVORDERING_MAANDEN} maand na de dagtekening ({nl_date(normaal)})."
+        )
+
+    if voorlopige_aanslag_conform:
+        return None, "vrijstelling-voorlopig", (
+            "Er is tijdig om een voorlopige aanslag verzocht en die is "
+            "overeenkomstig het verzoek opgelegd. In dat geval brengt de "
+            "Belastingdienst geen belastingrente in rekening."
+        )
+
     na_aanslag = dagtekening + timedelta(weeks=AANSLAG_WEKEN)
 
-    if afgeweken:
-        return na_aanslag, (
-            f"Er is afgeweken van de aangifte, dus de rente loopt tot en met "
-            f"{AANSLAG_WEKEN} weken na de dagtekening."
+    if not aangifte_gevolgd:
+        return na_aanslag, "6-wekenregel", (
+            f"Er is afgeweken van de aangifte, dus de maximering van "
+            f"{MAXIMERING_WEKEN} weken geldt niet. De rente loopt tot en met "
+            f"{AANSLAG_WEKEN} weken na de dagtekening ({nl_date(na_aanslag)})."
         )
 
     if aangifte_ontvangen is None:
-        return na_aanslag, (
-            "Datum van de aangifte onbekend — gerekend tot en met "
-            f"{AANSLAG_WEKEN} weken na de dagtekening. Dit is een bovengrens."
+        return na_aanslag, "bovengrens", (
+            f"Datum van de aangifte onbekend — gerekend tot en met "
+            f"{AANSLAG_WEKEN} weken na de dagtekening ({nl_date(na_aanslag)}). "
+            f"Dit is een bovengrens: met een aangiftedatum kan de uitkomst lager "
+            f"uitvallen of zelfs nihil zijn."
         )
 
-    if aangifte_ontvangen < uiterste_aangiftedatum:
-        return None, (
+    if uiterste_aangiftedatum is not None and aangifte_ontvangen < uiterste_aangiftedatum:
+        return None, "vrijstelling", (
             f"De aangifte is op tijd binnengekomen (vóór "
-            f"{uiterste_aangiftedatum.strftime('%d-%m-%Y')}) en er is niet van "
-            f"afgeweken. In dat geval brengt de Belastingdienst geen "
-            f"belastingrente in rekening."
+            f"{nl_date(uiterste_aangiftedatum)}) en is ongewijzigd gevolgd. "
+            f"In dat geval brengt de Belastingdienst geen belastingrente in rekening."
         )
 
     maximering = aangifte_ontvangen + timedelta(weeks=MAXIMERING_WEKEN)
     if maximering < na_aanslag:
-        return maximering, (
-            f"De aangifte is na de uiterste datum binnengekomen, maar er is niet "
-            f"van afgeweken. De rente is daarom gemaximeerd op "
+        return maximering, "19-wekenregel", (
+            f"De aangifte is na de uiterste datum binnengekomen, maar is wel "
+            f"ongewijzigd gevolgd. De rente is daarom gemaximeerd op "
             f"{MAXIMERING_WEKEN} weken na ontvangst van de aangifte "
-            f"({maximering.strftime('%d-%m-%Y')}), in plaats van "
-            f"{AANSLAG_WEKEN} weken na de dagtekening "
-            f"({na_aanslag.strftime('%d-%m-%Y')})."
+            f"({nl_date(maximering)}), in plaats van {AANSLAG_WEKEN} weken na de "
+            f"dagtekening ({nl_date(na_aanslag)})."
         )
 
-    return na_aanslag, (
+    return na_aanslag, "6-wekenregel", (
         f"De aanslag kwam binnen {MAXIMERING_WEKEN} weken na de aangifte, dus de "
-        f"rente loopt tot en met {AANSLAG_WEKEN} weken na de dagtekening."
+        f"rente loopt tot en met {AANSLAG_WEKEN} weken na de dagtekening "
+        f"({nl_date(na_aanslag)})."
     )
 
 
