@@ -1,28 +1,34 @@
 import streamlit as st
 from datetime import date, timedelta
 import calendar
-from _tarieven_check import controleer_nieuwe_tarieven
+from _tarieven_check import KOP_VPB, controleer_nieuwe_tarieven
 
 # ── Tarieven ────────────────────────────────────────────────────────────────
 # Enkelvoudige belastingrente VpB per jaar. Gesorteerd nieuw → oud.
-# Bron: Belastingdienst / Staatscourant — laatste controle: 1 juli 2025
+# Bron: belastingdienst.nl — "Percentages vennootschapsbelasting"
+# Laatste controle: 17 augustus 2026 (tabel 1-op-1 nagelopen tegen de bron).
+# Let op: 2022 t/m 2026 zijn herziene percentages (oorspronkelijk hoger vastgesteld).
 TARIEVEN = [
-    # Bron: belastingdienst.nl — "Percentages vennootschapsbelasting"
-    # Let op: 2025/2026 zijn herziene percentages (oorspronkelijk hoger vastgesteld)
     (date(2026, 1, 1),  5.00),
     (date(2025, 1, 1),  6.50),
     (date(2024, 1, 1),  7.50),
     (date(2023, 7, 1),  6.00),
+    (date(2022, 1, 1),  4.00),
     (date(2020, 10, 1), 4.00),
     (date(2020, 6, 1),  0.01),
     (date(2016, 9, 1),  8.00),
-    (date(2016, 3, 1),  8.05),
+    (date(2015, 3, 1),  8.05),
     (date(2014, 9, 1),  8.15),
     (date(2014, 4, 1),  8.25),
+    (date(2013, 1, 1),  3.00),
+    (date(2012, 10, 1), 2.25),
+    (date(2012, 7, 1),  2.50),
+    (date(2012, 4, 1),  2.30),
+    (date(2012, 1, 1),  2.85),
 ]
 
 
-_tarief_waarschuwing = controleer_nieuwe_tarieven(TARIEVEN)
+_tarief_waarschuwing = controleer_nieuwe_tarieven(TARIEVEN, KOP_VPB)
 
 
 def add_months(d: date, months: int) -> date:
