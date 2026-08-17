@@ -1,10 +1,21 @@
-# Wijzigingsrapport — codereview Bouwman Tools
+# Wijzigingsrapport — codereview betalingskenmerk-tool
 
 **Datum:** 17 augustus 2026
-**Betreft:** volledige codereview van de Streamlit-app + oplossen van alle gevonden bugs
+**Repository:** `betalingskenmerk-tool`
+**Betreft:** volledige codereview van deze repository + oplossen van alle gevonden bugs
 **Branch:** `master` (gepusht)
 **Omvang:** 9 commits, 18 bestanden, +1.686 / −329 regels
 **Tests:** van 0 naar 169 (alle groen)
+
+> **Scope.** Dit rapport gaat uitsluitend over de repository `betalingskenmerk-tool`.
+> Die bevat inmiddels zes pagina's — Betalingskenmerk, VIES BTW-controle, KvK/SBI
+> opzoeken, Belastingrente IB, Belastingrente VpB en Auto BTW privé — die samen als
+> één Streamlit-app draaien. Andere tools uit de Bouwman Tools-verzameling zijn
+> **niet** bekeken.
+>
+> Let op de naamgeving: de app presenteert zichzelf intern als "Bouwman Tools"
+> (in `app.py` en bovenaan de README), terwijl dat de naam van de héle verzameling is.
+> Zie **actiepunt 5**.
 
 ---
 
@@ -287,17 +298,28 @@ verkeerde bedragen; het gaat om robuustheid, privacy en onderhoudbaarheid.
       - BTW-correctie van auto's die **langer dan 4 jaar in gebruik** zijn — die stond op
         2,7% in plaats van 1,5%.
 
+- [ ] **5. Besluit hoe deze app moet heten.**
+      De repository heet `betalingskenmerk-tool`, maar bevat inmiddels zes pagina's en
+      presenteert zichzelf als "Bouwman Tools" — de naam van de héle verzameling, waarvan
+      dit er één is. Dat leidt tot verwarring over wat waar zit. Het speelt op twee plekken:
+      - `app.py` regel 4: `page_title="Bouwman Tools"` (bepaalt de browsertabtitel)
+      - `README.md` regel 1: `# Bouwman Tools — Belastingtools`
+
+      Denk ook aan wat er in `CLAUDE.md` staat: het plan is deze pagina's later onder te
+      brengen in de WWFT multi-page app. Dan wordt de naamgeving nóg relevanter. Geef aan
+      welke naam je wilt, dan pas ik beide plekken aan.
+
 ### Voor de volgende sessie — technisch, geen besluit nodig
 
-- [ ] 5. Kwetsbaarheden K1 t/m K4 oplossen (klein werk, grotendeels mechanisch)
-- [ ] 6. Duplicatie opruimen: gedeelde modules voor opmaak, CSS en het KvK-sleutelblok
-- [ ] 7. Knoppen die niets doen weghalen of laten werken
-- [ ] 8. Controlecijfer van het betalingskenmerk valideren, zodat een typefout wordt
+- [ ] 6. Kwetsbaarheden K1 t/m K4 oplossen (klein werk, grotendeels mechanisch)
+- [ ] 7. Duplicatie opruimen: gedeelde modules voor opmaak, CSS en het KvK-sleutelblok
+- [ ] 8. Knoppen die niets doen weghalen of laten werken
+- [ ] 9. Controlecijfer van het betalingskenmerk valideren, zodat een typefout wordt
       opgemerkt in plaats van stilzwijgend een verkeerd RSIN op te leveren
 
 ### Ter kennisgeving voor Bram
 
-- [ ] 9. De tarievencontrole waarschuwt vanaf nu automatisch als belastingdienst.nl
+- [ ] 10. De tarievencontrole waarschuwt vanaf nu automatisch als belastingdienst.nl
       afwijkt van de tabellen in de code — zowel bij een nieuwe periode als bij een
       met terugwerkende kracht herzien percentage. Er hoeft dus niet meer handmatig te
       worden nagelopen, maar de melding moet wél worden opgevolgd.
