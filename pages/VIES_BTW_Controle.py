@@ -1,47 +1,25 @@
+import html
+
 import streamlit as st
 import requests
-import re
 
-EU_LANDEN = [
-    "AT","BE","BG","CY","CZ","DE","DK","EE","EL","ES","FI","FR",
-    "HR","HU","IE","IT","LT","LU","LV","MT","NL","PL","PT","RO",
-    "SE","SI","SK","XI",
-]
-
-LAND_NAAM = {
-    "AT":"Oostenrijk","BE":"België","BG":"Bulgarije","CY":"Cyprus",
-    "CZ":"Tsjechië","DE":"Duitsland","DK":"Denemarken","EE":"Estland",
-    "EL":"Griekenland","ES":"Spanje","FI":"Finland","FR":"Frankrijk",
-    "HR":"Kroatië","HU":"Hongarije","IE":"Ierland","IT":"Italië",
-    "LT":"Litouwen","LU":"Luxemburg","LV":"Letland","MT":"Malta",
-    "NL":"Nederland","PL":"Polen","PT":"Portugal","RO":"Roemenië",
-    "SE":"Zweden","SI":"Slovenië","SK":"Slowakije","XI":"Noord-Ierland",
-}
-
-VIES_URL = "https://ec.europa.eu/taxation_customs/vies/rest-api/ms/{land}/vat/{nummer}"
-
-
-def parse_btw(raw: str):
-    """Geeft (landcode, nummer) terug, of (None, None) bij ongeldige invoer."""
-    s = re.sub(r"[\s\.\-]", "", raw).upper()
-    if len(s) >= 2 and s[:2].isalpha() and s[:2] in EU_LANDEN:
-        return s[:2], s[2:]
-    return None, None
+from _vies import (
+    LAND_NAAM,
+    VIES_URL,
+    adres_regels,
+    duid_antwoord,
+    parse_btw,
+    rsin_uit_btw_nummer,
+)
 
 
 @st.cache_data(ttl=3600)
 def vies_check(land: str, nummer: str) -> dict:
-    try:
-        r = requests.get(VIES_URL.format(land=land, nummer=nummer), timeout=8)
-        if not r.ok:
-            return {"fout": f"VIES niet bereikbaar ({r.status_code})"}
-        return r.json()
-    except Exception as e:
-        return {"fout": f"Verbindingsfout: {e}"}
-
-
-def adres_regels(adres_str: str) -> list[str]:
-    return [r.strip() for r in adres_str.strip().splitlines() if r.strip()]
+    """Raadpleegt VIES. Gooit een exceptie bij een netwerk- of HTTP-fout, zodat
+    Streamlit het mislukte antwoord niet een uur lang bewaart."""
+    r = requests.get(VIES_URL.format(land=land, nummer=nummer), timeout=8)
+    r.raise_for_status()
+    return duid_antwoord(r.json())
 
 
 
@@ -64,6 +42,8 @@ st.markdown("""
     border-radius:8px; padding:4px 14px; font-size:15px; font-weight:bold; }
   .badge-ongeldig { display:inline-block; background:#c0392b; color:white;
     border-radius:8px; padding:4px 14px; font-size:15px; font-weight:bold; }
+  .badge-storing  { display:inline-block; background:#b8860b; color:white;
+    border-radius:8px; padding:4px 14px; font-size:15px; font-weight:bold; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -85,77 +65,92 @@ with col_in:
         label_visibility="collapsed",
     )
 with col_knop:
-    controleer = st.button("Controleer →", use_container_width=True)
+    st.button("Controleer →", use_container_width=True)
 
 if not raw:
     st.caption("Voer een BTW-nummer in met landcode (bijv. NL, DE, BE). "
-               "Spaties en punten worden automatisch verwijderd.")
+               "Spaties, punten en streepjes worden automatisch verwijderd.")
     st.stop()
 
 land, nummer = parse_btw(raw)
 
 if land is None:
-    st.error("Ongeldige invoer — begin met een geldige EU-landcode (bijv. NL, DE, BE, FR).")
+    st.error("Ongeldige invoer — begin met een geldige EU-landcode (bijv. NL, DE, BE, FR), "
+             "gevolgd door alleen letters en cijfers.")
     st.stop()
 
 # ── API-aanroep ──────────────────────────────────────────────────────────────
 
 with st.spinner("VIES raadplegen…"):
-    data = vies_check(land, nummer)
-
-if "fout" in data:
-    st.error(f"VIES niet bereikbaar: {data['fout']}")
-    st.stop()
-
-geldig = data.get("isValid", False)
-naam   = data.get("name", "---").strip()
-adres  = data.get("address", "").strip()
+    try:
+        uitkomst = vies_check(land, nummer)
+    except Exception as exc:
+        st.error(
+            "VIES is nu niet bereikbaar, dus het nummer is **niet gecontroleerd**. "
+            "Probeer het over enkele minuten opnieuw."
+        )
+        st.caption(f"Technische melding: {type(exc).__name__}")
+        st.stop()
 
 # ── Resultaat ────────────────────────────────────────────────────────────────
 
-badge = '<span class="badge-geldig">✓ Geldig</span>' if geldig else '<span class="badge-ongeldig">✗ Niet geldig</span>'
+nummer_veilig = html.escape(f"{land} {nummer}")
+land_naam = html.escape(LAND_NAAM.get(land, land))
+
+BADGES = {
+    "geldig":   '<span class="badge-geldig">✓ Geldig</span>',
+    "ongeldig": '<span class="badge-ongeldig">✗ Niet geldig</span>',
+    "storing":  '<span class="badge-storing">⚠ Niet gecontroleerd</span>',
+}
+
 st.markdown(f"""
 <div class="vies-tile" style="margin-bottom:12px;">
   <div class="label">Status</div>
-  <div style="margin-top:6px;">{badge}</div>
-  <div class="sub" style="margin-top:6px;">{land} {nummer} &nbsp;·&nbsp; {LAND_NAAM.get(land, land)}</div>
+  <div style="margin-top:6px;">{BADGES[uitkomst['status']]}</div>
+  <div class="sub" style="margin-top:6px;">{nummer_veilig} &nbsp;·&nbsp; {land_naam}</div>
 </div>
 """, unsafe_allow_html=True)
 
-if geldig:
+if uitkomst["status"] == "storing":
+    # VIES antwoordt met HTTP 200 en isValid=false bij een storing. Dat is iets
+    # anders dan een ongeldig nummer en mag niet als zodanig worden getoond.
+    st.warning(
+        f"{uitkomst['melding']} Het BTW-nummer is hierdoor **niet gecontroleerd** — "
+        "dit betekent níet dat het ongeldig is. Probeer het later opnieuw."
+    )
+
+elif uitkomst["status"] == "ongeldig":
+    st.info("Dit BTW-nummer is niet geregistreerd of niet actief in de VIES-database. "
+            "Controleer of het nummer correct is ingevoerd.")
+
+else:
     col1, col2 = st.columns(2)
 
     with col1:
+        naam_html = html.escape(uitkomst["naam"]) if uitkomst["naam"] else "—"
         st.markdown(f"""
         <div class="vies-tile">
           <div class="label">Bedrijfsnaam</div>
-          <div class="value" style="font-size:16px;">{naam if naam and naam != "---" else "—"}</div>
+          <div class="value" style="font-size:16px;">{naam_html}</div>
         </div>""", unsafe_allow_html=True)
 
     with col2:
-        adres_html = "<br>".join(adres_regels(adres)) if adres and adres != "---" else "—"
+        regels = [html.escape(r) for r in adres_regels(uitkomst["adres"])]
+        adres_html = "<br>".join(regels) if regels else "—"
         st.markdown(f"""
         <div class="vies-tile">
           <div class="label">Adres</div>
           <div class="value" style="font-size:15px;font-weight:normal;line-height:1.5;">{adres_html}</div>
         </div>""", unsafe_allow_html=True)
 
-    # Voor NL: toon RSIN en haal SBI-code op via KvK
-    if land == "NL":
-        rsin_match = re.match(r"^(\d{9})B\d{2}$", nummer)
-        if rsin_match:
-            rsin9 = rsin_match.group(1)
-            rsin_fmt = f"{rsin9[:4]}.{rsin9[4:6]}.{rsin9[6:]}"
-            st.markdown(f"""
-            <div class="vies-tile">
-              <div class="label">RSIN (afgeleid)</div>
-              <div class="value" style="font-family:monospace;font-size:17px;">{rsin_fmt}</div>
-              <div class="sub">Correspondeert met het RSIN in een betalingskenmerk</div>
-            </div>""", unsafe_allow_html=True)
-
-
-else:
-    st.info("Dit BTW-nummer is niet geregistreerd of niet actief in de VIES-database. "
-            "Controleer of het nummer correct is ingevoerd.")
+    rsin9 = rsin_uit_btw_nummer(land, nummer)
+    if rsin9:
+        rsin_fmt = f"{rsin9[:4]}.{rsin9[4:6]}.{rsin9[6:]}"
+        st.markdown(f"""
+        <div class="vies-tile">
+          <div class="label">RSIN (afgeleid)</div>
+          <div class="value" style="font-family:monospace;font-size:17px;">{rsin_fmt}</div>
+          <div class="sub">Correspondeert met het RSIN in een betalingskenmerk</div>
+        </div>""", unsafe_allow_html=True)
 
 st.caption("Bron: Europese Commissie VIES · Gratis · Geen API-sleutel vereist")
