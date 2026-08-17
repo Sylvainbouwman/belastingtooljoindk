@@ -37,6 +37,16 @@ def _tekst(html_fragment: str) -> str:
     return " ".join(re.sub(r"<[^>]+>", " ", html_fragment).split())
 
 
+def nl_pct(percentage: float) -> str:
+    """Percentage in Nederlandse notatie, zonder betekenisverlies.
+
+    De samenvattingstegel gebruikte "%.0f", waardoor 6,5% als "6%" verscheen,
+    7,5% als "8%" (bankiersafronding) en 0,01% als "0%".
+    """
+    tekst = f"{percentage:.2f}".rstrip("0").rstrip(".")
+    return tekst.replace(".", ",") + "%"
+
+
 @st.cache_data(show_spinner=False)
 def _haal_pagina_op(maand: str) -> str:
     """Haalt de tarievenpagina op, gecached per maand (maand = 'YYYY-MM').

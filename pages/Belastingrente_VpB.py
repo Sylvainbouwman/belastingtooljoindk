@@ -1,7 +1,7 @@
 import streamlit as st
 from datetime import date, timedelta
 import calendar
-from _tarieven_check import KOP_VPB, controleer_nieuwe_tarieven
+from _tarieven_check import KOP_VPB, controleer_nieuwe_tarieven, nl_pct
 
 # ── Tarieven ────────────────────────────────────────────────────────────────
 # Enkelvoudige belastingrente VpB per jaar. Gesorteerd nieuw → oud.
@@ -167,7 +167,7 @@ with col1:
 
 with col2:
     uniq_tarieven = sorted({d["pct"] for d in deelperioden})
-    tarief_txt = " / ".join(f"{p:.0f}%" for p in uniq_tarieven)
+    tarief_txt = " / ".join(nl_pct(p) for p in uniq_tarieven)
     st.markdown(f"""
     <div class="bk-tile">
       <div class="label">Rentetarief (per jaar)</div>
@@ -187,11 +187,11 @@ st.markdown("**Berekening per periode**")
 for d in deelperioden:
     st.markdown(f"""
     <div class="bk-tile" style="margin-bottom:6px">
-      <div class="label">{nl_date(d['start'])} t/m {nl_date(d['eind'])} &nbsp;·&nbsp; {d['pct']:.2g}% &nbsp;·&nbsp; {d['dagen']} dagen</div>
+      <div class="label">{nl_date(d['start'])} t/m {nl_date(d['eind'])} &nbsp;·&nbsp; {nl_pct(d['pct'])} &nbsp;·&nbsp; {d['dagen']} dagen</div>
       <div class="value">{nl_euro(d['rente'])}</div>
     </div>""", unsafe_allow_html=True)
 
 st.caption(
-    "Tarieven op basis van belastingdienst.nl (bijgewerkt 2 juli 2026). "
-    "Controleer periodiek of er nieuwe percentages zijn gepubliceerd."
+    "Tarieven op basis van belastingdienst.nl (tabel nagelopen op 17 augustus 2026). "
+    "Deze pagina controleert automatisch of de bron inmiddels afwijkt."
 )
