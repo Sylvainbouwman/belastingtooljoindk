@@ -284,3 +284,16 @@ def test_omschrijving_bevat_nooit_placeholder_of_dubbel_jaartal():
             tekst = build_omschrijving(r)
             assert "—" not in tekst, tekst
             assert not re.search(r"\b(19|20)\d{2}\s+(19|20)\d{2}\b", tekst), tekst
+
+
+def test_gevalideerd_kenmerk_uit_de_readme():
+    """Het enige kenmerk waarvan de juiste uitkomst extern is bevestigd.
+    Als deze test omvalt, is er iets fundamenteels mis met de decodering."""
+    r, fout = decode_kenmerk("4863521721601050")
+    assert fout is None
+    assert r["soort"] == "Omzetbelasting"
+    assert r["soort_sub"] == "Aangifte"
+    assert r["jaar"] == 2026
+    assert r["tijdvak"] == "mei"
+    assert r["rsin9"] == "863521721"
+    assert build_omschrijving(r) == "Afdr. OB Mei 2026"
