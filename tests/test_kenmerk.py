@@ -9,6 +9,7 @@ from datetime import date
 import pytest
 
 from _kenmerk import (
+    rsin_uit,
     build_omschrijving,
     decode_kenmerk,
     decode_tijdvak,
@@ -50,6 +51,40 @@ def test_rsin_check_digit_bekende_waarden():
 
 def test_format_rsin():
     assert format_rsin("123456782") == "1234.56.782"
+
+
+def test_format_rsin_laat_none_door():
+    assert format_rsin(None) is None
+
+
+def test_rsin_uit_geeft_negen_cijfers():
+    assert rsin_uit("12345678") == "123456782"
+    assert len(rsin_uit("12345678")) == 9
+
+
+def test_rsin_uit_geeft_none_bij_restwaarde_tien():
+    # Bug 1: 10 is geen controlecijfer maar het bewijs dat er geen geldig
+    # BSN/RSIN bestaat. Vroeger werd "10" aangeplakt -> nummer van 10 cijfers.
+    assert rsin_check_digit("10000006") == 10
+    assert rsin_uit("10000006") is None
+
+
+def test_rsin_is_nooit_langer_dan_negen_cijfers():
+    """Bug 1, regressiebewaking over de volle invoerruimte."""
+    for n in range(10_000_000, 10_050_000):
+        uitkomst = rsin_uit(str(n).zfill(8))
+        assert uitkomst is None or len(uitkomst) == 9
+
+
+def test_kenmerk_met_onmogelijke_elfproef_decodeert_zonder_rsin():
+    """Bug 1: de rest van het kenmerk blijft bruikbaar, alleen het RSIN vervalt."""
+    r, fout = decode_kenmerk("0100000061500210")
+    assert fout is None
+    assert r["rsin9"] is None
+    assert r["rsin"] is None
+    # soort, jaar en tijdvak zijn wél gewoon afgeleid
+    assert r["soort"] == "Omzetbelasting"
+    assert r["tijdvak"] == "1e kwartaal"
 
 
 # ── Tijdvakken ──────────────────────────────────────────────────────────────

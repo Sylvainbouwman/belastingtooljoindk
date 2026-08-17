@@ -191,11 +191,20 @@ with col2:
       <div class="label">Jaartal</div>
       <div class="value">{result['jaar']}</div>
     </div>""", unsafe_allow_html=True)
-    st.markdown(f"""
-    <div class="bk-tile">
-      <div class="label">BSN / RSIN</div>
-      <div class="value" style="font-family:monospace;font-size:17px;">{result['rsin']}</div>
-    </div>""", unsafe_allow_html=True)
+    if result["rsin"]:
+        st.markdown(f"""
+        <div class="bk-tile">
+          <div class="label">BSN / RSIN</div>
+          <div class="value" style="font-family:monospace;font-size:17px;">{result['rsin']}</div>
+        </div>""", unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="bk-tile">
+          <div class="label">BSN / RSIN</div>
+          <div class="value" style="font-size:15px;color:#c0392b;">Niet af te leiden</div>
+          <div class="sub">De elfproef gaat niet op — het kenmerk is waarschijnlijk
+          verkeerd overgenomen. Controleer de cijfers.</div>
+        </div>""", unsafe_allow_html=True)
 
 kvk_key = st.session_state.get("kvk_api_key", "")
 rsin9 = result["rsin9"]
@@ -209,7 +218,9 @@ def _naam_tile(waarde: str, loading: bool = False) -> str:
       <div class="value" style="{kleur}">{waarde}</div>
     </div>"""
 
-if kvk_key:
+if not rsin9:
+    pass  # Geen geldig RSIN afgeleid: KvK-opzoeking heeft geen zin.
+elif kvk_key:
     if pending_key in st.session_state:
         del st.session_state[pending_key]
         sbi_codes = []
