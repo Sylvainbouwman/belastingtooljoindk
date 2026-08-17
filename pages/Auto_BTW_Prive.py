@@ -3,86 +3,64 @@ import requests
 from datetime import date, timedelta
 from fpdf import FPDF
 from _auto_paste import auto_paste_input as _auto_paste_input
+from _auto_calc import bijtelling as _bijtelling
+from _auto_calc import btw_correctie as _btw_correctie
+from _auto_calc import vervaldatum_vaste_termijn
 
-# ── Bijtelling tarieven ──────────────────────────────────────────────────────
-_STD_BIJ = {j: 22.0 for j in range(2017, 2031)}
-for j in range(2012, 2017):
-    _STD_BIJ[j] = 25.0
 
-_EV_BIJ = {
-    2025: (16.0, 30_000),
-    2024: (16.0, 30_000),
-    2023: (16.0, 30_000),
-    2022: (16.0, 35_000),
-    2021: (12.0, 40_000),
-    2020: (12.0, 45_000),
-    2019: (16.0, 50_000),
-    2018: (16.0, 50_000),
-    2017: ( 7.0, 50_000),
-}
+def _rdw_datum(waarde) -> date | None:
+    """RDW levert datums als 'YYYYMMDD'."""
+    tekst = str(waarde or "")
+    if len(tekst) != 8 or not tekst.isdigit():
+        return None
+    try:
+        return date(int(tekst[:4]), int(tekst[4:6]), int(tekst[6:8]))
+    except ValueError:
+        return None
 
 
 @st.cache_data(show_spinner=False, ttl=600)
 def _rdw_ophalen(kn: str) -> dict | None:
     try:
         r = requests.get(
-            f"https://opendata.rdw.nl/resource/m9d7-ebf2.json?kenteken={kn}",
+            "https://opendata.rdw.nl/resource/m9d7-ebf2.json",
+            params={"kenteken": kn},
             timeout=8,
         )
-        if not r.ok or not r.json():
+        if not r.ok:
             return None
-        v = r.json()[0]
+        voertuigen = r.json()
+        if not voertuigen:
+            return None
+        v = voertuigen[0]
         rb = requests.get(
-            f"https://opendata.rdw.nl/resource/8ys7-d773.json?kenteken={kn}",
+            "https://opendata.rdw.nl/resource/8ys7-d773.json",
+            params={"kenteken": kn},
             timeout=8,
         )
         brandstof, co2 = "Onbekend", None
-        if rb.ok and rb.json():
-            b = rb.json()[0]
-            brandstof = b.get("brandstof_omschrijving", "Onbekend")
-            try:
-                co2 = int(float(b["co2_uitstoot_gecombineerd"]))
-            except (KeyError, ValueError, TypeError):
-                pass
+        if rb.ok:
+            brandstoffen = rb.json()
+            if brandstoffen:
+                b = brandstoffen[0]
+                brandstof = b.get("brandstof_omschrijving", "Onbekend")
+                try:
+                    co2 = int(float(b["co2_uitstoot_gecombineerd"]))
+                except (KeyError, ValueError, TypeError):
+                    pass
         cat_str = v.get("catalogusprijs")
-        ts_str = v.get("datum_tenaamstelling", "")
-        datum_ts = None
-        if len(ts_str) == 8:
-            try:
-                datum_ts = date(int(ts_str[:4]), int(ts_str[4:6]), int(ts_str[6:8]))
-            except (ValueError, TypeError):
-                pass
+        datum_eerste_toelating = _rdw_datum(v.get("datum_eerste_toelating"))
         return {
             "voertuig": (v.get("merk", "") + " " + v.get("handelsbenaming", "")).strip(),
             "bouwjaar": str(v.get("datum_eerste_toelating", ""))[:4],
             "brandstof": brandstof,
             "co2": co2,
             "catalogusprijs": int(cat_str) if cat_str else None,
-            "datum_tenaamstelling": datum_ts,
+            "datum_tenaamstelling": _rdw_datum(v.get("datum_tenaamstelling")),
+            "datum_eerste_toelating": datum_eerste_toelating,
         }
     except Exception:
         return None
-
-
-def _btw_correctie(catalogusprijs: float, marge: bool, dagen: int) -> float:
-    return catalogusprijs * (0.015 if marge else 0.027) * (dagen / 365)
-
-
-def _bijtelling(catalogusprijs: float, co2: int | None, brandstof: str, jaar: int, dagen: int):
-    is_ev = (co2 == 0) or brandstof.lower() in ("elektriciteit", "waterstof")
-    if is_ev and jaar in _EV_BIJ:
-        pct, cap = _EV_BIJ[jaar]
-        if catalogusprijs <= cap:
-            bedrag = catalogusprijs * (pct / 100) * (dagen / 365)
-            label = f"{pct:.0f}% (0-emissie, ≤ € {cap:,})"
-        else:
-            bedrag = (cap * (pct / 100) + (catalogusprijs - cap) * 0.22) * (dagen / 365)
-            label = f"{pct:.0f}% t/m € {cap:,} + 22% daarboven"
-    else:
-        pct = _STD_BIJ.get(jaar, 22.0)
-        bedrag = catalogusprijs * (pct / 100) * (dagen / 365)
-        label = f"{pct:.0f}%"
-    return bedrag, label
 
 
 def nl_euro(x: float) -> str:
@@ -140,7 +118,7 @@ def _maak_pdf(auto_results: list, klant_naam: str, klant_nr: str, jaar: int, mar
             _rij("Klantnummer:", klant_nr)
 
     _sectie(f"Berekening {jaar}")
-    _rij("BTW-tarief:", "1,5% (marge-auto)" if marge else "2,7%")
+    _rij("Marge-auto:", "Ja" if marge else "Nee")
 
     for i, r in enumerate(auto_results):
         label = f"Auto {i + 1}" if len(auto_results) > 1 else "Voertuig"
@@ -150,6 +128,10 @@ def _maak_pdf(auto_results: list, klant_naam: str, klant_nr: str, jaar: int, mar
         _rij("Brandstof:", r["auto"]["brandstof"])
         co2_txt = f"{r['auto']['co2']} g/km" if r["auto"]["co2"] is not None else "Onbekend"
         _rij("CO2-uitstoot:", co2_txt)
+        det = r["auto"].get("datum_eerste_toelating")
+        _rij("Eerste toelating:", nl_date(det) if det else "Onbekend")
+        ts = r["auto"].get("datum_tenaamstelling")
+        _rij("In gebruik vanaf:", nl_date(ts) if ts else "Onbekend")
         _rij("Catalogusprijs:", _pdf_bedrag(r["catalogusprijs"]))
         _rij("Periode:", f"{r['periode_label']} ({r['dagen']} dagen)")
 
@@ -157,7 +139,8 @@ def _maak_pdf(auto_results: list, klant_naam: str, klant_nr: str, jaar: int, mar
         pdf.set_fill_color(230, 238, 255)
         pdf.set_text_color(0, 0, 0)
         pdf.set_font("Helvetica", "", 9)
-        pdf.cell(0, 6, "BTW-correctie privégebruik", fill=True, new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 6, _pdf_str(f"BTW-correctie privegebruik ({r['btw_label']})"),
+                 fill=True, new_x="LMARGIN", new_y="NEXT")
         pdf.set_font("Helvetica", "B", 14)
         pdf.set_text_color(26, 58, 110)
         pdf.cell(0, 8, _pdf_bedrag(r["btw"]), new_x="LMARGIN", new_y="NEXT")
@@ -240,14 +223,15 @@ with col_b:
     marge = st.toggle(
         "Marge-auto (1,5%)",
         value=False,
-        help="Vink aan als de auto als marge-auto is gekocht (zonder BTW-factuur).",
+        help="Vink aan als de auto als marge-auto is gekocht (zonder BTW-factuur). "
+             "Het lage forfait van 1,5% wordt daarnaast automatisch toegepast zodra "
+             "het jaar van ingebruikname en de vier jaren daarna voorbij zijn.",
     )
 with col_n:
     klant_naam = st.text_input("Klantnaam", key="klant_naam", placeholder="Optioneel — voor de PDF")
 with col_nr:
     klant_nr = st.text_input("Klantnummer", key="klant_nr", placeholder="bijv. 12345")
 
-tarief_str = "1,5%" if marge else "2,7%"
 
 # ── Session state: lijst van auto's ─────────────────────────────────────────
 if "autos" not in st.session_state:
@@ -316,11 +300,18 @@ for idx, auto_entry in enumerate(list(st.session_state["autos"])):
         cat_txt = nl_euro(auto_data_i["catalogusprijs"]) if auto_data_i["catalogusprijs"] else "—"
         ts_html = (f' &nbsp;·&nbsp; <span style="color:#1a4d2e;font-weight:600;">In gebruik vanaf {nl_date(ts_i)}</span>'
                    if ts_i else "")
+        det_i = auto_data_i["datum_eerste_toelating"]
+        verval_i = vervaldatum_vaste_termijn(det_i)
+        verval_html = (
+            f' &nbsp;·&nbsp; <span style="color:#6b7a99;">Bijtellingsregime {det_i.year} '
+            f'vast t/m {nl_date(verval_i - timedelta(days=1))}</span>'
+            if verval_i else ""
+        )
         st.markdown(
             f'<div class="auto-info">'
             f'<b>{kenteken_i}</b> &nbsp;·&nbsp; {auto_data_i["voertuig"]} &nbsp;·&nbsp; '
             f'Bouwjaar {auto_data_i["bouwjaar"]} &nbsp;·&nbsp; {auto_data_i["brandstof"]} &nbsp;·&nbsp; '
-            f'{co2_txt} &nbsp;·&nbsp; Catalogusprijs {cat_txt}{ts_html}</div>',
+            f'{co2_txt} &nbsp;·&nbsp; Catalogusprijs {cat_txt}{ts_html}{verval_html}</div>',
             unsafe_allow_html=True,
         )
 
@@ -423,10 +414,15 @@ for idx, auto_entry in enumerate(list(st.session_state["autos"])):
                     st.session_state[flip_pending_key] = True
                     st.rerun()
 
-        btw_i = _btw_correctie(catalogusprijs_i, marge, dagen_i)
+        btw_i, btw_label_i = _btw_correctie(
+            catalogusprijs_i, marge, dagen_i,
+            ingebruikname=auto_data_i["datum_tenaamstelling"],
+            jaar=berekeningsjaar,
+        )
         bij_i, bij_label_i = _bijtelling(
             catalogusprijs_i, auto_data_i["co2"], auto_data_i["brandstof"],
-            berekeningsjaar, dagen_i,
+            berekeningsjaar, datum_van_i, datum_tot_i,
+            eerste_toelating=auto_data_i["datum_eerste_toelating"],
         )
 
         col_r1, col_r2 = st.columns(2)
@@ -440,7 +436,7 @@ for idx, auto_entry in enumerate(list(st.session_state["autos"])):
               </div>
               <div style="font-size:30px;font-weight:bold;font-family:monospace;">{nl_euro(btw_i)}</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:4px;">
-                {tarief_str} forfait &nbsp;·&nbsp; {dagen_i} dagen
+                {btw_label_i} forfait &nbsp;·&nbsp; {dagen_i} dagen
               </div>
             </div>""")
         with col_r2:
@@ -464,6 +460,7 @@ for idx, auto_entry in enumerate(list(st.session_state["autos"])):
             "periode_label": periode_label_i,
             "dagen": dagen_i,
             "btw": btw_i,
+            "btw_label": btw_label_i,
             "bij": bij_i,
             "bij_label": bij_label_i,
         })
