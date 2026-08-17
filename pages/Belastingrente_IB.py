@@ -1,12 +1,12 @@
 import streamlit as st
 from datetime import date, timedelta
-from _tarieven_check import controleer_nieuwe_tarieven
+from _tarieven_check import KOP_ALGEMEEN, controleer_nieuwe_tarieven
 
 # ── Tarieven ────────────────────────────────────────────────────────────────
 # Enkelvoudige belastingrente IB/PH per jaar. Gesorteerd nieuw → oud.
-# Bron: Belastingdienst / Staatscourant — laatste controle: 1 juli 2025
+# Bron: belastingdienst.nl — "Percentages alle belastingen (m.u.v. toeslagen en VpB)"
+# Laatste controle: 17 augustus 2026 (tabel 1-op-1 nagelopen tegen de bron).
 TARIEVEN = [
-    # Bron: belastingdienst.nl — "Percentages alle belastingen (m.u.v. toeslagen en VpB)"
     (date(2026, 1, 1),  5.00),
     (date(2025, 1, 1),  6.50),
     (date(2024, 1, 1),  7.50),
@@ -22,7 +22,7 @@ TARIEVEN = [
 ]
 
 
-_tarief_waarschuwing = controleer_nieuwe_tarieven(TARIEVEN)
+_tarief_waarschuwing = controleer_nieuwe_tarieven(TARIEVEN, KOP_ALGEMEEN)
 
 
 def tarief_op(d: date) -> float:
