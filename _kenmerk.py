@@ -50,8 +50,25 @@ MIDDEL2_LABEL = {
 
 
 def rsin_check_digit(d8: str) -> int:
+    """Restwaarde van de elfproef over de eerste 8 cijfers.
+
+    Let op: de uitkomst kan 10 zijn. Dat is géén controlecijfer maar het bewijs
+    dat er bij deze 8 cijfers geen geldig BSN/RSIN bestaat. Gebruik rsin_uit()
+    in plaats van deze functie rechtstreeks.
+    """
     weights = [9, 8, 7, 6, 5, 4, 3, 2]
     return sum(int(c) * w for c, w in zip(d8, weights)) % 11
+
+
+def rsin_uit(d8: str) -> str | None:
+    """Vult de 8 cijfers aan tot een 9-cijferig BSN/RSIN, of None als dat niet kan.
+
+    Bij restwaarde 10 bestaat er geen geldig negende cijfer. Dat gebeurt bij
+    ongeveer één op de elf invoeren en betekent in de praktijk dat het kenmerk
+    verkeerd is overgenomen.
+    """
+    rest = rsin_check_digit(d8)
+    return None if rest == 10 else d8 + str(rest)
 
 
 def reconstruct_year(digit: int) -> int:
@@ -70,7 +87,9 @@ def decode_tijdvak(code: str) -> str:
     return mapping.get(n, f"tijdvak {code}")
 
 
-def format_rsin(rsin9: str) -> str:
+def format_rsin(rsin9: str | None) -> str | None:
+    if rsin9 is None:
+        return None
     return f"{rsin9[:4]}.{rsin9[4:6]}.{rsin9[6:]}"
 
 
@@ -86,8 +105,7 @@ def decode_kenmerk(raw: str):
     middel10 = p(10)
 
     if middel10 in (0, 1, 5, 6):
-        rsin8 = s(2, 9)
-        rsin9 = rsin8 + str(rsin_check_digit(rsin8))
+        rsin9 = rsin_uit(s(2, 9))
         m = MIDDEL_LABEL[middel10]
         return {
             "soort": m["lang"], "soort_sub": m["sub"], "kort": m["kort"],
@@ -107,8 +125,7 @@ def decode_kenmerk(raw: str):
             prefix = str(middel2)
         else:
             prefix = str(middel2 - 7)
-        rsin8 = prefix + rsin6
-        rsin9 = rsin8 + str(rsin_check_digit(rsin8))
+        rsin9 = rsin_uit(prefix + rsin6)
         return {
             "soort": "Vennootschapsbelasting", "soort_sub": "", "kort": "VpB",
             "jaar": reconstruct_year(p(8)),
@@ -118,8 +135,7 @@ def decode_kenmerk(raw: str):
         }, None
 
     if middel2 in MIDDEL2_LABEL:
-        rsin8 = s(2, 9)
-        rsin9 = rsin8 + str(rsin_check_digit(rsin8))
+        rsin9 = rsin_uit(s(2, 9))
         m = MIDDEL2_LABEL[middel2]
         return {
             "soort": m["lang"], "soort_sub": "", "kort": m["kort"],
