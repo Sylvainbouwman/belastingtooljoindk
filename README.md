@@ -47,28 +47,41 @@ Zoek bedrijfsgegevens op via de KvK Handelsregister API.
 - Onderscheid hoofd- en nevenactiviteiten
 - Tot 10 resultaten per zoekopdracht
 
-### 📊 Belastingrente IB
-Berekent de belastingrente voor een aanslag inkomstenbelasting.
+### 📊 Belastingrente IB en VpB
+Berekent de belastingrente voor een aanslag inkomstenbelasting of vennootschapsbelasting,
+volgens de rekenmethode van de Belastingdienst.
 
-- Renteperiode: 1 juli volgend op het belastingjaar t/m 6 weken na dagtekening
-- Tarieven rechtstreeks van belastingdienst.nl (tabel nagelopen op 17 augustus 2026)
-- Altijd zichtbare uitsplitsing per tariefperiode
-- Werkt ook als voorcalculatie met verwachte dagtekening
+**Rekenmethode** — de testsuite reproduceert de gepubliceerde rekenvoorbeelden van de
+Belastingdienst tot op de euro:
+
+- **30 dagen per maand, 360 dagen per jaar** (niet: werkelijke dagen / 365)
+- Renteperiode **inclusief** begin- en einddatum
+- Per tariefperiode **naar beneden afgerond op hele euro's** — niet over het totaal;
+  hun eigen voorbeeld geeft 93 + 9 = 102, terwijl 93,75 + 9,93 naar 103 zou afronden
+- Splitst automatisch bij elke tariefwijziging binnen de periode
+
+**Situaties die worden herkend** — de pagina toont welke regel is toegepast:
+
+| Situatie | Einddatum rente |
+|---|---|
+| Aangifte op tijd (vóór 1 mei IB / 1 juni VpB) én ongewijzigd gevolgd | **geen rente verschuldigd** |
+| VpB: tijdig om een voorlopige aanslag verzocht, conform opgelegd | **geen rente verschuldigd** |
+| Te laat, maar ongewijzigd gevolgd | 19 weken na ontvangst aangifte, of 6 weken na dagtekening — het vroegste |
+| Afgeweken van de aangifte | 6 weken na dagtekening |
+| Navorderingsaanslag | 1 maand na dagtekening |
+| Navordering op eigen verzoek | 12 weken na het verzoek, of 1 maand na dagtekening — het vroegste |
+
+**Verder:**
+
+- Startdatum: 1 juli volgend op het belastingjaar; bij VpB de 7e maand na het boekjaar,
+  zodat ook **gebroken boekjaren** kloppen
+- Uitklapblok met alle uitgangspunten en de reden van de einddatum, zodat een fiscalist
+  de berekening kan narekenen
+- Werkt ook als voorcalculatie met een verwachte dagtekening
 - **Automatische check:** eens per maand wordt de tarieventabel op belastingdienst.nl
   uitgelezen en regel voor regel vergeleken. Signaleert zowel een nieuwe periode als
   een percentage dat met terugwerkende kracht is herzien
-
-### 📊 Belastingrente VpB
-Berekent de belastingrente voor een aanslag vennootschapsbelasting.
-
-- Renteperiode: 6 maanden na boekjaar-einde t/m 6 weken na dagtekening
-- Ondersteunt **gebroken boekjaren** (elke einddatum)
-- Tarieven rechtstreeks van belastingdienst.nl (tabel nagelopen op 17 augustus 2026)
-- Altijd zichtbare uitsplitsing per tariefperiode
-- Werkt ook als voorcalculatie met verwachte dagtekening
-- **Automatische check:** eens per maand wordt de tarieventabel op belastingdienst.nl
-  uitgelezen en regel voor regel vergeleken. Signaleert zowel een nieuwe periode als
-  een percentage dat met terugwerkende kracht is herzien
+- Nog niet ondersteund: navordering bij een gebroken boekjaar is niet apart getoetst
 
 ### 🚗 Auto BTW privé
 Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke auto (forfaitmethode).
@@ -104,8 +117,9 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 | `_kenmerk.py` | Decodeerlogica betalingskenmerk (zonder Streamlit, los testbaar) |
 | `_auto_calc.py` | BTW-correctie en bijtelling zakelijke auto (zonder Streamlit) |
 | `_vies.py` | BTW-nummerlogica en duiding van VIES-antwoorden (zonder Streamlit) |
+| `_rente.py` | Belastingrenteberekening: 30/360, renteperiode, afronding (zonder Streamlit) |
 | `_tarieven_check.py` | Maandelijkse check op nieuwe tarieven (belastingdienst.nl) |
-| `tests/` | Pytest-suite (169 tests) |
+| `tests/` | Pytest-suite (203 tests) |
 | `requirements.txt` | Python dependencies |
 | `requirements-dev.txt` | Alleen voor de tests (pytest) |
 
@@ -143,18 +157,28 @@ kvk_api_key = "jouw-kvk-api-sleutel"
 python -m pytest tests/ -q
 ```
 
-De rekenlogica staat bewust los van Streamlit in `_kenmerk.py`, `_auto_calc.py` en
-`_vies.py`, zodat die zonder draaiende app te testen is. Een paar tests gaan over het
-netwerk en vergelijken de hardgecodeerde tabellen met de bron (belastingdienst.nl, VIES);
-die worden overgeslagen als er geen internet is. Die netwerktests zijn er niet voor niets:
-ze hebben twee datafouten in de VpB-tarieventabel aan het licht gebracht.
+De rekenlogica staat bewust los van Streamlit in `_kenmerk.py`, `_auto_calc.py`,
+`_vies.py` en `_rente.py`, zodat die zonder draaiende app te testen is.
+
+De belangrijkste tests staan in `tests/test_rente.py`: die reproduceren de
+rekenvoorbeelden die de Belastingdienst zelf publiceert, tot op de euro. Zolang die
+groen zijn, is de rekenmethode aantoonbaar gelijk aan de bron — niet aan een
+interpretatie ervan.
+
+Een paar tests gaan over het netwerk en vergelijken de hardgecodeerde tabellen en het
+antwoordformaat met de bron (belastingdienst.nl, VIES); die worden overgeslagen als er
+geen internet is. Ze zijn er niet voor niets: ze hebben twee datafouten in de
+VpB-tarieventabel aan het licht gebracht.
 
 ---
 
 ## Openstaande punten
 
-Twee zaken zijn bewust nog niet opgelost omdat ze een fiscaal-inhoudelijke bevestiging
-vragen. Beide staan als waarschuwing in de code zelf.
+Enkele zaken zijn bewust nog niet opgelost omdat ze een fiscaal-inhoudelijke
+bevestiging vragen. Ze staan als waarschuwing in de code zelf.
+
+Zie [WIJZIGINGSRAPPORT.md](WIJZIGINGSRAPPORT.md) voor de volledige actielijst en wat er
+in de codereview van 17-08-2026 is gewijzigd.
 
 1. **Middelcodes 85 t/m 88.** `MIDDEL2_LABEL` kent deze als Eurovignet en MOA
    vrachtwagens, maar de VpB-tak vangt de hele range 80–96 af en gaat voor. Daardoor
@@ -166,6 +190,11 @@ vragen. Beide staan als waarschuwing in de code zelf.
 2. **Nulemissiepercentages bijtelling.** De reeks in `_auto_calc.py` is gecorrigeerd naar
    4/4/4/8/12/16 (2017–2025), maar de officiële overzichtspagina gaf een 404 bij het
    naslaan. Controleer deze waarden voordat je er klanten mee bedient.
+
+3. **Verificatieronde nog niet afgerond.** Alleen de rentepagina's zijn tegen de bron
+   getoetst. Dat leverde twee regels op die nooit in de tool hadden gezeten — de
+   vrijstelling bij tijdige aangifte en de maximering op 19 weken. Auto BTW privé en
+   Betalingskenmerk zijn nog niet op die manier doorgelicht.
 
 ---
 
@@ -181,5 +210,7 @@ vragen. Beide staan als waarschuwing in de code zelf.
 
 - [Specificatie Betalingskenmerk_bepaling v1.5 — Belastingdienst](https://odb.belastingdienst.nl/wp-content/uploads/2025/07/Specificatie-Betalingskenmerk_bepaling_1.5.pdf)
 - [Overzicht percentages belastingrente — Belastingdienst](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/standaard_functies/prive/contact/rechten_en_plichten_bij_de_belastingdienst/belastingrente/overzicht_percentages_belastingrente)
+- [Belastingrente betalen bij inkomstenbelasting — Belastingdienst](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/standaard_functies/prive/contact/rechten_en_plichten_bij_de_belastingdienst/belastingrente/belastingrente_betalen_bij_inkomstenbelasting)
+- [Belastingrente betalen bij vennootschapsbelasting — Belastingdienst](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/standaard_functies/prive/contact/rechten_en_plichten_bij_de_belastingdienst/belastingrente/belastingrente_betalen_bij_vennootschapsbelasting)
 - [KvK Handelsregister API](https://developers.kvk.nl)
 - [EU VIES API](https://ec.europa.eu/taxation_customs/vies/)
