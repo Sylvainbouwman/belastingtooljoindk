@@ -2,10 +2,11 @@
 
 **Datum:** 17 augustus 2026
 **Repository:** `betalingskenmerk-tool`
-**Betreft:** volledige codereview van deze repository + oplossen van alle gevonden bugs
+**Betreft:** volledige codereview + oplossen van alle gevonden bugs, gevolgd door een
+verificatieronde waarin het rekenwerk is getoetst aan de bron
 **Branch:** `master` (gepusht)
-**Omvang:** 9 commits, 18 bestanden, +1.686 / −329 regels
-**Tests:** van 0 naar 169 (alle groen)
+**Omvang:** 14 commits, 21 bestanden, +2.884 / −433 regels
+**Tests:** van 0 naar 203 (alle groen)
 
 > **Scope.** Dit rapport gaat uitsluitend over de repository `betalingskenmerk-tool`.
 > Die bevat inmiddels zes pagina's — Betalingskenmerk, VIES BTW-controle, KvK/SBI
@@ -15,28 +16,39 @@
 >
 > Let op de naamgeving: de app presenteert zichzelf intern als "Bouwman Tools"
 > (in `app.py` en bovenaan de README), terwijl dat de naam van de héle verzameling is.
-> Zie **actiepunt 5**.
+> Zie **actiepunt 6**.
 
 ---
 
 ## 1. Samenvatting in het kort
 
-De volledige codebase is doorgenomen op fouten en kwetsbaarheden. Er zijn **tien echte
-bugs** gevonden; negen daarvan zijn opgelost, één is bewust ongewijzigd gelaten omdat
-die een fiscale beslissing vraagt.
+Het werk bestond uit twee rondes.
 
-Vier bugs leidden tot **verkeerde bedragen of verkeerde conclusies** in de tool:
+**Ronde 1 — codereview.** Tien echte bugs gevonden; negen opgelost, één bewust
+ongewijzigd gelaten omdat die een fiscale beslissing vraagt.
+
+**Ronde 2 — verificatie tegen de bron.** Niet de code doorlezen, maar de fiscale regels
+erbij pakken en controleren of de code ze volledig toepast. Dat vond twee regels die
+nooit in de tool hebben gezeten — en die het zwaarst wegen van alles in dit rapport.
+
+De gevolgen voor de uitkomsten, van zwaar naar licht:
 
 | Wat er misging | Gevolg |
 |---|---|
-| Bijtellingspercentage werd op het berekeningsjaar bepaald | EV's kregen het verkeerde percentage; een EV uit 2021 werd op het 2025-regime gerekend |
-| Het lage BTW-forfait van 1,5% na 4 jaar ontbrak | Oudere auto's rekenden structureel 2,7% — bijna dubbel |
-| Twee datafouten in de VpB-rentetabel | Tot €1.295 te veel rente op een aanslag van €100.000 (boekjaar 2012) |
-| VIES-storingen werden als "niet geldig" getoond | Risico bij de beoordeling van het 0%-tarief bij ICP-leveringen |
+| Vrijstelling bij tijdige aangifte ontbrak volledig | **De tool toonde rente waar niets verschuldigd is** — € 264 op € 10.000 |
+| Maximering op 19 weken ontbrak | **tot 2,6× te hoge** renteberekening |
+| Het lage BTW-forfait van 1,5% na 4 jaar ontbrak | Oudere auto's rekenden 2,7% — **bijna dubbel** |
+| Bijtellingspercentage werd op het berekeningsjaar bepaald | EV's kregen structureel het verkeerde regime |
+| Twee datafouten in de VpB-rentetabel | Tot € 1.295 te veel rente op € 100.000 (boekjaar 2012) |
+| Rekenmethode week af van de Belastingdienst (dagentelling, afronding) | enkele euro's per aanslag |
+| VIES-storingen werden als "niet geldig" getoond | Risico bij de beoordeling van het 0%-tarief bij ICP |
 
 Daarnaast bleek de tool bij ongeveer 1 op de 11 betalingskenmerken een **verzonnen
 BSN/RSIN** te tonen, en klopte de kopieerknop-omschrijving alleen voor loonheffing en
 omzetbelasting.
+
+De verificatieronde is alleen op de rentepagina's gedaan. Auto BTW privé en
+Betalingskenmerk staan nog open — zie actiepunt 9.
 
 ---
 
@@ -55,13 +67,22 @@ def _bijtelling(..., jaar, dagen)                  # berekeningsjaar i.p.v. datu
 
 | Tool | Wat er misgaat | Omvang |
 |---|---|---|
+| Belastingrente IB + VpB | **Rekent rente waar niets verschuldigd is.** De vrijstelling bij tijdige aangifte (vóór 1 mei / 1 juni) die ongewijzigd wordt gevolgd, ontbreekt volledig | **€ 264 waar € 0 hoort** op € 10.000 |
+| Belastingrente IB + VpB | **De maximering op 19 weken** na ontvangst van de aangifte ontbreekt | **tot 2,6× te hoog** |
+| Belastingrente IB + VpB | Rekent met werkelijke dagen / 365; de Belastingdienst rekent 30 dagen per maand / 360 | enkele euro's |
+| Belastingrente IB + VpB | Einddatum telt niet mee; rondt niet af op hele euro's | < € 2 |
+| Belastingrente IB + VpB | Navorderingsaanslagen worden als gewone aanslag gerekend (6 weken i.p.v. 1 maand) | ~2 weken te veel rente |
 | Belastingrente VpB | Boekjaren t/m 2013 vallen terug op 8,25% waar 3% geldt | tot **€ 1.295** te veel op € 100.000 |
 | Belastingrente VpB | Periode 1-3-2015 t/m 29-2-2016 rekent 8,15% i.p.v. 8,05% | ~€ 37 op € 100.000 |
+| Belastingrente VpB | Startdatum een dag te vroeg bij boekjaren t/m 30-06 of 28-02 | 1 dag rente |
 | Auto BTW privé | Bijtelling gebruikt het verkeerde jaarregime | EV's structureel fout, kan honderden euro's per auto zijn |
 | Auto BTW privé | BTW-correctie mist de 1,5%-regel na 4 jaar | **bijna dubbel**: € 1.350 i.p.v. € 750 op € 50.000 |
 | Auto BTW privé | Schrikkeljaar rekent 100,27% van het forfait | ~0,27% te hoog in 2024, 2028 |
 | Betalingskenmerk | Ongeveer 1 op de 11 kenmerken toont een **verzonnen** BSN/RSIN | fout nummer, geen foutmelding |
 | VIES | Een storing bij een lidstaat wordt getoond als "niet geldig" | risico bij 0%-tarief ICP |
+
+De twee bovenste regels zijn het ernstigst: die zijn pas bij de verificatieronde
+gevonden (§2a) en betreffen regels die nooit in de tool hebben gezeten.
 
 **Wat er moet gebeuren:** de huidige `master` ophalen. Het is dezelfde repository, dus
 een `git pull` volstaat — er is geen aparte levering nodig. Daarna geldt actiepunt 4:
@@ -86,6 +107,74 @@ Dit was expliciet een randvoorwaarde, dus in deze volgorde gewerkt:
 4. **Eén commit per bug**, zodat elke wijziging los terug te lezen of terug te draaien is.
 5. **Naspelen in de draaiende app.** Niet alleen tests: de app is gestart en elke
    gewijzigde pagina is met echte data doorlopen (zie §5).
+
+---
+
+## 2a. Verificatieronde: het rekenwerk tegen de bron
+
+De eerste ronde ging over fouten die je vindt door naar de *code* te kijken. Daarna is
+de omgekeerde beweging gemaakt: de fiscale regels erbij pakken en controleren of de code
+ze volledig en juist toepast. Dat vindt een ander soort fout — namelijk regels die er
+nooit in hebben gezeten, en die je dus ook niet als bug tegenkomt.
+
+**De toetssteen.** De Belastingdienst publiceert rekenvoorbeelden. De nieuwe module
+reproduceert die exact: 73 dagen → € 15, en 180 + 22 dagen → € 93 + € 9 = € 102. Daarmee
+is de rekenmethode niet langer een interpretatie maar aantoonbaar gelijk aan de bron.
+
+### Twee regels die volledig ontbraken
+
+**Geen rente bij tijdige aangifte.** *"U betaalt geen belastingrente als u voor 1 mei
+aangifte doet en wij uw gegevens ongewijzigd overnemen"* — bij VpB is de grens 1 juni.
+De tool rekende gewoon door: op € 10.000 verscheen € 264 waar niets verschuldigd is.
+
+**Maximering op 19 weken** na ontvangst van de aangifte, als er niet van wordt afgeweken.
+In het voorbeeld van de Belastingdienst rekende de tool 198 dagen waar er 74 hoorden —
+**2,6× te hoog**.
+
+Beide vragen informatie die de tool niet had. Er zijn daarom invoervelden bijgekomen:
+*datum ontvangst aangifte* (mag leeg blijven) en *aangifte ongewijzigd gevolgd*.
+
+### Drie rekentechnische afwijkingen
+
+| | Belastingdienst | Was |
+|---|---|---|
+| Dagentelling | 30 dagen per maand, 360 per jaar | werkelijke dagen, 365 |
+| Einddatum | telt mee | telde niet mee |
+| Afronding | naar beneden op hele euro's, per tariefperiode | centen |
+
+Dat de afronding **per tariefperiode** gebeurt en niet over het totaal blijkt uit hun
+eigen voorbeeld: 93 + 9 = 102, terwijl 93,75 + 9,93 zou afronden naar 103.
+
+### Naar aanleiding van de rekenmodule-specificatie
+
+Op de specificatie die tijdens dit traject is aangeleverd, zijn drie zaken doorgevoerd:
+
+- **Navorderingsaanslag** — rente tot 1 maand na de dagtekening in plaats van 6 weken.
+  Bij navordering op eigen verzoek geldt daarnaast een maximum van 12 weken na het
+  verzoek. Beide pagina's hebben nu een keuze *definitieve aanslag / navorderingsaanslag*.
+- **VpB voorlopige aanslag** — rente kan ook worden voorkomen door tijdig om een
+  voorlopige aanslag te verzoeken die conform wordt opgelegd.
+- **Bug in de startdatum** — die werd berekend als boekjaar-einde + 6 maanden + 1 dag.
+  Bij een boekjaar t/m 30-06 of 28-02 kwam dat een dag te vroeg uit, omdat 30 juni op
+  30 december wordt afgebeeld. De specificatie formuleert het in hele maanden ("vanaf
+  de 7e maand na het boekjaar"); die formulering is overgenomen en lost meteen het
+  randgeval op van een boekjaar dat midden in een maand eindigt.
+
+Beide pagina's tonen nu een uitklapblok met alle uitgangspunten en de reden van de
+einddatum (`vrijstelling` / `19-wekenregel` / `6-wekenregel` / `navordering` /
+`bovengrens`), zodat een fiscalist de berekening kan narekenen.
+
+> **De specificatie spreekt zichzelf tegen.** §11 zegt: per tariefperiode afronden. De
+> pseudocode in §12 telt eerst op en rondt daarna één keer af. Dat geeft € 103 waar de
+> Belastingdienst € 102 publiceert. §11 heeft gelijk en is gevolgd; §12 moet worden
+> gecorrigeerd voordat de specificatie wordt uitgeleverd — een ontwikkelaar pakt de
+> pseudocode. Zie **actiepunt 5**.
+
+**Wat wél klopte:** de VpB-startdatum voor reguliere boekjaren, en de drie
+regressiecontroles uit §9 van de specificatie (73, 77 en 202 dagen) komen exact uit.
+
+**Nog niet gedekt:** de verificatieronde is alleen op de rentepagina's uitgevoerd. Auto
+BTW privé en Betalingskenmerk staan nog open — zie **actiepunt 9**.
 
 ---
 
@@ -168,6 +257,16 @@ procenten: 6,5% werd getoond als "6%", 7,5% door bankiersafronding als "8%" en 0
 "0%". De detailregels eronder toonden wél de juiste waarde, dus de tegel sprak zichzelf
 tegen. De berekening zelf was altijd goed — dit was puur weergave.
 
+**Rekenmethode en ontbrekende regels** · commits `faae4e3` en `e026c8e`
+
+De zwaarste bevindingen op deze pagina's komen uit de verificatieronde en staan
+uitgewerkt in **§2a**: de ontbrekende vrijstelling bij tijdige aangifte, de ontbrekende
+maximering op 19 weken, de afwijkende dagentelling en afronding, de navorderingsaanslag
+en de dagfout in de startdatum bij bepaalde gebroken boekjaren.
+
+De rekenlogica staat nu in `_rente.py`, los van Streamlit, met 42 tests waarvan drie de
+rekenvoorbeelden van de Belastingdienst tot op de euro reproduceren.
+
 ### 3.3 Auto BTW privé
 
 **Bug 5 — het bijtellingspercentage werd op het verkeerde jaar bepaald** · commit `34fefe3`
@@ -242,7 +341,7 @@ test die bewaakt dat het niet ongemerkt verschuift. Zie **actiepunt 2**.
 
 ## 5. Hoe het is gecontroleerd
 
-Naast de 169 tests is de app gestart en met echte data doorlopen:
+Naast de 203 tests is de app gestart en met echte data doorlopen:
 
 | Pagina | Testgeval | Uitkomst |
 |---|---|---|
@@ -252,11 +351,19 @@ Naast de 169 tests is de app gestart en met echte data doorlopen:
 | VIES | `nl<img src=x onerror=alert(1)>` | geweigerd, 0 geïnjecteerde elementen |
 | Betalingskenmerk | `0100000061500210` (11-proef gaat niet op) | "Niet af te leiden", rest decodeert door |
 | Betalingskenmerk | IB / VpB / toeslag | `Aanslag IB 2025` · `Aanslag VpB boekjaar 2024` · `Zorgtoeslag 2025` |
-| Belastingrente VpB | boekjaar 2024, dagtekening vandaag | € 697,53 · tarief toont nu "5% / 6,5%" |
+| Belastingrente | aangiftedatum onbekend | € 697 + "dit is een bovengrens" |
+| Belastingrente | aangifte 20-04-2025, ongewijzigd gevolgd | **Geen belastingrente verschuldigd** |
+| Belastingrente | afgeweken van de aangifte | € 697 (180 d × 6,5% = € 325 + 268 d × 5% = € 372) |
+| Belastingrente VpB | navorderingsaanslag | € 681 — einddatum 1 maand i.p.v. 6 weken |
+| Belastingrente VpB | tijdig verzochte voorlopige aanslag | **Geen belastingrente verschuldigd** |
 
-Twee tests draaien over het netwerk en vergelijken de hardgecodeerde tabellen met de bron
-(belastingdienst.nl en VIES). Die hebben de twee VpB-datafouten gevonden en blijven
-signaleren zodra de bron wijzigt.
+De belangrijkste controle staat in de testsuite: `tests/test_rente.py` reproduceert de
+rekenvoorbeelden die de Belastingdienst zelf publiceert, tot op de euro. Zolang die
+tests groen zijn, is de rekenmethode aantoonbaar gelijk aan de bron.
+
+Drie tests draaien over het netwerk en vergelijken de hardgecodeerde tabellen en het
+antwoordformaat met de bron (belastingdienst.nl en VIES). Die hebben de twee
+VpB-datafouten gevonden en blijven signaleren zodra de bron wijzigt.
 
 Zelf controleren:
 
@@ -333,7 +440,14 @@ verkeerde bedragen; het gaat om robuustheid, privacy en onderhoudbaarheid.
       - BTW-correctie van auto's die **langer dan 4 jaar in gebruik** zijn — die stond op
         2,7% in plaats van 1,5%.
 
-- [ ] **5. Besluit hoe deze app moet heten.**
+- [ ] **5. Corrigeer §12 van de rekenmodule-specificatie vóór die wordt uitgeleverd.**
+      De pseudocode telt eerst alle deelbedragen op en rondt daarna één keer af
+      (`total_interest += interest` … `return floor(total_interest)`). Dat geeft € 103
+      waar de Belastingdienst € 102 publiceert. §11 zegt het goed — per tariefperiode
+      afronden — maar een ontwikkelaar implementeert de pseudocode. Zolang §12 niet is
+      aangepast, bouwt Bram's team de fout in.
+
+- [ ] **6. Besluit hoe deze app moet heten.**
       De repository heet `betalingskenmerk-tool`, maar bevat inmiddels zes pagina's en
       presenteert zichzelf als "Bouwman Tools" — de naam van de héle verzameling, waarvan
       dit er één is. Dat leidt tot verwarring over wat waar zit. Het speelt op twee plekken:
@@ -346,15 +460,22 @@ verkeerde bedragen; het gaat om robuustheid, privacy en onderhoudbaarheid.
 
 ### Voor de volgende sessie — technisch, geen besluit nodig
 
-- [ ] 6. Kwetsbaarheden K1 t/m K4 oplossen (klein werk, grotendeels mechanisch)
-- [ ] 7. Duplicatie opruimen: gedeelde modules voor opmaak, CSS en het KvK-sleutelblok
+- [ ] 7. Kwetsbaarheden K1 t/m K4 oplossen (klein werk, grotendeels mechanisch)
 - [ ] 8. Knoppen die niets doen weghalen of laten werken
-- [ ] 9. Controlecijfer van het betalingskenmerk valideren, zodat een typefout wordt
-      opgemerkt in plaats van stilzwijgend een verkeerd RSIN op te leveren
+- [ ] 9. **Verificatieronde afmaken.** Alleen de rentepagina's zijn tegen de bron
+      getoetst. Auto BTW privé en Betalingskenmerk staan nog open. Gezien wat die ronde
+      bij de rente opleverde — twee volledig ontbrekende regels — is de verwachting dat
+      daar ook iets te vinden is. Dit is het punt met de hoogste te verwachten opbrengst.
+- [ ] 10. Controlecijfer van het betalingskenmerk valideren, zodat een typefout wordt
+      opgemerkt in plaats van stilzwijgend een verkeerd RSIN op te leveren. Vraagt
+      specificatie v1.5, net als actiepunt 2.
+- [ ] 11. Duplicatie opruimen (CSS, opmaak, KvK-sleutelblok). **Bewust achteraan gezet:**
+      het gaat vrijwel volledig om opmaak, en dat is juist het deel dat door de UI van
+      DK/Join wordt vervangen. Loont pas als besloten is waar de code uiteindelijk woont.
 
 ### Ter kennisgeving voor Bram
 
-- [ ] 10. De tarievencontrole waarschuwt vanaf nu automatisch als belastingdienst.nl
+- [ ] 12. De tarievencontrole waarschuwt vanaf nu automatisch als belastingdienst.nl
       afwijkt van de tabellen in de code — zowel bij een nieuwe periode als bij een
       met terugwerkende kracht herzien percentage. Er hoeft dus niet meer handmatig te
       worden nagelopen, maar de melding moet wél worden opgevolgd.
@@ -374,6 +495,11 @@ verkeerde bedragen; het gaat om robuustheid, privacy en onderhoudbaarheid.
 | `5cbcc54` | Bugs 8, 9 — VIES-storingen en caching |
 | `0f55c2c` | Percentageweergave 6,5% / 7,5% |
 | `19edb8e` | README bijgewerkt |
+| `eca4039` | Wijzigingsrapport toegevoegd |
+| `e500b3d` | Rapporttitel gecorrigeerd (scope) |
+| `11541fc` | Vastgelegd dat de versie in DK/Join fout rekent |
+| `faae4e3` | **Verificatieronde** — belastingrente rekende volgens een andere methode dan de Belastingdienst |
+| `e026c8e` | **Specificatie verwerkt** — navordering, voorlopige aanslag, maandtelling boekjaar |
 
 Elke commitmelding beschrijft wat er misging, wat het gevolg was en hoe is gecontroleerd
 dat er niets anders is gewijzigd.
