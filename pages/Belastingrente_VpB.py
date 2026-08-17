@@ -1,7 +1,10 @@
-import streamlit as st
-from datetime import date, timedelta
 import calendar
-from _tarieven_check import KOP_VPB, controleer_nieuwe_tarieven, nl_pct
+from datetime import date, timedelta
+
+import streamlit as st
+
+from _rente import bereken, nl_date, nl_euro, nl_euro_heel, nl_pct, renteperiode
+from _tarieven_check import KOP_VPB, controleer_nieuwe_tarieven
 
 # ── Tarieven ────────────────────────────────────────────────────────────────
 # Enkelvoudige belastingrente VpB per jaar. Gesorteerd nieuw → oud.
@@ -27,44 +30,14 @@ TARIEVEN = [
     (date(2012, 1, 1),  2.85),
 ]
 
-
 _tarief_waarschuwing = controleer_nieuwe_tarieven(TARIEVEN, KOP_VPB)
 
 
-def add_months(d: date, months: int) -> date:
-    m = d.month + months
-    y = d.year + (m - 1) // 12
-    m = (m - 1) % 12 + 1
-    return date(y, m, min(d.day, calendar.monthrange(y, m)[1]))
-
-
-def tarief_op(d: date) -> float:
-    for start, pct in TARIEVEN:
-        if d >= start:
-            return pct
-    return TARIEVEN[-1][1]
-
-
-def bereken(bedrag: float, start: date, eind: date):
-    knippunten = sorted({start, eind} | {d for d, _ in TARIEVEN if start < d < eind})
-    perioden, totaal = [], 0.0
-    for i in range(len(knippunten) - 1):
-        a, b = knippunten[i], knippunten[i + 1]
-        dagen = (b - a).days
-        pct = tarief_op(a)
-        rente = bedrag * (pct / 100) * (dagen / 365)
-        totaal += rente
-        perioden.append({"start": a, "eind": b, "dagen": dagen, "pct": pct, "rente": rente})
-    return totaal, perioden
-
-
-def nl_euro(x: float) -> str:
-    s = f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return f"€ {s}"
-
-
-def nl_date(d: date) -> str:
-    return d.strftime("%d-%m-%Y")
+def tel_maanden_op(d: date, maanden: int) -> date:
+    maand = d.month + maanden
+    jaar = d.year + (maand - 1) // 12
+    maand = (maand - 1) % 12 + 1
+    return date(jaar, maand, min(d.day, calendar.monthrange(jaar, maand)[1]))
 
 
 # ── Opmaak ──────────────────────────────────────────────────────────────────
@@ -87,7 +60,8 @@ st.markdown("""
 <div class="bk-header">
   <h1>Belastingrente VpB</h1>
   <p>Bereken de belastingrente voor een aanslag vennootschapsbelasting.
-     De rente loopt van 6 maanden na boekjaar-einde tot 6 weken na de dagtekening van de aanslag.</p>
+     De rente loopt vanaf 6 maanden na het boekjaar-einde, en eindigt 6 weken na de
+     dagtekening — of eerder, als de aangifte op tijd binnen was.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -105,10 +79,9 @@ with col_a:
         min_value=date(2000, 1, 1),
         max_value=date(huidig_jaar + 1, 12, 31),
         format="DD-MM-YYYY",
-        help="Regulier boekjaar: 31 december. Bij een gebroken boekjaar vult u de werkelijke einddatum in.",
+        help="Regulier boekjaar: 31 december. Bij een gebroken boekjaar vult u de "
+             "werkelijke einddatum in.",
     )
-    boekjaar = boekjaar_eind.year
-
 with col_b:
     dagtekening = st.date_input(
         "Dagtekening aanslag (of verwachte datum)",
@@ -116,7 +89,37 @@ with col_b:
         min_value=date(2015, 1, 1),
         max_value=date(huidig_jaar + 3, 12, 31),
         format="DD-MM-YYYY",
-        help="Vul de werkelijke dagtekening in, of een verwachte datum om vooraf een inschatting te maken.",
+        help="Vul de werkelijke dagtekening in, of een verwachte datum om vooraf een "
+             "inschatting te maken.",
+    )
+
+# Rente start 6 maanden na het boekjaar-einde; bij een regulier boekjaar komt dat
+# uit op 1 juli, zoals belastingdienst.nl het formuleert. De vrijstellingsgrens
+# ligt een maand eerder (voor VpB: vóór 1 juni).
+r_start = tel_maanden_op(boekjaar_eind, 6) + timedelta(days=1)
+uiterste_aangiftedatum = tel_maanden_op(boekjaar_eind, 5) + timedelta(days=1)
+
+col_c, col_d = st.columns(2)
+with col_c:
+    aangifte_ontvangen = st.date_input(
+        "Datum ontvangst aangifte",
+        value=None,
+        min_value=boekjaar_eind,
+        max_value=date(huidig_jaar + 3, 12, 31),
+        format="DD-MM-YYYY",
+        help=f"Bepaalt twee dingen: of er überhaupt rente verschuldigd is (bij aangifte "
+             f"vóór {nl_date(uiterste_aangiftedatum)} zonder afwijking is dat niet zo), "
+             f"en de maximering op 19 weken na ontvangst. Laat leeg als de datum "
+             f"onbekend is — dan wordt een bovengrens getoond.",
+    )
+with col_d:
+    st.write("")
+    afgeweken = st.toggle(
+        "Aanslag wijkt af van de aangifte",
+        value=False,
+        help="Zet aan als de Belastingdienst bij het opleggen van de aanslag is "
+             "afgeweken van de ingediende aangifte. Dan vervallen zowel de vrijstelling "
+             "bij tijdige aangifte als de maximering op 19 weken.",
     )
 
 bedrag = st.number_input(
@@ -128,18 +131,32 @@ bedrag = st.number_input(
 )
 
 # ── Berekening ───────────────────────────────────────────────────────────────
-r_start = add_months(boekjaar_eind, 6) + timedelta(days=1)
-r_eind  = dagtekening + timedelta(weeks=6)
+r_eind, toelichting = renteperiode(
+    dagtekening=dagtekening,
+    aangifte_ontvangen=aangifte_ontvangen,
+    afgeweken=afgeweken,
+    uiterste_aangiftedatum=uiterste_aangiftedatum,
+)
 
-if r_start >= r_eind:
-    st.warning(
-        f"Geen belastingrente: renteperiode start op {nl_date(r_start)} maar eindigt op {nl_date(r_eind)}. "
-        "De aanslag is (te vroeg) gedagtekend binnen 6 maanden na het boekjaar-einde."
+if r_eind is None:
+    st.success(f"**Geen belastingrente verschuldigd.** {toelichting}")
+    st.caption(
+        "Bron: belastingdienst.nl — \"U doet aangifte vennootschapsbelasting voor "
+        "1 juni volgend op het belastingjaar en wij nemen de gegevens uit uw aangifte "
+        "ongewijzigd over.\""
     )
     st.stop()
 
-totaal_rente, deelperioden = bereken(bedrag, r_start, r_eind)
-totaal_dagen = (r_eind - r_start).days
+if r_eind < r_start:
+    st.warning(
+        f"Geen belastingrente: de renteperiode zou starten op {nl_date(r_start)} maar "
+        f"eindigt al op {nl_date(r_eind)}. De aanslag is gedagtekend binnen 6 maanden "
+        f"na het boekjaar-einde."
+    )
+    st.stop()
+
+totaal_rente, deelperioden = bereken(bedrag, r_start, r_eind, TARIEVEN)
+totaal_dagen = sum(d["dagen"] for d in deelperioden)
 
 # ── Uitvoer ──────────────────────────────────────────────────────────────────
 st.html(f"""
@@ -150,10 +167,12 @@ st.html(f"""
     BELASTINGRENTE VPB
   </div>
   <div style="font-size:36px;font-weight:bold;font-family:monospace;">
-    {nl_euro(totaal_rente)}
+    {nl_euro_heel(totaal_rente)}
   </div>
 </div>
 """)
+
+st.info(toelichting)
 
 col1, col2, col3 = st.columns(3)
 
@@ -162,7 +181,7 @@ with col1:
     <div class="bk-tile">
       <div class="label">Renteperiode</div>
       <div class="value" style="font-size:14px;">{nl_date(r_start)} t/m {nl_date(r_eind)}</div>
-      <div class="sub">{totaal_dagen} dagen</div>
+      <div class="sub">{totaal_dagen} dagen (30 per maand)</div>
     </div>""", unsafe_allow_html=True)
 
 with col2:
@@ -172,7 +191,7 @@ with col2:
     <div class="bk-tile">
       <div class="label">Rentetarief (per jaar)</div>
       <div class="value">{tarief_txt}</div>
-      <div class="sub">Enkelvoudig, 365 dagen</div>
+      <div class="sub">Enkelvoudig, 360 dagen</div>
     </div>""", unsafe_allow_html=True)
 
 with col3:
@@ -187,11 +206,15 @@ st.markdown("**Berekening per periode**")
 for d in deelperioden:
     st.markdown(f"""
     <div class="bk-tile" style="margin-bottom:6px">
-      <div class="label">{nl_date(d['start'])} t/m {nl_date(d['eind'])} &nbsp;·&nbsp; {nl_pct(d['pct'])} &nbsp;·&nbsp; {d['dagen']} dagen</div>
-      <div class="value">{nl_euro(d['rente'])}</div>
+      <div class="label">{nl_date(d['start'])} t/m {nl_date(d['eind'])}
+        &nbsp;·&nbsp; {nl_pct(d['pct'])} &nbsp;·&nbsp; {d['dagen']} dagen</div>
+      <div class="value">{nl_euro_heel(d['rente'])}</div>
     </div>""", unsafe_allow_html=True)
 
 st.caption(
-    "Tarieven op basis van belastingdienst.nl (tabel nagelopen op 17 augustus 2026). "
-    "Deze pagina controleert automatisch of de bron inmiddels afwijkt."
+    "Rekenmethode volgens belastingdienst.nl: 30 dagen per maand, 360 dagen per jaar, "
+    "per tariefperiode naar beneden afgerond op hele euro's. Tarieventabel nagelopen op "
+    "17 augustus 2026; deze pagina controleert automatisch of de bron inmiddels afwijkt. "
+    "Bij een gebroken boekjaar wordt de vrijstellingsgrens afgeleid als 5 maanden na het "
+    "boekjaar-einde — controleer dat als u daarmee werkt."
 )

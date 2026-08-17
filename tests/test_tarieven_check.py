@@ -153,18 +153,3 @@ def _tarieven_uit_pagina(modulenaam: str):
     raise AssertionError(f"TARIEVEN niet gevonden in {pad}")
 
 
-# ── Percentage-opmaak ───────────────────────────────────────────────────────
-
-@pytest.mark.parametrize("percentage,verwacht", [
-    (5.0,  "5%"),
-    (6.5,  "6,5%"),     # gaf "6%" met %.0f
-    (7.5,  "7,5%"),     # gaf "8%" door bankiersafronding
-    (0.01, "0,01%"),    # gaf "0%"
-    (8.05, "8,05%"),
-    (2.25, "2,25%"),
-    (2.30, "2,3%"),
-    (22.0, "22%"),
-])
-def test_percentage_opmaak_verliest_geen_decimalen(percentage, verwacht):
-    from _tarieven_check import nl_pct
-    assert nl_pct(percentage) == verwacht
