@@ -40,6 +40,35 @@ omzetbelasting.
 
 ---
 
+## 1a. Voor Bram: de versie in DK/Join rekent fout
+
+De code die rond 17 juli 2026 uit GitHub is opgehaald, is commit **`821b575` van
+15-07-2026**. Sindsdien is er niets bijgewerkt. In die versie is geverifieerd aanwezig:
+
+```python
+(date(2016, 3, 1),  8.05)                          # moet 1-3-2015 zijn; rijen vóór 2014 ontbreken
+def _btw_correctie(catalogusprijs, marge, dagen)   # geen ingebruikname → 1,5%-regel ontbreekt
+def _bijtelling(..., jaar, dagen)                  # berekeningsjaar i.p.v. datum eerste toelating
+```
+
+**De volgende berekeningen zijn in die versie aantoonbaar onjuist:**
+
+| Tool | Wat er misgaat | Omvang |
+|---|---|---|
+| Belastingrente VpB | Boekjaren t/m 2013 vallen terug op 8,25% waar 3% geldt | tot **€ 1.295** te veel op € 100.000 |
+| Belastingrente VpB | Periode 1-3-2015 t/m 29-2-2016 rekent 8,15% i.p.v. 8,05% | ~€ 37 op € 100.000 |
+| Auto BTW privé | Bijtelling gebruikt het verkeerde jaarregime | EV's structureel fout, kan honderden euro's per auto zijn |
+| Auto BTW privé | BTW-correctie mist de 1,5%-regel na 4 jaar | **bijna dubbel**: € 1.350 i.p.v. € 750 op € 50.000 |
+| Auto BTW privé | Schrikkeljaar rekent 100,27% van het forfait | ~0,27% te hoog in 2024, 2028 |
+| Betalingskenmerk | Ongeveer 1 op de 11 kenmerken toont een **verzonnen** BSN/RSIN | fout nummer, geen foutmelding |
+| VIES | Een storing bij een lidstaat wordt getoond als "niet geldig" | risico bij 0%-tarief ICP |
+
+**Wat er moet gebeuren:** de huidige `master` ophalen. Het is dezelfde repository, dus
+een `git pull` volstaat — er is geen aparte levering nodig. Daarna geldt actiepunt 4:
+nagaan of er met de oude versie voor klanten is gerekend.
+
+---
+
 ## 2. Hoe is voorkomen dat er werkende code sneuvelde
 
 Dit was expliciet een randvoorwaarde, dus in deze volgorde gewerkt:
@@ -291,8 +320,14 @@ verkeerde bedragen; het gaat om robuustheid, privacy en onderhoudbaarheid.
       Community Cloud daarvoor de juiste plek? Dit is een verwerkersvraag, geen
       technische.
 
+- [ ] **0. Laat Bram de huidige `master` ophalen. Dit gaat vóór al het andere.**
+      De versie in DK/Join is van 15-07-2026 en rekent aantoonbaar fout — zie §1a.
+      Zolang die draait, worden er verkeerde bedragen geproduceerd in de beveiligde
+      omgeving.
+
 - [ ] **4. Controleer of eerdere berekeningen herzien moeten worden.**
-      Zijn er klanten waarvoor met de oude versie is gerekend?
+      Zijn er klanten waarvoor met de oude versie is gerekend? Let op: dat kan zowel via
+      jouw lokale versie als via DK/Join zijn gebeurd.
       - Belastingrente VpB over **boekjaren t/m 2013** — die was aantoonbaar te hoog.
       - Bijtelling van **elektrische auto's** — die kreeg het verkeerde jaarregime.
       - BTW-correctie van auto's die **langer dan 4 jaar in gebruik** zijn — die stond op
