@@ -216,3 +216,45 @@ def test_omschrijving_bevat_middel_en_jaar():
     tekst = build_omschrijving(r)
     assert "OB" in tekst
     assert str(r["jaar"]) in tekst
+
+
+def test_omschrijving_lh_ob_blijft_ongewijzigd():
+    """Bug 3 mocht de bestaande, correcte LH/OB-omschrijving niet aantasten."""
+    ob_aangifte, _ = decode_kenmerk("0123456781500210")
+    ob_naheffing, _ = decode_kenmerk("0123456785500210")
+    assert build_omschrijving(ob_aangifte) == "Afdr. OB 1e kwartaal 2025"
+    assert build_omschrijving(ob_naheffing) == "Naheff. OB 1e kwartaal 2025"
+
+
+def test_omschrijving_aanslag_heeft_geen_tijdvak_streepje():
+    """Bug 3: gaf voorheen 'Afdr. IB — 2025'."""
+    r, _ = decode_kenmerk("0123456787050000")
+    tekst = build_omschrijving(r)
+    assert tekst == "Aanslag IB 2025"
+    assert "—" not in tekst
+    assert "Afdr." not in tekst
+
+
+def test_omschrijving_vpb_noemt_boekjaar_en_niet_twee_jaartallen():
+    """Bug 3: gaf voorheen 'Afdr. VpB Boekjaar 2024 2025'."""
+    r, _ = decode_kenmerk("0123456507420240")
+    tekst = build_omschrijving(r)
+    assert tekst == "Aanslag VpB boekjaar 2024"
+
+
+def test_omschrijving_toeslag_gebruikt_volledige_naam():
+    r, _ = decode_kenmerk("0123456782550000")
+    assert build_omschrijving(r) == "Zorgtoeslag 2025"
+
+
+def test_omschrijving_bevat_nooit_placeholder_of_dubbel_jaartal():
+    """Breed vangnet over alle middelcodes."""
+    import re
+    for p10 in range(10):
+        for p11 in range(10):
+            r, fout = decode_kenmerk(f"0123456{p10}{p11}500210")
+            if fout:
+                continue
+            tekst = build_omschrijving(r)
+            assert "—" not in tekst, tekst
+            assert not re.search(r"\b(19|20)\d{2}\s+(19|20)\d{2}\b", tekst), tekst
