@@ -18,6 +18,10 @@ MIDDEL_LABEL = {
     6: {"kort": "LH",  "lang": "Loonheffing",     "sub": "Aangifte"},
 }
 
+# Middelcodes die een toeslag zijn in plaats van een belastingaanslag. Bepaalt
+# de formulering van de boekhoudomschrijving (zie build_omschrijving).
+TOESLAG_CODES = {23, 24, 25, 26, 27, 28}
+
 # LET OP — onopgelost conflict, bewust ongewijzigd gelaten.
 # De VpB-tak in decode_kenmerk() vangt middelcode 80 t/m 96 af en staat vóór de
 # opzoeking in deze tabel. Daardoor zijn de entries 85, 86, 87 en 88 hieronder
@@ -109,6 +113,7 @@ def decode_kenmerk(raw: str):
         m = MIDDEL_LABEL[middel10]
         return {
             "soort": m["lang"], "soort_sub": m["sub"], "kort": m["kort"],
+            "categorie": "naheffing" if m["sub"] == "Naheffingsaanslag" else "aangifte",
             "jaar": reconstruct_year(p(11)),
             "tijdvak": decode_tijdvak(s(14, 15)),
             "rsin": format_rsin(rsin9), "rsin9": rsin9,
@@ -128,8 +133,10 @@ def decode_kenmerk(raw: str):
         rsin9 = rsin_uit(prefix + rsin6)
         return {
             "soort": "Vennootschapsbelasting", "soort_sub": "", "kort": "VpB",
+            "categorie": "vpb",
             "jaar": reconstruct_year(p(8)),
             "tijdvak": f"Boekjaar {s(12, 15)}",
+            "boekjaar": s(12, 15),
             "rsin": format_rsin(rsin9), "rsin9": rsin9,
             "digit_active": [False,True,True,True,True,True,True,True,False,True,True,False,False,False,False,False],
         }, None
@@ -139,6 +146,7 @@ def decode_kenmerk(raw: str):
         m = MIDDEL2_LABEL[middel2]
         return {
             "soort": m["lang"], "soort_sub": "", "kort": m["kort"],
+            "categorie": "toeslag" if middel2 in TOESLAG_CODES else "aanslag",
             "jaar": reconstruct_year(p(12)),
             "tijdvak": "—",
             "rsin": format_rsin(rsin9), "rsin9": rsin9,
@@ -149,6 +157,23 @@ def decode_kenmerk(raw: str):
 
 
 def build_omschrijving(r: dict) -> str:
-    prefix = "Naheff." if r["soort_sub"] == "Naheffingsaanslag" else "Afdr."
-    tv = r["tijdvak"].capitalize()
-    return f"{prefix} {r['kort']} {tv} {r['jaar']}"
+    """Korte omschrijving voor in de boekhouding.
+
+    De formulering hangt af van de soort heffing. Een aangifte loonheffing is
+    een afdracht, een aanslag inkomstenbelasting niet; en bij VpB is het
+    boekjaar de relevante periode, niet het jaarcijfer uit het kenmerk.
+    """
+    categorie = r.get("categorie", "aangifte")
+
+    if categorie == "vpb":
+        return f"Aanslag VpB boekjaar {r['boekjaar']}"
+
+    if categorie == "aanslag":
+        return f"Aanslag {r['kort']} {r['jaar']}"
+
+    if categorie == "toeslag":
+        return f"{r['soort']} {r['jaar']}"
+
+    # Aangifte of naheffingsaanslag LH/OB: hier hoort het tijdvak wél bij.
+    prefix = "Naheff." if categorie == "naheffing" else "Afdr."
+    return f"{prefix} {r['kort']} {r['tijdvak'].capitalize()} {r['jaar']}"
