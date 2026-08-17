@@ -78,28 +78,59 @@ with col_b:
 r_start = date(belastingjaar + 1, 7, 1)
 uiterste_aangiftedatum = date(belastingjaar + 1, 5, 1)
 
-col_c, col_d = st.columns(2)
-with col_c:
-    aangifte_ontvangen = st.date_input(
-        "Datum ontvangst aangifte",
-        value=None,
-        min_value=date(belastingjaar + 1, 1, 1),
-        max_value=date(huidig_jaar + 3, 12, 31),
-        format="DD-MM-YYYY",
-        help=f"Bepaalt twee dingen: of er überhaupt rente verschuldigd is (bij aangifte "
-             f"vóór {nl_date(uiterste_aangiftedatum)} zonder afwijking is dat niet zo), "
-             f"en de maximering op 19 weken na ontvangst. Laat leeg als de datum "
-             f"onbekend is — dan wordt een bovengrens getoond.",
-    )
-with col_d:
-    st.write("")
-    afgeweken = st.toggle(
-        "Aanslag wijkt af van de aangifte",
+aanslag_type = st.radio(
+    "Soort aanslag",
+    options=["regulier", "navordering"],
+    format_func=lambda x: "Definitieve aanslag" if x == "regulier" else "Navorderingsaanslag",
+    horizontal=True,
+    help="Bij een navorderingsaanslag loopt de rente tot 1 maand na de dagtekening, "
+         "in plaats van 6 weken.",
+)
+
+aangifte_ontvangen = None
+aangifte_gevolgd = True
+verzoek_datum = None
+
+if aanslag_type == "regulier":
+    col_c, col_d = st.columns(2)
+    with col_c:
+        aangifte_ontvangen = st.date_input(
+            "Datum ontvangst aangifte",
+            value=None,
+            min_value=date(belastingjaar + 1, 1, 1),
+            max_value=date(huidig_jaar + 3, 12, 31),
+            format="DD-MM-YYYY",
+            help=f"Bepaalt twee dingen: of er überhaupt rente verschuldigd is (bij "
+                 f"aangifte vóór {nl_date(uiterste_aangiftedatum)} die ongewijzigd "
+                 f"wordt gevolgd is dat niet zo), en de maximering op 19 weken na "
+                 f"ontvangst. Laat leeg als de datum onbekend is — dan wordt een "
+                 f"bovengrens getoond.",
+        )
+    with col_d:
+        st.write("")
+        aangifte_gevolgd = st.toggle(
+            "Aangifte ongewijzigd gevolgd",
+            value=True,
+            help="Laat aan als de Belastingdienst de aangifte zonder wijzigingen heeft "
+                 "overgenomen. Zet uit als er is afgeweken — dan vervallen zowel de "
+                 "vrijstelling bij tijdige aangifte als de maximering op 19 weken.",
+        )
+else:
+    op_verzoek = st.toggle(
+        "Navordering op eigen verzoek",
         value=False,
-        help="Zet aan als de Belastingdienst bij het opleggen van de aanslag is "
-             "afgeweken van de ingediende aangifte. Dan vervallen zowel de vrijstelling "
-             "bij tijdige aangifte als de maximering op 19 weken.",
+        help="Zet aan als de belastingplichtige zelf om de navordering heeft verzocht. "
+             "De rente is dan wettelijk gemaximeerd op 12 weken na ontvangst van dat "
+             "verzoek.",
     )
+    if op_verzoek:
+        verzoek_datum = st.date_input(
+            "Datum ontvangst verzoek",
+            value=None,
+            min_value=date(belastingjaar, 1, 1),
+            max_value=date(huidig_jaar + 3, 12, 31),
+            format="DD-MM-YYYY",
+        )
 
 bedrag = st.number_input(
     "Aangeslagen bedrag IB (€)",
@@ -110,11 +141,13 @@ bedrag = st.number_input(
 )
 
 # ── Berekening ───────────────────────────────────────────────────────────────
-r_eind, toelichting = renteperiode(
+r_eind, reden, toelichting = renteperiode(
     dagtekening=dagtekening,
     aangifte_ontvangen=aangifte_ontvangen,
-    afgeweken=afgeweken,
+    aangifte_gevolgd=aangifte_gevolgd,
     uiterste_aangiftedatum=uiterste_aangiftedatum,
+    aanslag_type=aanslag_type,
+    verzoek_datum=verzoek_datum,
 )
 
 if r_eind is None:
@@ -189,9 +222,21 @@ for d in deelperioden:
       <div class="value">{nl_euro_heel(d['rente'])}</div>
     </div>""", unsafe_allow_html=True)
 
+with st.expander("Uitgangspunten van deze berekening", expanded=False):
+    st.markdown(f"""
+| | |
+|---|---|
+| Soort aanslag | {"Definitieve aanslag" if aanslag_type == "regulier" else "Navorderingsaanslag"} |
+| Aangifte ontvangen | {nl_date(aangifte_ontvangen) if aangifte_ontvangen else "onbekend"} |
+| Dagtekening aanslag | {nl_date(dagtekening)} |
+| Aangifte ongewijzigd gevolgd | {"ja" if aangifte_gevolgd else "nee"} |
+| Reden einddatum rente | `{reden}` |
+| Renteperiode | {nl_date(r_start)} t/m {nl_date(r_eind)} |
+| Bedrag waarover rente loopt | {nl_euro(bedrag)} |
+""")
+
 st.caption(
     "Rekenmethode volgens belastingdienst.nl: 30 dagen per maand, 360 dagen per jaar, "
     "per tariefperiode naar beneden afgerond op hele euro's. Tarieventabel nagelopen op "
-    "17 augustus 2026; deze pagina controleert automatisch of de bron inmiddels afwijkt. "
-    "Navorderingsaanslagen (rente tot 1 maand na dagtekening) worden nog niet ondersteund."
+    "17 augustus 2026; deze pagina controleert automatisch of de bron inmiddels afwijkt."
 )
