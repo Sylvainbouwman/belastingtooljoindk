@@ -77,6 +77,20 @@ SOORT_OP_POSITIE_13 = {70, 71, 73, 75}
 # Middelcodes die per definitie een naheffingsaanslag zijn (paragrafen 8, 7 en 11).
 NAHEFFING_CODES = {76, 88, 86}
 
+# Middelcodes die per definitie over een natuurlijk persoon gaan: het nummer in
+# het kenmerk is dan een BSN en geen RSIN. Inkomstenbelasting, de conserverende
+# aanslag, de Zorgverzekeringswet en de toeslagen worden alleen aan personen
+# opgelegd. Bij loonheffing, omzetbelasting, houderschapsbelasting, MOA,
+# Eurovignet en middelcode 97 kan het beide zijn: een eenmanszaak draagt
+# omzetbelasting af onder een nummer dat op het BSN is gebaseerd.
+BSN_CODES = {70, 71, 73, 75} | TOESLAG_CODES
+
+# Een RSIN begint altijd met 00 of met 80 t/m 89. Dat staat in paragraaf 2 van de
+# specificatie: "NB: RSIN-s beginnen altijd met 00, of 80 t/m 89". Buiten die
+# reeksen is het nummer dus geen RSIN, en heeft een opzoeking bij de KvK ook geen
+# zin - die kent alleen ingeschreven organisaties.
+RSIN_BEGIN = ("00",) + tuple(str(n) for n in range(80, 90))
+
 # Weging voor het controlecijfer op positie 1, van rechts naar links toegepast
 # over de posities 2 t/m 16. Zie controlecijfer() voor de verantwoording.
 CONTROLE_WEGING = (2, 4, 8, 5, 10, 9, 7, 3, 6, 1)
@@ -176,6 +190,43 @@ def decode_boekjaar(tydvak4: str) -> str:
     return tydvak4
 
 
+def is_mogelijk_rsin(nummer9: str | None) -> bool:
+    """Of dit nummer een RSIN kan zijn, op grond van de beginposities."""
+    return bool(nummer9) and nummer9.startswith(RSIN_BEGIN)
+
+
+def mag_naar_kvk(resultaat: dict | None) -> bool:
+    """Of het nummer uit dit kenmerk bij de KvK mag worden opgezocht.
+
+    Een BSN gaat er niet heen. Dat is een privacykeuze en tegelijk een praktische:
+    de KvK kent geen particulieren, dus zo'n opzoeking levert toch niets op. Er
+    zijn twee gronden om het nummer niet te versturen:
+
+      1. het middel wordt alleen aan natuurlijke personen opgelegd (BSN_CODES);
+      2. het nummer begint niet met 00 of 80 t/m 89 en is dus geen RSIN.
+
+    Bij vennootschapsbelasting is het altijd een RSIN - de specificatie zegt in
+    paragraaf 2 uitdrukkelijk dat een VpB-aanslagnummer nooit een BSN bevat.
+    """
+    if not resultaat or not resultaat.get("rsin9"):
+        return False
+    if resultaat.get("nummer_soort") == "bsn":
+        return False
+    if resultaat.get("nummer_soort") == "rsin":
+        return True
+    return is_mogelijk_rsin(resultaat["rsin9"])
+
+
+def nummer_label(resultaat: dict) -> str:
+    """Wat er boven het nummer komt te staan, zodat een medewerker ziet wat het is."""
+    soort = resultaat.get("nummer_soort")
+    if soort == "bsn":
+        return "BSN (natuurlijk persoon)"
+    if soort == "rsin":
+        return "RSIN"
+    return "RSIN" if is_mogelijk_rsin(resultaat.get("rsin9")) else "BSN (natuurlijk persoon)"
+
+
 def actieve_posities(*posities: int) -> list[bool]:
     """Vlaggenlijst voor de positieweergave: True op elke gedecodeerde positie.
 
@@ -218,6 +269,7 @@ def decode_kenmerk(raw: str, negeer_controlecijfer: bool = False):
         return {
             "soort": m["lang"], "soort_sub": m["sub"], "kort": m["kort"],
             "categorie": "naheffing" if m["sub"] == "Naheffingsaanslag" else "aangifte",
+            "nummer_soort": "onbekend",   # een eenmanszaak draagt af onder een BSN
             "jaar": reconstruct_year(p(11)),
             "tijdvak": decode_tijdvak(s(14, 15)),
             "rsin": format_rsin(rsin9), "rsin9": rsin9,
@@ -242,6 +294,7 @@ def decode_kenmerk(raw: str, negeer_controlecijfer: bool = False):
             "soort_sub": SOORT_LABEL.get(p(9), ""),
             "kort": "VpB",
             "categorie": "vpb",
+            "nummer_soort": "rsin",       # paragraaf 2: nooit een BSN
             "jaar": reconstruct_year(p(8)),
             "tijdvak": f"Boekjaar {decode_boekjaar(boekjaar)}",
             "boekjaar": boekjaar,
@@ -268,6 +321,7 @@ def decode_kenmerk(raw: str, negeer_controlecijfer: bool = False):
             "soort": m["lang"], "soort_sub": soort_sub, "kort": m["kort"],
             "categorie": "toeslag" if middel2 in TOESLAG_CODES else "aanslag",
             "naheffing": middel2 in NAHEFFING_CODES,
+            "nummer_soort": "bsn" if middel2 in BSN_CODES else "onbekend",
             "jaar": reconstruct_year(p(12)),
             "tijdvak": "—",
             "rsin": format_rsin(rsin9), "rsin9": rsin9,

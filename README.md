@@ -21,7 +21,8 @@ Decodeert 16-cijferige Belastingdienst betalingskenmerken.
 - Genereert een boekhoudingomschrijving met kopieerknop, per soort passend geformuleerd:
   `Afdr. OB mei 2026` · `Naheff. LH 1e kwartaal 2025` · `Aanslag IB 2025` ·
   `Voorl. aanslag VpB boekjaar 0112` · `Zorgtoeslag 2025` · `Naheff. MOA 2023`
-- Zoekt automatisch de bedrijfsnaam **en SBI-code** op via de KvK API (RSIN-lookup)
+- Zoekt automatisch de bedrijfsnaam **en SBI-code** op via de KvK API, maar alleen bij een
+  nummer dat een RSIN kan zijn — een BSN gaat niet naar de KvK (zie Privacy)
 - **Auto-decode bij plakken** — geen klik nodig
 
 Gevalideerd kenmerk: `4863521721601050` = Aangifte OB, mei 2026, RSIN 863521721
@@ -144,7 +145,7 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 | `_tarieven_check.py` | Maandelijkse check op nieuwe tarieven (belastingdienst.nl) |
 | `_format.py` | Nederlandse notatie voor bedragen, datums en percentages (zonder Streamlit) |
 | `_ui.py` | Gedeeld stijlblok, koptekst, HTML-escaping en het KvK-sleutelblok |
-| `tests/` | Pytest-suite (303 tests) |
+| `tests/` | Pytest-suite (327 tests) |
 | `requirements.txt` | Python dependencies |
 | `requirements-dev.txt` | Alleen voor de tests (pytest) |
 
@@ -207,20 +208,45 @@ De verificatieronde is afgerond: alle vier de rekenpagina's zijn tegen de bron g
 Zie [WIJZIGINGSRAPPORT.md](WIJZIGINGSRAPPORT.md) voor wat dat opleverde en voor de
 actielijst.
 
-Wat nu nog open staat, vraagt een beslissing en geen code:
+Wat nu nog open staat:
 
-1. **BSN-verwerking (punt K5).** Uit het kenmerk van een particulier rolt een BSN. Die
-   wordt getoond, een uur gecachet en als zoekterm naar de KvK gestuurd — terwijl de KvK
-   particulieren niet kent. Op Streamlit Community Cloud loopt dat over infrastructuur van
-   derden. Dit is een verwerkersvraag.
+1. **De naam van deze app.** De repository heet `betalingskenmerk-tool` en de live versie
+   heet Belastingtool, maar `app.py` zet de browsertabtitel nog op "Bouwman Tools" — en dat
+   is de naam van de portal waarop meerdere losse tools staan, niet van deze app. Zie de
+   actielijst in het wijzigingsrapport.
 
-2. **De naam van deze app.** De repository heet `betalingskenmerk-tool`, maar de app bevat
-   zes pagina's en presenteert zichzelf als "Bouwman Tools". Zie de actielijst in het
-   wijzigingsrapport.
+Beslist en verwerkt op 18 augustus 2026:
 
-3. **Zijn er eerdere berekeningen die herzien moeten worden?** De verificatierondes hebben
-   fouten opgeleverd die verkeerde bedragen en verkeerde nummers gaven. Het overzicht van
-   wat wanneer fout was, staat in het wijzigingsrapport.
+- **BSN-verwerking (K5).** Een BSN gaat niet meer naar de KvK; het wordt alleen getoond,
+  met een label erbij zodat een medewerker ziet dat het om een natuurlijk persoon gaat.
+  Zie hieronder onder Privacy.
+- **Herziening van eerdere berekeningen** is niet nodig: de tool is nog in testfase.
+
+---
+
+## Privacy
+
+Uit een betalingskenmerk van een particulier rolt een **BSN**. Dat nummer wordt wel
+getoond — een medewerker moet kunnen zien dat het om een natuurlijk persoon gaat — maar
+gaat **niet naar de KvK**. De tool bepaalt dat vooraf, op twee gronden:
+
+1. **Het middel.** Inkomstenbelasting, de conserverende aanslag IH, de Zorgverzekeringswet
+   en alle toeslagen worden uitsluitend aan natuurlijke personen opgelegd. Bij die
+   middelcodes staat vast dat het een BSN is.
+2. **De beginposities van het nummer.** Bij loonheffing, omzetbelasting,
+   houderschapsbelasting, MOA, Eurovignet en middelcode 97 kan het beide zijn — een
+   eenmanszaak draagt omzetbelasting af onder een nummer dat op het BSN is gebaseerd.
+   Daar geldt de regel uit paragraaf 2 van de specificatie: *"RSIN-s beginnen altijd met
+   00, of 80 t/m 89"*. Begint het nummer daar niet mee, dan is het geen RSIN en blijft de
+   opzoeking uit.
+
+Bij vennootschapsbelasting is het altijd een RSIN; de specificatie stelt uitdrukkelijk dat
+een VpB-aanslagnummer nooit een BSN bevat. Omdat de KvK-opzoeking de enige plek was waar
+het nummer werd gecachet, wordt er nu ook geen BSN meer een uur bewaard.
+
+> Deze Streamlit-versie is een **testomgeving** voor collega's. De versie die in productie
+> wordt gebruikt, komt in een beveiligde omgeving te staan waar de AVG-waarborgen zijn
+> geregeld.
 
 ---
 

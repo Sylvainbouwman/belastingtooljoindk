@@ -9,6 +9,9 @@ from datetime import date
 import pytest
 
 from _kenmerk import (
+    is_mogelijk_rsin,
+    mag_naar_kvk,
+    nummer_label,
     rsin_uit,
     build_omschrijving,
     controlecijfer,
@@ -586,3 +589,90 @@ def test_positieweergave_markeert_positie_16_alleen_bij_middelcode_97():
     assert lir["digit_active"][15] is True
     hsb, _ = decode_kenmerk(mk("036000017830001"))
     assert hsb["digit_active"][15] is False
+
+
+# ── K5: welk nummer mag naar de KvK ─────────────────────────────────────────
+
+@pytest.mark.parametrize("nummer,verwacht", [
+    ("001234567", True),     # RSIN begint met 00
+    ("801234567", True),     # 80 t/m 89
+    ("891234567", True),
+    ("863521721", True),     # het gevalideerde kenmerk uit de README
+    ("123456782", False),    # gewoon een BSN-reeks
+    ("036000012", False),
+    ("791234567", False),    # net onder de reeks
+    ("901234567", False),    # net erboven
+    (None, False),
+])
+def test_mogelijk_rsin_volgt_de_beginposities_uit_de_specificatie(nummer, verwacht):
+    """Paragraaf 2: "RSIN-s beginnen altijd met 00, of 80 t/m 89"."""
+    assert is_mogelijk_rsin(nummer) is verwacht
+
+
+def test_inkomstenbelasting_levert_een_bsn_en_gaat_niet_naar_de_kvk():
+    """Actiepunt 3: inkomstenbelasting wordt alleen aan natuurlijke personen
+    opgelegd, dus het nummer is een BSN. Dat gaat niet naar een externe partij."""
+    r, fout = decode_kenmerk(mk("036000017000001"))
+    assert fout is None
+    assert r["nummer_soort"] == "bsn"
+    assert mag_naar_kvk(r) is False
+    assert "BSN" in nummer_label(r)
+
+
+@pytest.mark.parametrize("body", [
+    "036000017000001",   # 70 inkomstenbelasting
+    "036000017100001",   # 71 conserverende aanslag
+    "036000017300001",   # 73 IB gemoedsbezwaarde
+    "036000017500001",   # 75 zorgverzekeringswet
+    "036000012300001",   # 23 kinderopvangtoeslag
+    "036000012400001",   # 24 huurtoeslag
+    "036000012500001",   # 25 zorgtoeslag
+    "036000012600001",   # 26 kindgebonden budget
+    "036000012700001",   # 27 verzuimboete
+    "036000012800001",   # 28 vergrijpboete
+])
+def test_persoonsgebonden_middelen_gaan_nooit_naar_de_kvk(body):
+    r, fout = decode_kenmerk(mk(body))
+    assert fout is None
+    assert r["nummer_soort"] == "bsn"
+    assert mag_naar_kvk(r) is False
+
+
+def test_vennootschapsbelasting_is_altijd_een_rsin():
+    """Paragraaf 2: een VpB-aanslagnummer bevat altijd een RSIN en nooit een BSN."""
+    r, fout = decode_kenmerk(mk("253586208001120"))
+    assert fout is None
+    assert r["nummer_soort"] == "rsin"
+    assert mag_naar_kvk(r) is True
+    assert nummer_label(r) == "RSIN"
+
+
+def test_omzetbelasting_hangt_af_van_het_nummer_zelf():
+    """Een BV en een eenmanszaak dragen beide omzetbelasting af. Bij een nummer
+    dat geen RSIN kan zijn, blijft de opzoeking uit."""
+    bedrijf, _ = decode_kenmerk("4863521721601050")     # het gevalideerde kenmerk
+    assert bedrijf["nummer_soort"] == "onbekend"
+    assert bedrijf["rsin9"] == "863521721"
+    assert mag_naar_kvk(bedrijf) is True
+
+    persoon, _ = decode_kenmerk(mk("123456781500210"))
+    assert persoon["nummer_soort"] == "onbekend"
+    assert persoon["rsin9"] == "123456782"
+    assert mag_naar_kvk(persoon) is False
+
+
+def test_zonder_nummer_geen_opzoeking():
+    r, fout = decode_kenmerk(mk("100000061500210"))
+    assert fout is None and r["rsin9"] is None
+    assert mag_naar_kvk(r) is False
+    assert mag_naar_kvk(None) is False
+
+
+def test_geen_enkel_specificatievoorbeeld_stuurt_een_bsn_naar_de_kvk():
+    """Breed vangnet over de 27 officiële voorbeelden: alles wat doorgelaten wordt
+    moet een nummer zijn dat een RSIN kán zijn."""
+    for kenmerk, bsn, *_ in SPEC_VOORBEELDEN:
+        r, fout = decode_kenmerk(kenmerk)
+        assert fout is None
+        if mag_naar_kvk(r):
+            assert is_mogelijk_rsin(r["rsin9"]), (kenmerk, r["rsin9"])
