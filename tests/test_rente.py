@@ -10,6 +10,7 @@ from datetime import date
 import pytest
 
 from _rente import (
+    STARTMAAND_RENTE,
     bereken,
     dagen_30_360,
     eerste_dag_van_maand_na,
@@ -345,3 +346,42 @@ def test_elke_situatie_geeft_een_herkenbare_reden():
     for verwachte_reden, argumenten in gevallen.items():
         _, reden, _ = renteperiode(**argumenten)
         assert reden == verwachte_reden, argumenten
+
+
+# ── Navordering bij een gebroken boekjaar ───────────────────────────────────
+
+def test_navordering_bij_een_gebroken_boekjaar():
+    """De README noemde deze combinatie als niet apart getoetst. De startdatum
+    volgt uit het boekjaar en de einddatum uit het aanslagtype; die twee staan los
+    van elkaar, dus de combinatie hoort te werken. Hier vastgelegd.
+
+    Boekjaar t/m 30-06-2024, navorderingsaanslag met dagtekening 10-09-2025.
+    Start: de 7e maand na het boekjaar, dus 01-01-2025. Eind: 1 maand na de
+    dagtekening, dus 10-10-2025.
+    """
+    boekjaar_eind = date(2024, 6, 30)
+    start = eerste_dag_van_maand_na(boekjaar_eind, STARTMAAND_RENTE)
+    assert start == date(2025, 1, 1)
+
+    eind, reden, _ = renteperiode(date(2025, 9, 10), aanslag_type="navordering")
+    assert eind == date(2025, 10, 10)
+    assert reden == "navordering"
+
+    bedrag, regels = bereken(100_000, start, eind, TARIEVEN)
+    assert bedrag > 0
+    assert regels[0]["start"] == start
+    assert regels[-1]["eind"] == eind
+
+
+@pytest.mark.parametrize("boekjaar_eind,verwachte_start", [
+    (date(2024, 12, 31), date(2025, 7, 1)),
+    (date(2024, 6, 30), date(2025, 1, 1)),
+    (date(2024, 2, 29), date(2024, 9, 1)),
+    (date(2024, 9, 15), date(2025, 4, 1)),
+])
+def test_navordering_startdatum_volgt_het_boekjaar(boekjaar_eind, verwachte_start):
+    """Bij navordering blijft de startdatum die van het boekjaar; alleen de
+    einddatum wijkt af. Ook voor een boekjaar dat midden in een maand eindigt."""
+    assert eerste_dag_van_maand_na(boekjaar_eind, STARTMAAND_RENTE) == verwachte_start
+    eind, reden, _ = renteperiode(date(2026, 1, 20), aanslag_type="navordering")
+    assert reden == "navordering" and eind == date(2026, 2, 20)

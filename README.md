@@ -89,7 +89,7 @@ Belastingdienst tot op de euro:
 - **Automatische check:** eens per maand wordt de tarieventabel op belastingdienst.nl
   uitgelezen en regel voor regel vergeleken. Signaleert zowel een nieuwe periode als
   een percentage dat met terugwerkende kracht is herzien
-- Nog niet ondersteund: navordering bij een gebroken boekjaar is niet apart getoetst
+- Navordering bij een gebroken boekjaar is nu ook als combinatie getoetst: de startdatum volgt het boekjaar, de einddatum het aanslagtype
 
 ### 🚗 Auto BTW privé
 Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke auto (forfaitmethode).
@@ -144,7 +144,7 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 | `_tarieven_check.py` | Maandelijkse check op nieuwe tarieven (belastingdienst.nl) |
 | `_format.py` | Nederlandse notatie voor bedragen, datums en percentages (zonder Streamlit) |
 | `_ui.py` | Gedeeld stijlblok, koptekst, HTML-escaping en het KvK-sleutelblok |
-| `tests/` | Pytest-suite (298 tests) |
+| `tests/` | Pytest-suite (303 tests) |
 | `requirements.txt` | Python dependencies |
 | `requirements-dev.txt` | Alleen voor de tests (pytest) |
 
