@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import date
 
 from _rente import bereken, nl_date, nl_euro, nl_euro_heel, nl_pct, renteperiode
+from _ui import paginakop, paginastijl
 from _tarieven_check import KOP_ALGEMEEN, controleer_nieuwe_tarieven
 
 # ── Tarieven ────────────────────────────────────────────────────────────────
@@ -26,29 +27,14 @@ TARIEVEN = [
 _tarief_waarschuwing = controleer_nieuwe_tarieven(TARIEVEN, KOP_ALGEMEEN)
 
 # ── Opmaak ──────────────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-  [data-testid="stAppViewContainer"] { background: linear-gradient(180deg,#f8fbfd 0%,#eef3f7 100%); }
-  .bk-header { background: linear-gradient(135deg,#24304A,#2f3d5d); color: white;
-    border-radius: 16px; padding: 18px 22px; margin-bottom: 16px; }
-  .bk-header h1 { margin: 0 0 6px; font-size: 26px; color: white; }
-  .bk-header p  { margin: 0; font-size: 14px; color: rgba(255,255,255,0.88); line-height: 1.5; }
-  .bk-tile { background: white; border-radius: 12px; padding: 14px 16px;
-    box-shadow: 0 2px 10px rgba(36,48,74,.07); margin-bottom: 8px; }
-  .bk-tile .label { font-size: 12px; color: #6b7a99; margin-bottom: 2px; }
-  .bk-tile .value { font-size: 18px; font-weight: bold; color: #24304A; }
-  .bk-tile .sub   { font-size: 13px; color: #6b7a99; margin-top: 2px; }
-</style>
-""", unsafe_allow_html=True)
+paginastijl()
 
-st.markdown("""
-<div class="bk-header">
-  <h1>Belastingrente IB</h1>
-  <p>Bereken de belastingrente voor een aanslag inkomstenbelasting.
-     De rente loopt vanaf 1 juli van het jaar volgend op het belastingjaar, en eindigt
-     6 weken na de dagtekening — of eerder, als de aangifte op tijd binnen was.</p>
-</div>
-""", unsafe_allow_html=True)
+paginakop(
+    "Belastingrente IB",
+    "Bereken de belastingrente voor een aanslag inkomstenbelasting. De rente loopt "
+    "vanaf 1 juli van het jaar volgend op het belastingjaar, en eindigt 6 weken na de "
+    "dagtekening — of eerder, als de aangifte op tijd binnen was.",
+)
 
 # ── Invoer ───────────────────────────────────────────────────────────────────
 if _tarief_waarschuwing:

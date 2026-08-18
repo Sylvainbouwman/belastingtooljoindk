@@ -5,6 +5,8 @@ import requests
 from datetime import date, timedelta
 from fpdf import FPDF
 from _auto_paste import auto_paste_input as _auto_paste_input
+from _format import nl_date, nl_euro
+from _ui import paginakop, paginastijl, veilig
 from _auto_calc import bijtelling as _bijtelling
 from _auto_calc import btw_correctie as _btw_correctie
 from _auto_calc import (
@@ -89,18 +91,9 @@ def _rdw_ophalen(kn: str) -> dict | None:
         return None
 
 
-def nl_euro(x: float) -> str:
-    s = f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return f"€ {s}"
-
-
 def _pdf_bedrag(x: float) -> str:
     s = f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     return f"EUR {s}"
-
-
-def nl_date(d: date) -> str:
-    return d.strftime("%d-%m-%Y")
 
 
 def _pdf_str(s: str) -> str:
@@ -222,28 +215,13 @@ def _maak_pdf(auto_results: list, klant_naam: str, klant_nr: str, jaar: int) -> 
     return bytes(pdf.output())
 
 
-# ── Opmaak ───────────────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-  [data-testid="stAppViewContainer"] { background: linear-gradient(180deg,#f8fbfd 0%,#eef3f7 100%); }
-  .bk-header { background: linear-gradient(135deg,#24304A,#2f3d5d); color: white;
-    border-radius: 14px; padding: 16px 22px; margin-bottom: 14px; }
-  .bk-header h1 { margin: 0 0 4px; font-size: 24px; color: white; }
-  .bk-header p  { margin: 0; font-size: 13px; color: rgba(255,255,255,0.85); }
-  .auto-info { background: #f0f4f8; border-radius: 8px; padding: 8px 14px;
-    font-size: 13px; color: #24304A; margin: 6px 0 10px 0; }
-  .auto-info b { color: #1a3a6e; }
-  .auto-nr { font-size: 13px; font-weight: 700; color: #6b7a99;
-    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-</style>
-""", unsafe_allow_html=True)
+paginastijl()
 
-st.markdown("""
-<div class="bk-header">
-  <h1>🚗 Auto BTW privé</h1>
-  <p>BTW-correctie en bijtelling voor privégebruik zakelijke auto — forfaitmethode, RDW-koppeling.</p>
-</div>
-""", unsafe_allow_html=True)
+paginakop(
+    "🚗 Auto BTW privé",
+    "BTW-correctie en bijtelling voor privégebruik zakelijke auto — forfaitmethode, "
+    "RDW-koppeling.",
+)
 
 # ── Globale instellingen ──────────────────────────────────────────────────────
 huidig_jaar = date.today().year
@@ -317,7 +295,7 @@ for idx, auto_entry in enumerate(list(st.session_state["autos"])):
             auto_data_i = _rdw_ophalen(kenteken_i)
 
         if auto_data_i is None:
-            st.error(f"Kenteken **{kenteken_i}** niet gevonden in het RDW.")
+            st.error(f"Kenteken **{kenteken_i}** niet gevonden in het RDW, of geen geldig kenteken.")
             auto_results.append(None)
             continue
 
@@ -336,8 +314,9 @@ for idx, auto_entry in enumerate(list(st.session_state["autos"])):
         )
         st.markdown(
             f'<div class="auto-info">'
-            f'<b>{kenteken_i}</b> &nbsp;·&nbsp; {auto_data_i["voertuig"]} &nbsp;·&nbsp; '
-            f'Bouwjaar {auto_data_i["bouwjaar"]} &nbsp;·&nbsp; {auto_data_i["brandstof"]} &nbsp;·&nbsp; '
+            f'<b>{veilig(kenteken_i)}</b> &nbsp;·&nbsp; {veilig(auto_data_i["voertuig"])} &nbsp;·&nbsp; '
+            f'Bouwjaar {veilig(auto_data_i["bouwjaar"])} &nbsp;·&nbsp; '
+            f'{veilig(auto_data_i["brandstof"])} &nbsp;·&nbsp; '
             f'{co2_txt} &nbsp;·&nbsp; Catalogusprijs {cat_txt}{ts_html}{verval_html}</div>',
             unsafe_allow_html=True,
         )

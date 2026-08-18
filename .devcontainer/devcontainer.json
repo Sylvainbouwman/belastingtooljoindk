@@ -18,8 +18,11 @@
     }
   },
   "updateContentCommand": "[ -f packages.txt ] && sudo apt update && sudo apt upgrade -y && sudo xargs apt install -y <packages.txt; [ -f requirements.txt ] && pip3 install --user -r requirements.txt; pip3 install --user streamlit; echo '✅ Packages installed and Requirements met'",
+  // K4: het Codespaces-sjabloon zette CORS en XSRF-bescherming uit. Dat is niet
+  // nodig om de app in een Codespace te bekijken en zet een beveiliging uit die
+  // je juist aan wilt houden, ook lokaal.
   "postAttachCommand": {
-    "server": "streamlit run app.py --server.enableCORS false --server.enableXsrfProtection false"
+    "server": "streamlit run app.py"
   },
   "portsAttributes": {
     "8501": {

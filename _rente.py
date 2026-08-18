@@ -20,6 +20,8 @@ De drie regels die de uitkomst bepalen:
 import math
 from datetime import date, timedelta
 
+from _format import nl_date, nl_euro, nl_euro_heel, nl_pct
+
 # Weken na de datum op de aanslag waarover nog rente loopt.
 AANSLAG_WEKEN = 6
 
@@ -217,24 +219,8 @@ def renteperiode(dagtekening: date,
 
 # ── Opmaak ──────────────────────────────────────────────────────────────────
 
-def nl_euro(bedrag: float) -> str:
-    tekst = f"{bedrag:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    return f"€ {tekst}"
-
-
-def nl_euro_heel(bedrag: int) -> str:
-    return "€ " + f"{bedrag:,}".replace(",", ".")
-
-
-def nl_date(dag: date) -> str:
-    return dag.strftime("%d-%m-%Y")
-
-
-def nl_pct(percentage: float) -> str:
-    """Percentage in Nederlandse notatie, zonder betekenisverlies.
-
-    "%.0f" maakte van 6,5% een "6%", van 7,5% een "8%" (bankiersafronding) en
-    van 0,01% een "0%".
-    """
-    tekst = f"{percentage:.2f}".rstrip("0").rstrip(".")
-    return tekst.replace(".", ",") + "%"
+# De notatiefuncties staan in _format.py, omdat ook de autopagina ze gebruikt.
+# Hier blijven ze beschikbaar zodat "from _rente import nl_euro" blijft werken.
+__all__ = [name for name in dir() if not name.startswith("_")] + [
+    "nl_euro", "nl_euro_heel", "nl_date", "nl_pct",
+]
