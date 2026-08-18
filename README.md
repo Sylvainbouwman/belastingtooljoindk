@@ -1,8 +1,13 @@
-# Bouwman Tools — Belastingtools
+# Belastingtool JoinDK
 
-Een Streamlit-app met belastingtools voor dagelijks gebruik.
+Een Streamlit-app met belastingtools voor dagelijks gebruik bij Join Administraties en
+DK Accountants. Begonnen als losse betalingskenmerk-tool en daarna uitgebouwd tot zes
+pagina's.
 
 **Live:** [belastingtooljoindk.streamlit.app](https://belastingtooljoindk.streamlit.app)
+
+> Deze app hoort niet bij de verzameling op bouwman.tools; dat is een aparte portal met
+> andere, losse tools.
 
 ---
 
@@ -208,15 +213,10 @@ De verificatieronde is afgerond: alle vier de rekenpagina's zijn tegen de bron g
 Zie [WIJZIGINGSRAPPORT.md](WIJZIGINGSRAPPORT.md) voor wat dat opleverde en voor de
 actielijst.
 
-Wat nu nog open staat:
+Alle punten uit de codereview zijn afgehandeld. Beslist en verwerkt op 18 augustus 2026:
 
-1. **De naam van deze app.** De repository heet `betalingskenmerk-tool` en de live versie
-   heet Belastingtool, maar `app.py` zet de browsertabtitel nog op "Bouwman Tools" — en dat
-   is de naam van de portal waarop meerdere losse tools staan, niet van deze app. Zie de
-   actielijst in het wijzigingsrapport.
-
-Beslist en verwerkt op 18 augustus 2026:
-
+- **De naam.** De repository heet `belastingtooljoindk`, gelijk aan de URL. De oude naam
+  `betalingskenmerk-tool` dekte maar één van de zes pagina's.
 - **BSN-verwerking (K5).** Een BSN gaat niet meer naar de KvK; het wordt alleen getoond,
   met een label erbij zodat een medewerker ziet dat het om een natuurlijk persoon gaat.
   Zie hieronder onder Privacy.

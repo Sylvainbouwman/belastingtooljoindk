@@ -1,23 +1,21 @@
-# Wijzigingsrapport — codereview betalingskenmerk-tool
+# Wijzigingsrapport — codereview belastingtooljoindk
 
 **Datum:** 17 augustus 2026, bijgewerkt 18 augustus 2026
-**Repository:** `betalingskenmerk-tool`
+**Repository:** `belastingtooljoindk` (tot 18-08-2026 `betalingskenmerk-tool`)
 **Betreft:** volledige codereview + oplossen van alle gevonden bugs, gevolgd door een
 verificatieronde waarin het rekenwerk van álle vier de rekenpagina's is getoetst aan de bron
 **Branch:** `master` (gepusht)
 **Omvang:** 17 commits, 26 bestanden, +4.200 / −752 regels
 **Tests:** van 0 naar 327 (alle groen)
 
-> **Scope.** Dit rapport gaat uitsluitend over de repository `betalingskenmerk-tool`.
-> Die bevat inmiddels zes pagina's — Betalingskenmerk, VIES BTW-controle, KvK/SBI
-> opzoeken, Belastingrente IB, Belastingrente VpB en Auto BTW privé — die samen als
-> één Streamlit-app draaien. Andere tools uit de Bouwman Tools-verzameling zijn
-> **niet** bekeken.
+> **Scope.** Dit rapport gaat uitsluitend over de repository `belastingtooljoindk`, die
+> tot 18-08-2026 `betalingskenmerk-tool` heette. Die bevat inmiddels zes pagina's —
+> Betalingskenmerk, VIES BTW-controle, KvK/SBI opzoeken, Belastingrente IB, Belastingrente
+> VpB en Auto BTW privé — die samen als één Streamlit-app draaien.
 >
-> Let op de naamgeving: de app presenteert zichzelf intern als "Bouwman Tools"
-> (in `app.py` en bovenaan de README), terwijl dat de naam is van de portal
-> **bouwman.tools** waarop meerdere losse tools achter een login staan. Deze app heet daar
-> **Belastingtool**. Zie **actiepunt 6**.
+> Deze app hoort **niet** bij de verzameling op **bouwman.tools**; dat is een aparte portal
+> met andere, losse tools. De app noemde zichzelf wel zo (in `app.py` en bovenaan de
+> README), en dat is met **actiepunt 6** rechtgezet.
 
 ---
 
@@ -649,17 +647,13 @@ Bijgewerkt op 18 augustus, na de terugkoppeling van Sylvain. Er staat nog één 
 
 ### Nog te doen
 
-- [ ] **6. Besluit hoe deze app moet heten.**
-      De verzameling heet inmiddels **bouwman.tools**: een portal waarop meerdere losse
-      tools staan, achter een gebruikersnaam en wachtwoord. Deze app staat daar als
-      **Belastingtool** (`belastingtooljoindk.streamlit.app`). Maar `app.py` zet de
-      browsertabtitel nog op "Bouwman Tools", en dat is dus de naam van de portal en niet
-      van deze app. Twee plekken:
-      - `app.py` regel 4: `page_title="Bouwman Tools"`
-      - `README.md` regel 1: `# Bouwman Tools — Belastingtools`
+Niets meer aan de code. Wat resteert is werk buiten de repository:
 
-      Sylvain kijkt er nog naar. Zeg het woord en beide regels gaan op "Belastingtool",
-      of op de naam die je kiest.
+- [ ] **De repository omdopen op GitHub** naar `belastingtooljoindk`, en daarna de app in
+      Streamlit Cloud opnieuw uitrollen. Let op de volgorde: eerst de oude app in Streamlit
+      Cloud verwijderen zodat het subdomein `belastingtooljoindk` vrijkomt, dan opnieuw
+      deployen vanaf de nieuwe reponaam en de KvK-sleutel opnieuw in Settings → Secrets
+      zetten. Alle verwijzingen ín de repository zijn al omgezet.
 
 ### Afgehandeld met een beslissing
 
@@ -671,6 +665,12 @@ Bijgewerkt op 18 augustus, na de terugkoppeling van Sylvain. Er staat nog één 
 - [x] **4. Eerdere berekeningen herzien.** Niet nodig: de tool is nog in testfase, er is
       nog niet met een oude versie voor klanten gerekend.
 - [x] **5. §12 van de rekenmodule-specificatie.** Wordt aangepast.
+- [x] **6. De naam van de app.** De repository gaat `belastingtooljoindk` heten, gelijk aan
+      de URL, omdat het feitelijk een verzameling is: begonnen met het betalingskenmerk en
+      daarna uitgebouwd. De browsertabtitel en de README-titel staan nu op "Belastingtool
+      JoinDK" in plaats van "Bouwman Tools", want die laatste is een andere verzameling
+      waar deze app niet op staat. Het bestand `UC_betalingskenmerk-tool.md` heet nu
+      `UC_belastingtooljoindk.md`.
 
 ### Afgerond in de derde ronde
 
