@@ -1,3 +1,5 @@
+import re
+
 import streamlit as st
 import requests
 from datetime import date, timedelta
@@ -5,7 +7,26 @@ from fpdf import FPDF
 from _auto_paste import auto_paste_input as _auto_paste_input
 from _auto_calc import bijtelling as _bijtelling
 from _auto_calc import btw_correctie as _btw_correctie
-from _auto_calc import vervaldatum_vaste_termijn
+from _auto_calc import (
+    bijtelling_youngtimer,
+    is_nulemissie,
+    is_plafondvrij,
+    is_youngtimer,
+    maandfractie,
+    vervaldatum_vaste_termijn,
+    waarschuwing_regimejaar,
+    youngtimer_leeftijdsgrens,
+)
+
+# Een Nederlands kenteken is zes tekens, cijfers en hoofdletters. Streepjes en
+# kleine letters worden weggehaald voordat er iets naar het RDW gaat.
+KENTEKEN_PATROON = re.compile(r"^[A-Z0-9]{6}$")
+
+
+def normaliseer_kenteken(ruw: str) -> str | None:
+    """Geeft het kenteken in RDW-vorm terug, of None als het niet geldig is."""
+    opgeschoond = re.sub(r"[^A-Za-z0-9]", "", ruw or "").upper()
+    return opgeschoond if KENTEKEN_PATROON.match(opgeschoond) else None
 
 
 def _rdw_datum(waarde) -> date | None:
@@ -21,6 +42,11 @@ def _rdw_datum(waarde) -> date | None:
 
 @st.cache_data(show_spinner=False, ttl=600)
 def _rdw_ophalen(kn: str) -> dict | None:
+    # K2: nooit ongevalideerde tekens in de RDW-querystring zetten. Alleen zes
+    # cijfers en hoofdletters komen hier voorbij.
+    kn = normaliseer_kenteken(kn)
+    if kn is None:
+        return None
     try:
         r = requests.get(
             "https://opendata.rdw.nl/resource/m9d7-ebf2.json",
@@ -81,7 +107,7 @@ def _pdf_str(s: str) -> str:
     return s.replace("—", "-").replace("–", "-").replace("≤", "<=").replace("€", "EUR")
 
 
-def _maak_pdf(auto_results: list, klant_naam: str, klant_nr: str, jaar: int, marge: bool) -> bytes:
+def _maak_pdf(auto_results: list, klant_naam: str, klant_nr: str, jaar: int) -> bytes:
     pdf = FPDF()
     pdf.add_page()
     pdf.set_margins(25, 20, 25)
@@ -118,7 +144,6 @@ def _maak_pdf(auto_results: list, klant_naam: str, klant_nr: str, jaar: int, mar
             _rij("Klantnummer:", klant_nr)
 
     _sectie(f"Berekening {jaar}")
-    _rij("Marge-auto:", "Ja" if marge else "Nee")
 
     for i, r in enumerate(auto_results):
         label = f"Auto {i + 1}" if len(auto_results) > 1 else "Voertuig"
@@ -133,7 +158,12 @@ def _maak_pdf(auto_results: list, klant_naam: str, klant_nr: str, jaar: int, mar
         ts = r["auto"].get("datum_tenaamstelling")
         _rij("In gebruik vanaf:", nl_date(ts) if ts else "Onbekend")
         _rij("Catalogusprijs:", _pdf_bedrag(r["catalogusprijs"]))
-        _rij("Periode:", f"{r['periode_label']} ({r['dagen']} dagen)")
+        _rij("Marge-auto:", "Ja" if r["marge"] else "Nee")
+        _rij("Periode:", f"{r['periode_label']} ({r['dagen']} dagen / "
+                         f"{r['maanden']:.2f} van 12 maanden)")
+        if r["youngtimer"]:
+            wev_txt = _pdf_bedrag(r["wev"]) if r["wev"] else "niet ingevuld"
+            _rij("Youngtimer:", f"Ja - bijtelling 35% over WEV ({wev_txt})")
 
         pdf.ln(2)
         pdf.set_fill_color(230, 238, 255)
@@ -152,12 +182,13 @@ def _maak_pdf(auto_results: list, klant_naam: str, klant_nr: str, jaar: int, mar
         pdf.cell(0, 6, _pdf_str(f"Bijtelling ({r['bij_label']})"), fill=True, new_x="LMARGIN", new_y="NEXT")
         pdf.set_font("Helvetica", "B", 14)
         pdf.set_text_color(26, 77, 46)
-        pdf.cell(0, 8, _pdf_bedrag(r["bij"]), new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, _pdf_bedrag(r["bij"]) if r["bij"] is not None else "-",
+                 new_x="LMARGIN", new_y="NEXT")
 
     if len(auto_results) > 1:
         _sectie("Totaal")
         total_btw = sum(r["btw"] for r in auto_results)
-        total_bij = sum(r["bij"] for r in auto_results)
+        total_bij = sum(r["bij"] for r in auto_results if r["bij"] is not None)
         pdf.ln(1)
         pdf.set_fill_color(220, 232, 255)
         pdf.set_text_color(0, 0, 0)
@@ -181,7 +212,11 @@ def _maak_pdf(auto_results: list, klant_naam: str, klant_nr: str, jaar: int, mar
     pdf.cell(0, 5, f"Gegenereerd op {date.today().strftime('%d-%m-%Y')} via belastingtooljoindk.streamlit.app",
              new_x="LMARGIN", new_y="NEXT")
     pdf.multi_cell(0, 5,
-        "Berekening op basis van forfaitmethode (art. 4 lid 2 Wet OB). "
+        "Berekening op basis van forfaitmethode (art. 4 lid 2 Wet OB). De "
+        "BTW-correctie is naar maanden berekend, conform het rekenvoorbeeld van de "
+        "Belastingdienst; de bijtelling naar dagen. Bij een IB-ondernemer is de "
+        "bijtelling nooit hoger dan de totale autokosten van het jaar - die kosten "
+        "zijn hier niet bekend en dus niet toegepast. "
         "Voertuiggegevens via RDW Open Data. Indicatief - geen fiscaal advies.")
 
     return bytes(pdf.output())
@@ -212,20 +247,12 @@ st.markdown("""
 
 # ── Globale instellingen ──────────────────────────────────────────────────────
 huidig_jaar = date.today().year
-col_a, col_b, col_n, col_nr = st.columns([1, 1, 2, 1])
+col_a, col_n, col_nr = st.columns([1, 2, 1])
 with col_a:
     berekeningsjaar = st.selectbox(
         "Berekeningsjaar",
         options=list(range(huidig_jaar, huidig_jaar - 8, -1)),
         index=0,
-    )
-with col_b:
-    marge = st.toggle(
-        "Marge-auto (1,5%)",
-        value=False,
-        help="Vink aan als de auto als marge-auto is gekocht (zonder BTW-factuur). "
-             "Het lage forfait van 1,5% wordt daarnaast automatisch toegepast zodra "
-             "het jaar van ingebruikname en de vier jaren daarna voorbij zijn.",
     )
 with col_n:
     klant_naam = st.text_input("Klantnaam", key="klant_naam", placeholder="Optioneel — voor de PDF")
@@ -397,6 +424,19 @@ for idx, auto_entry in enumerate(list(st.session_state["autos"])):
 
         dagen_i = (datum_tot_i - datum_van_i).days + 1
         periode_label_i = f"{nl_date(datum_van_i)} t/m {nl_date(datum_tot_i)}"
+        maanden_i = maandfractie(datum_van_i, datum_tot_i) * 12
+
+        # Marge per auto: bij meerdere auto's in één berekening kan de ene een
+        # marge-auto zijn en de andere niet. Dit stond eerder als één schakelaar
+        # voor de hele pagina.
+        marge_i = st.toggle(
+            "Marge-auto (1,5%)",
+            value=False,
+            key=f"marge_{car_id}",
+            help="Vink aan als deze auto als marge-auto is gekocht (zonder BTW-factuur). "
+                 "Het lage forfait van 1,5% wordt daarnaast automatisch toegepast zodra "
+                 "het jaar van ingebruikname en de vier jaren daarna voorbij zijn.",
+        )
 
         # Bepaal of omdraaien mogelijk is (periode beslaat niet het hele jaar)
         jan1_y = date(berekeningsjaar, 1, 1)
@@ -415,15 +455,59 @@ for idx, auto_entry in enumerate(list(st.session_state["autos"])):
                     st.rerun()
 
         btw_i, btw_label_i = _btw_correctie(
-            catalogusprijs_i, marge, dagen_i,
+            catalogusprijs_i, marge_i, datum_van_i, datum_tot_i,
             ingebruikname=auto_data_i["datum_tenaamstelling"],
             jaar=berekeningsjaar,
         )
-        bij_i, bij_label_i = _bijtelling(
-            catalogusprijs_i, auto_data_i["co2"], auto_data_i["brandstof"],
-            berekeningsjaar, datum_van_i, datum_tot_i,
-            eerste_toelating=auto_data_i["datum_eerste_toelating"],
-        )
+
+        # Youngtimer: 35% van de waarde in het economisch verkeer in plaats van
+        # een percentage van de catalogusprijs. De WEV staat niet in de
+        # RDW-gegevens, dus die moet erbij worden gezet.
+        youngtimer_i = is_youngtimer(det_i, berekeningsjaar)
+        wev_i = None
+        if youngtimer_i:
+            st.warning(
+                f"Deze auto is op 1 januari {berekeningsjaar} ouder dan "
+                f"{youngtimer_leeftijdsgrens(berekeningsjaar)} jaar en valt onder de "
+                f"youngtimerregeling: de bijtelling is 35% van de waarde in het "
+                f"economisch verkeer, niet een percentage van de catalogusprijs. "
+                f"Vul die waarde hieronder in. De BTW-correctie blijft over de "
+                f"catalogusprijs lopen."
+            )
+            wev_h = st.number_input(
+                "Waarde in het economisch verkeer (€)",
+                min_value=0, value=0, step=500, key=f"wev_{car_id}",
+            )
+            wev_i = float(wev_h) if wev_h else None
+
+        if youngtimer_i:
+            if wev_i is None:
+                bij_i, bij_label_i = None, "youngtimer — WEV nog invullen"
+            else:
+                bij_i, bij_label_i = bijtelling_youngtimer(wev_i, dagen_i)
+        else:
+            bij_i, bij_label_i = _bijtelling(
+                catalogusprijs_i, auto_data_i["co2"], auto_data_i["brandstof"],
+                berekeningsjaar, datum_van_i, datum_tot_i,
+                eerste_toelating=auto_data_i["datum_eerste_toelating"],
+            )
+
+            melding_i = waarschuwing_regimejaar(
+                is_nulemissie(auto_data_i["co2"], auto_data_i["brandstof"]),
+                berekeningsjaar,
+            )
+            if melding_i:
+                st.warning(melding_i)
+
+            if (is_nulemissie(auto_data_i["co2"], auto_data_i["brandstof"])
+                    and not is_plafondvrij(auto_data_i["brandstof"])):
+                st.caption(
+                    "Rijdt deze auto volledig op geïntegreerde zonnecellen (minstens "
+                    "1 kilowattpiek, accu zonder lood)? Dan geldt het verlaagde "
+                    "percentage over de hele catalogusprijs, zonder plafond. Dat is "
+                    "niet uit de RDW-gegevens af te leiden en zit dus niet in de "
+                    "berekening hieronder."
+                )
 
         col_r1, col_r2 = st.columns(2)
         with col_r1:
@@ -436,10 +520,11 @@ for idx, auto_entry in enumerate(list(st.session_state["autos"])):
               </div>
               <div style="font-size:30px;font-weight:bold;font-family:monospace;">{nl_euro(btw_i)}</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:4px;">
-                {btw_label_i} forfait &nbsp;·&nbsp; {dagen_i} dagen
+                {btw_label_i} forfait &nbsp;·&nbsp; {maanden_i:.2f}/12 maanden
               </div>
             </div>""")
         with col_r2:
+            bij_waarde = nl_euro(bij_i) if bij_i is not None else "—"
             st.html(f"""
             <div style="background:linear-gradient(135deg,#1a4d2e,#1e5c36);color:white;
               border-radius:12px;padding:16px 20px;text-align:center;
@@ -447,7 +532,7 @@ for idx, auto_entry in enumerate(list(st.session_state["autos"])):
               <div style="font-size:11px;color:rgba(255,255,255,0.8);margin-bottom:4px;letter-spacing:.06em;">
                 BIJTELLING (FISCALE WAARDE)
               </div>
-              <div style="font-size:30px;font-weight:bold;font-family:monospace;">{nl_euro(bij_i)}</div>
+              <div style="font-size:30px;font-weight:bold;font-family:monospace;">{bij_waarde}</div>
               <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:4px;">
                 {bij_label_i} &nbsp;·&nbsp; {dagen_i} dagen
               </div>
@@ -459,6 +544,10 @@ for idx, auto_entry in enumerate(list(st.session_state["autos"])):
             "catalogusprijs": catalogusprijs_i,
             "periode_label": periode_label_i,
             "dagen": dagen_i,
+            "maanden": maanden_i,
+            "marge": marge_i,
+            "youngtimer": youngtimer_i,
+            "wev": wev_i,
             "btw": btw_i,
             "btw_label": btw_label_i,
             "bij": bij_i,
@@ -487,7 +576,11 @@ valid_results = [r for r in auto_results if r is not None]
 
 if len(valid_results) > 1:
     total_btw = sum(r["btw"] for r in valid_results)
-    total_bij = sum(r["bij"] for r in valid_results)
+    # Een youngtimer zonder ingevulde WEV levert geen bedrag; die telt niet mee
+    # en dat wordt eronder gemeld, zodat het totaal niet stil te laag uitkomt.
+    bij_bedragen = [r["bij"] for r in valid_results if r["bij"] is not None]
+    total_bij = sum(bij_bedragen)
+    ontbrekend = len(valid_results) - len(bij_bedragen)
     st.markdown("---")
     col_t1, col_t2 = st.columns(2)
     with col_t1:
@@ -513,9 +606,14 @@ if len(valid_results) > 1:
           </div>
           <div style="font-size:26px;font-weight:bold;font-family:monospace;">{nl_euro(total_bij)}</div>
           <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:3px;">
-            {len(valid_results)} auto's · {berekeningsjaar}
+            {len(bij_bedragen)} van {len(valid_results)} auto's · {berekeningsjaar}
           </div>
         </div>""")
+    if ontbrekend:
+        st.warning(
+            f"{ontbrekend} auto('s) tellen niet mee in de totale bijtelling omdat de "
+            f"waarde in het economisch verkeer nog niet is ingevuld."
+        )
 
 # ── PDF ───────────────────────────────────────────────────────────────────────
 if valid_results:
@@ -524,7 +622,7 @@ if valid_results:
 
     if st.button("📄 Genereer PDF", use_container_width=True):
         try:
-            pdf_bytes = _maak_pdf(valid_results, klant_naam, klant_nr, berekeningsjaar, marge)
+            pdf_bytes = _maak_pdf(valid_results, klant_naam, klant_nr, berekeningsjaar)
             st.session_state["pdf_bytes"] = pdf_bytes
             st.session_state["pdf_naam"] = bestandsnaam
         except Exception as e:
@@ -539,7 +637,16 @@ if valid_results:
             use_container_width=True,
         )
 
+if valid_results:
+    st.info(
+        "**Bij een IB-ondernemer is de bijtelling nooit hoger dan de totale "
+        "autokosten van het jaar** (afschrijving, brandstof, onderhoud, verzekering, "
+        "motorrijtuigenbelasting). Die kosten zijn hier niet bekend, dus dat maximum "
+        "is niet toegepast. Bij een lage catalogusprijs en weinig kosten kan de "
+        "uitkomst hierboven dus te hoog zijn."
+    )
+
 st.caption(
-    "Forfaitmethode art. 4 lid 2 Wet OB · Voertuiggegevens via RDW Open Data · "
-    "Toekomstig: opslaan in AFAS-dossier."
+    "Forfaitmethode art. 4 lid 2 Wet OB · BTW-correctie naar maanden, bijtelling naar "
+    "dagen · Voertuiggegevens via RDW Open Data · Toekomstig: opslaan in AFAS-dossier."
 )
