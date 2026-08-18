@@ -18,19 +18,32 @@ STANDAARD_BIJTELLING_VANAF_2017 = 22.0
 # Korting voor nulemissievoertuigen: {regimejaar: (percentage, plafond of None)}.
 # Boven het plafond geldt het standaardpercentage van datzelfde regimejaar.
 #
-# Op 18-08-2026 nagelopen op belastingdienst.nl. Bij de bron bevestigd:
-#   2021  12% t/m EUR 40.000   (bijtelling-privegebruik-auto-2021)
-#   2022  16% t/m EUR 35.000   (bijtelling-privegebruik-auto-2022)
-#   2023  16% t/m EUR 30.000   (bijtelling-privegebruik-auto-2023)
-#   2024  16% t/m EUR 30.000   (bijtelling-privegebruik-auto-2024)
-#   2025  17% t/m EUR 30.000   (bijtelling-privegebruik-auto-2025)
-#   2026  18% t/m EUR 30.000   (bijtelling-privegebruik-auto-2026)
-# De jaarpagina van 2020 bevestigt het percentage van 8%, maar noemt het plafond
-# niet; 2019 (4% t/m EUR 50.000) staat in de Nieuwsbrief Loonheffingen 2019.
-# NOG NIET BIJ DE BRON BEVESTIGD: het plafond van 2020 en het ontbreken van een
-# plafond in 2017 en 2018. Die drie gegevens spelen alleen nog bij een
-# herberekening van een oud jaar: de 60-maandstermijn van elke auto met eerste
-# toelating tot en met 2020 is uiterlijk in 2025 verlopen.
+# De hele reeks is bij de bron nagelopen. De wet formuleert de korting als een
+# verlaging in procentpunten met een maximumbedrag; deze tabel noteert het
+# resulterende percentage met het bijbehorende plafond van de catalogusprijs.
+# Dat is dezelfde regel: plafond x (standaard - percentage) is precies het
+# maximale kortingsbedrag uit de wet. Zie test_maximale_korting_uit_de_wet.
+#
+#   2017  4%  geen plafond   Stb. 2016, 275 (Wet uitwerking Autobrief II), art. 3.20
+#   2018  4%  geen plafond   lid 2: verlaging met 18% van de waarde van de auto bij
+#                            een CO2-uitstoot van 0 gram per kilometer; 22 - 18 = 4.
+#                            Geen maximumbedrag in 2017 en 2018 (Kst. 34 391, nr. 3).
+#   2019  4%  EUR 50.000     Stb. 2016, 275, art. III: de verlaging bedraagt ten
+#                            hoogste EUR 9.000 = 18% van EUR 50.000.
+#   2020  8%  EUR 45.000     Kst. 35 304, nr. 3 (Wet fiscale maatregelen
+#                            Klimaatakkoord): korting 14%-punt, cap EUR 45.000,
+#                            maximaal EUR 6.300 = 14% van EUR 45.000.
+#   2021  12% EUR 40.000     Kst. 35 304, nr. 3 (10%-punt) + jaarpagina 2021.
+#   2022  16% EUR 35.000     Kst. 35 927, nr. 3 (Belastingplan 2022) verlaagde de
+#                            cap van 2019 naar EUR 35.000 + jaarpagina 2022.
+#   2023  16% EUR 30.000     Kst. 35 927, nr. 3 + jaarpagina 2023.
+#   2024  16% EUR 30.000     jaarpagina 2024.
+#   2025  17% EUR 30.000     Kst. 35 927, nr. 3 (korting van 6 naar 5%-punt) +
+#                            jaarpagina 2025.
+#   2026  18% EUR 30.000     jaarpagina 2026 en de overzichtstabel voor werknemers.
+#                            LET OP: de Klimaatakkoordwet liet de korting per 2026
+#                            vervallen; dat is dus met latere wetgeving aangepast.
+#                            Voor dit jaar is de jaarpagina daarom de bron.
 KORTING_NULEMISSIE = {
     2017: (4.0, None),
     2018: (4.0, None),
@@ -47,21 +60,29 @@ KORTING_NULEMISSIE = {
 # Laatste jaar waarvoor de korting bij de bron is nagelopen. Voor een later
 # regimejaar rekent de tool met het standaardpercentage; dat kan dus te hoog
 # uitpakken zodra er nieuwe wetgeving is. Zie waarschuwing_regimejaar().
+# Dat 2026 zelf al een aanpassing bleek van wat in 2019 was vastgelegd, laat zien
+# dat die waarschuwing er niet voor niets staat.
 KORTING_GEVERIFIEERD_TOT_EN_MET = 2026
 
 NULEMISSIE_BRANDSTOFFEN = ("elektriciteit", "waterstof")
 
 # Voor waterstofauto's en auto's die volledig op geintegreerde zonnecellen
 # rijden geldt het verlaagde percentage over de hele catalogusprijs, zonder
-# plafond. Bevestigd op de jaarpagina's 2022 t/m 2026: "Het verlaagde percentage
-# van .. geldt voor auto's op waterstof en voor auto's die volledig worden
-# aangedreven door geintegreerde zonnecellen."
+# plafond. Dit staat in de wet zelf: het plafond is ingevoerd "met dien
+# verstande dat het bedrag van de verlaging ten hoogste EUR 9.000 bedraagt
+# indien de auto niet wordt aangedreven door een motor die kan worden gevoed met
+# waterstof" (Stb. 2016, 275, art. III). Kst. 35 304, nr. 3 herhaalt het: "De cap
+# is niet van toepassing op auto's met een motor die kan worden gevoed met
+# waterstof." De jaarpagina's 2022 t/m 2026 noemen daarnaast de zonnecelauto's.
 # Zonnecelauto's zijn niet uit de RDW-gegevens te herkennen (de eisen zijn een
 # vermogen van minstens 1 kilowattpiek en een accu zonder lood); daarvoor staat
 # een waarschuwing op de pagina zelf.
 PLAFONDVRIJE_BRANDSTOFFEN = ("waterstof",)
 
-# Het bijtellingspercentage ligt vanaf de eerste tenaamstelling 60 maanden vast.
+# Het bijtellingspercentage ligt 60 maanden vast. Artikel 3.20, elfde lid Wet IB
+# 2001 (Stb. 2016, 275): de verlaging blijft van toepassing "voor een periode van
+# 60 maanden te rekenen vanaf de eerste dag van de maand volgend op de datum van
+# eerste toelating van de auto". Zie vervaldatum_vaste_termijn().
 VASTE_TERMIJN_MAANDEN = 60
 
 # Auto's ouder dan deze leeftijd vallen onder de youngtimerregeling: 35% van de

@@ -107,7 +107,9 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
   af, dan wordt de periode gesplitst
   - Benzine/diesel: 22% (2017 en later), 25% (tot en met 2016)
   - Nulemissie: korting met plafond — 4% (2017–2019), 8% (2020), 12% (2021), 16% (2022–2024),
-    17% (2025), 18% (2026), telkens tot het plafond van dat jaar en daarboven 22%
+    17% (2025), 18% (2026), telkens tot het plafond van dat jaar en daarboven 22%. De hele
+    reeks is bij de bron nagelopen: de jaarpagina's van belastingdienst.nl en, voor de jaren
+    tot 2021, de wettekst en de memories van toelichting (zie Bronnen)
   - **Waterstof** (en auto's volledig op geïntegreerde zonnecellen): het verlaagde percentage
     geldt over de hele catalogusprijs, zonder plafond
   - **Youngtimer**: is de auto op 1 januari ouder dan 16 jaar (tot 2026: 15 jaar), dan is de
@@ -142,7 +144,7 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 | `_tarieven_check.py` | Maandelijkse check op nieuwe tarieven (belastingdienst.nl) |
 | `_format.py` | Nederlandse notatie voor bedragen, datums en percentages (zonder Streamlit) |
 | `_ui.py` | Gedeeld stijlblok, koptekst, HTML-escaping en het KvK-sleutelblok |
-| `tests/` | Pytest-suite (293 tests) |
+| `tests/` | Pytest-suite (298 tests) |
 | `requirements.txt` | Python dependencies |
 | `requirements-dev.txt` | Alleen voor de tests (pytest) |
 
@@ -207,22 +209,16 @@ actielijst.
 
 Wat nu nog open staat, vraagt een beslissing en geen code:
 
-1. **Drie gegevens van vóór 2021 zijn niet bij de bron bevestigd.** Het plafond van 2020
-   (€ 45.000) en het ontbreken van een plafond in 2017 en 2018 staan niet op de
-   jaarpagina's van belastingdienst.nl. Ze spelen alleen bij een herberekening van een oud
-   jaar: de 60-maandstermijn van elke auto met eerste toelating tot en met 2020 is
-   uiterlijk in 2025 verlopen. Staat als waarschuwing in `_auto_calc.py`.
-
-2. **BSN-verwerking (punt K5).** Uit het kenmerk van een particulier rolt een BSN. Die
+1. **BSN-verwerking (punt K5).** Uit het kenmerk van een particulier rolt een BSN. Die
    wordt getoond, een uur gecachet en als zoekterm naar de KvK gestuurd — terwijl de KvK
    particulieren niet kent. Op Streamlit Community Cloud loopt dat over infrastructuur van
    derden. Dit is een verwerkersvraag.
 
-3. **De naam van deze app.** De repository heet `betalingskenmerk-tool`, maar de app bevat
+2. **De naam van deze app.** De repository heet `betalingskenmerk-tool`, maar de app bevat
    zes pagina's en presenteert zichzelf als "Bouwman Tools". Zie de actielijst in het
    wijzigingsrapport.
 
-4. **Zijn er eerdere berekeningen die herzien moeten worden?** De verificatierondes hebben
+3. **Zijn er eerdere berekeningen die herzien moeten worden?** De verificatierondes hebben
    fouten opgeleverd die verkeerde bedragen en verkeerde nummers gaven. Het overzicht van
    wat wanneer fout was, staat in het wijzigingsrapport.
 
@@ -242,5 +238,12 @@ Wat nu nog open staat, vraagt een beslissing en geen code:
 - [Overzicht percentages belastingrente — Belastingdienst](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/standaard_functies/prive/contact/rechten_en_plichten_bij_de_belastingdienst/belastingrente/overzicht_percentages_belastingrente)
 - [Belastingrente betalen bij inkomstenbelasting — Belastingdienst](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/standaard_functies/prive/contact/rechten_en_plichten_bij_de_belastingdienst/belastingrente/belastingrente_betalen_bij_inkomstenbelasting)
 - [Belastingrente betalen bij vennootschapsbelasting — Belastingdienst](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/standaard_functies/prive/contact/rechten_en_plichten_bij_de_belastingdienst/belastingrente/belastingrente_betalen_bij_vennootschapsbelasting)
+- [Btw en privégebruik auto van de zaak — Belastingdienst](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/zakelijk/btw/btw_aftrekken/btw_en_de_auto/privegebruik_auto_van_de_zaak/privegebruik_auto_van_de_zaak)
+- [Waarde van de auto — Belastingdienst](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/zakelijk/winst/inkomstenbelasting/inkomstenbelasting_voor_ondernemers/privegebruik_auto/waarde_van_de_auto)
+- Bijtelling privégebruik auto, jaarpagina's [2020](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/zakelijk/winst/inkomstenbelasting/verandering_inkomstenbelasting_vorige_jaren/bijtelling-privegebruik-auto-2020) · [2021](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/zakelijk/winst/inkomstenbelasting/verandering_inkomstenbelasting_vorige_jaren/bijtelling-privegebruik-auto-2021) · [2022](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/zakelijk/winst/inkomstenbelasting/verandering_inkomstenbelasting_vorige_jaren/bijtelling-privegebruik-auto-2022) · [2023](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/zakelijk/winst/inkomstenbelasting/verandering_inkomstenbelasting_vorige_jaren/veranderingen-inkomstenbelasting-2023/bijtelling-privegebruik-auto-2023) · [2024](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/zakelijk/winst/inkomstenbelasting/verandering_inkomstenbelasting_vorige_jaren/veranderingen-inkomstenbelasting-2024/bijtelling-privegebruik-auto-2024) · [2025](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/zakelijk/winst/inkomstenbelasting/verandering_inkomstenbelasting_vorige_jaren/veranderingen-inkomstenbelasting-2025/bijtelling-privegebruik-auto-2025) · [2026](https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/zakelijk/winst/inkomstenbelasting/veranderingen-inkomstenbelasting-2026/bijtelling-privegebruik-auto-2026)
+- [Staatsblad 2016, 275 — Wet uitwerking Autobrief II](https://zoek.officielebekendmakingen.nl/stb-2016-275.html) (art. 3.20 Wet IB: verlaging met 18%-punt bij 0 gram CO2, de waterstofuitzondering en de 60-maandstermijn)
+- [Kamerstuk 34 391, nr. 3 — MvT Wet uitwerking Autobrief II](https://zoek.officielebekendmakingen.nl/kst-34391-3.html) (percentages 2016–2020 en de cap van € 50.000 vanaf 2019)
+- [Kamerstuk 35 304, nr. 3 — MvT Wet fiscale maatregelen Klimaatakkoord](https://zoek.officielebekendmakingen.nl/kst-35304-3.html) (korting 14%-punt en cap € 45.000 in 2020, reeks daarna)
+- [Kamerstuk 35 927, nr. 3 — MvT Belastingplan 2022](https://zoek.officielebekendmakingen.nl/kst-35927-3.html) (aanpassing van de cap voor 2022–2025)
 - [KvK Handelsregister API](https://developers.kvk.nl)
 - [EU VIES API](https://ec.europa.eu/taxation_customs/vies/)

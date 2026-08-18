@@ -6,7 +6,7 @@
 verificatieronde waarin het rekenwerk van álle vier de rekenpagina's is getoetst aan de bron
 **Branch:** `master` (gepusht)
 **Omvang:** 17 commits, 26 bestanden, +4.200 / −752 regels
-**Tests:** van 0 naar 293 (alle groen)
+**Tests:** van 0 naar 298 (alle groen)
 
 > **Scope.** Dit rapport gaat uitsluitend over de repository `betalingskenmerk-tool`.
 > Die bevat inmiddels zes pagina's — Betalingskenmerk, VIES BTW-controle, KvK/SBI
@@ -285,6 +285,52 @@ Belastingdienst, maar de tool kent die kosten niet. De pagina meldt dat nu expli
 
 ---
 
+## 2c. De bijtellingsreeks tegen de wet zelf
+
+De jaarpagina's van belastingdienst.nl noemen het plafond van 2020 niet, en zeggen niets
+over 2017 en 2018. Die drie gegevens stonden daarom eerst als onbevestigd in de code.
+Sylvain heeft daarna de primaire bronnen aangeleverd: het Staatsblad en de memories van
+toelichting. Daarmee sluit de reeks, en er zit een controle in die de tabel aan de wet
+vastlegt.
+
+De wet formuleert de korting namelijk anders dan de tool. In artikel 3.20 Wet IB staat een
+**verlaging in procentpunten met een maximumbedrag**; de tool noteert het **resulterende
+percentage met een plafond op de catalogusprijs**. Dat is dezelfde regel, en dat is nu na te
+rekenen: plafond × (standaard − percentage) hoort precies het maximale kortingsbedrag uit
+de wet te zijn. Twee van die bedragen staan letterlijk in de stukken:
+
+| Jaar | Wettelijke korting | Plafond | Maximale korting | Bron |
+|---|---|---|---|---|
+| 2017, 2018 | 18%-punt → 4% | geen | n.v.t. | Stb. 2016, 275, art. 3.20 lid 2 |
+| 2019 | 18%-punt → 4% | € 50.000 | **€ 9.000** | Stb. 2016, 275, art. III |
+| 2020 | 14%-punt → 8% | € 45.000 | **€ 6.300** | Kst. 35 304, nr. 3 |
+
+€ 50.000 × 18% = € 9.000 en € 45.000 × 14% = € 6.300 — beide bedragen worden in de bron
+genoemd en komen exact uit. Dat staat nu als test vast, samen met een controle dat de
+korting bij een prijs boven het plafond nooit boven dat wettelijke maximum uitkomt.
+
+Twee dingen die ik gisteren alleen via de jaarpagina's had, blijken ook rechtstreeks in de
+wet te staan:
+
+- **De waterstofuitzondering.** Het plafond is ingevoerd "met dien verstande dat het bedrag
+  van de verlaging ten hoogste € 9.000 bedraagt indien de auto **niet** wordt aangedreven
+  door een motor die kan worden gevoed met waterstof" (Stb. 2016, 275, art. III). De
+  memorie van toelichting bij de Klimaatakkoordwet herhaalt het: "De cap is niet van
+  toepassing op auto's met een motor die kan worden gevoed met waterstof."
+- **De 60-maandstermijn.** Artikel 3.20, elfde lid: de verlaging blijft van toepassing
+  "voor een periode van 60 maanden te rekenen vanaf de eerste dag van de maand volgend op
+  de datum van eerste toelating van de auto". Dat is letterlijk wat
+  `vervaldatum_vaste_termijn()` doet.
+
+> **Eén punt om in de gaten te houden.** De Wet fiscale maatregelen Klimaatakkoord liet de
+> korting **per 2026 geheel vervallen**. De jaarpagina 2026 en de overzichtstabel voor
+> werknemers noemen wel degelijk 18% tot en met € 30.000, dus dat is met latere wetgeving
+> aangepast. Voor 2026 is de jaarpagina daarom de bron, en dat staat zo in de code. Het
+> laat ook zien waarom de melding bij een regimejaar voorbij de gecontroleerde tabel
+> nuttig is: deze reeks verandert vaker dan je zou denken.
+
+---
+
 ## 3. Wat is aangepast
 
 ### 3.1 Betalingskenmerk
@@ -446,7 +492,7 @@ De bevindingen staan in paragraaf 2b; hier staat waar ze terechtkwamen.
 | `pages/Auto_BTW_Prive.py` | marge per auto; youngtimerblok; maandweergave; kentekenvalidatie; escaping van de RDW-velden |
 | `pages/VIES_BTW_Controle.py`, `pages/KvK_SBI_Opzoeken.py` | dode knop weg; gedeeld stijlblok; escaping; KvK-sleutelblok en URL-controle |
 | `_format.py`, `_ui.py` | nieuw — zie paragraaf 6 |
-| `tests/` | van 203 naar 293 tests; `tests/test_ui.py` is nieuw |
+| `tests/` | van 203 naar 298 tests; `tests/test_ui.py` is nieuw |
 
 ---
 
@@ -456,14 +502,11 @@ De bevindingen staan in paragraaf 2b; hier staat waar ze terechtkwamen.
 omdat het een fiscale vraag leek. De specificatie beslecht het: het zijn Eurovignet en MOA,
 de VpB-range was fout. Zie paragraaf 2b.
 
-Wat nu nog bewust níet is aangepast:
+**De drie gegevens van vóór 2021 zijn inmiddels ook bevestigd.** Ze stonden hier eerst als
+onbevestigd, omdat de jaarpagina's van belastingdienst.nl ze niet noemen. Sylvain heeft de
+primaire bronnen aangeleverd en daarmee sluit de reeks: zie paragraaf 2c.
 
-**Drie gegevens van vóór 2021 in de bijtellingstabel.** Het plafond van 2020 (€ 45.000) en
-het ontbreken van een plafond in 2017 en 2018 staan niet op de jaarpagina's van
-belastingdienst.nl. Ze zijn dus niet bij de bron bevestigd en staan als waarschuwing in
-`_auto_calc.py`. Ze spelen alleen bij een herberekening van een oud jaar: de
-60-maandstermijn van elke auto met eerste toelating tot en met 2020 is uiterlijk in 2025
-verlopen. Het jaar 2019 (4% tot € 50.000) staat wel in de Nieuwsbrief Loonheffingen 2019.
+Wat nu nog bewust níet is aangepast:
 
 **Het SOORT-cijfer buiten de waarden 0 en 6.** Alleen die twee komen in de voorbeelden van
 de specificatie voor. Bij een andere waarde toont de tool niets in plaats van een gok.
@@ -475,7 +518,7 @@ tool niet zelf bepalen; die wordt gevraagd.
 
 ## 5. Hoe het is gecontroleerd
 
-Naast de 293 tests is de app gestart en met echte data doorlopen. Eerst de controles uit
+Naast de 298 tests is de app gestart en met echte data doorlopen. Eerst de controles uit
 ronde 3 (18 augustus):
 
 | Pagina | Testgeval | Uitkomst |
@@ -616,16 +659,11 @@ Bijgewerkt op 18 augustus. Alles wat zonder beslissing kon worden opgepakt, is o
       brengen in de WWFT multi-page app. Geef aan welke naam je wilt, dan pas ik beide
       plekken aan.
 
-- [ ] **1. Optioneel: bevestig drie gegevens van vóór 2021.**
-      Het plafond van 2020 (€ 45.000) en het ontbreken van een plafond in 2017 en 2018 staan
-      niet op de jaarpagina's van belastingdienst.nl. Alle jaren van 2021 t/m 2026 zijn
-      inmiddels wél bij de bron bevestigd, en 2019 staat in de Nieuwsbrief Loonheffingen
-      2019. Deze drie spelen alleen bij een herberekening van een oud jaar, want de
-      60-maandstermijn van die auto's is uiterlijk in 2025 verlopen. Laag geprioriteerd,
-      maar het staat als waarschuwing in de code.
-
 ### Afgerond
 
+- [x] **1. Nulemissiepercentages en plafonds** — de hele reeks 2017 t/m 2026 is bij de bron
+      bevestigd. De jaren tot 2021 uit de wettekst en de memories van toelichting die
+      Sylvain heeft aangeleverd; 2021 t/m 2026 uit de jaarpagina's. Zie paragraaf 2c.
 - [x] **2. Middelcodes 85 t/m 88** — beslecht door specificatie v1.5: Eurovignet en MOA.
       De VpB-range was fout, de labels waren goed.
 - [x] **7. Kwetsbaarheden K1 t/m K4** — opgelost, zie paragraaf 6.
