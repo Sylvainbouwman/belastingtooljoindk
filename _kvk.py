@@ -92,6 +92,47 @@ def sbi_gesplitst(profiel: dict | None) -> tuple[list, list]:
     return hoofd, neven
 
 
+def groepeer_resultaten(resultaten: list | None) -> list[dict]:
+    """Eén regel per bedrijf in de zoekresultaten.
+
+    De Zoeken-API geeft per bedrijf meerdere records: een `rechtspersoon` zonder
+    adres, een `hoofdvestiging` met adres, en bij meer locaties ook
+    `nevenvestiging`-records. Voor Onesti B.V. leverde dat twee ogenschijnlijk
+    identieke regels op, waarvan één zonder plaatsnaam.
+
+    Meer dan één regel per KvK-nummer voegt niets toe, want het basisprofiel hangt
+    aan het KvK-nummer en niet aan de vestiging. Van elk nummer blijft daarom het
+    record met de meeste bruikbare gegevens over - de hoofdvestiging, want die
+    heeft een adres en een vestigingsnummer. De volgorde van de KvK blijft
+    behouden, en het aantal vestigingsrecords komt als extra veld mee zodat de
+    pagina kan melden dat een bedrijf meerdere locaties heeft.
+
+    Een record zonder KvK-nummer wordt niet weggegooid maar apart gehouden; beter
+    een regel te veel dan een treffer die stil verdwijnt.
+    """
+    groepen: dict = {}
+    for index, record in enumerate(resultaten or []):
+        sleutel = record.get("kvkNummer") or f"__zonder_nummer_{index}"
+        groepen.setdefault(sleutel, []).append(record)
+
+    gegroepeerd = []
+    for records in groepen.values():
+        beste = max(records, key=_bruikbaarheid)
+        vestigingen = sum(1 for r in records if r.get("type") in
+                          ("hoofdvestiging", "nevenvestiging"))
+        gegroepeerd.append({**beste, "vestigingen_in_resultaat": vestigingen})
+    return gegroepeerd
+
+
+def _bruikbaarheid(record: dict) -> tuple:
+    """Hoe geschikt een record is om als regel te tonen. Hoger is beter."""
+    return (
+        2 if record.get("type") == "hoofdvestiging" else 0,
+        1 if record.get("adres") else 0,
+        1 if record.get("vestigingsnummer") else 0,
+    )
+
+
 def profiel_kort(profiel: dict | None) -> dict:
     """De velden die de pagina toont, allemaal uit dezelfde ene bevraging.
 

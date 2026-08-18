@@ -8,6 +8,7 @@ import pytest
 
 from _kvk import (
     adres,
+    groepeer_resultaten,
     handelsnamen,
     kvk_datum,
     profiel_kort,
@@ -187,3 +188,79 @@ def test_profiel_kort_bevat_alleen_velden_uit_een_bevraging():
         "naam", "statutaire_naam", "handelsnamen", "rechtsvorm", "geregistreerd",
         "werkzame_personen", "adres", "websites", "vestigingsnummer", "non_mailing",
     }
+
+
+# ── Dubbele zoekresultaten ──────────────────────────────────────────────────
+
+# Precies wat de Zoeken-API teruggaf voor "onesti bv" op 18-08-2026: één bedrijf,
+# twee records. Dat leverde twee bijna identieke regels op de pagina op.
+ZOEKRESULTAAT_ONESTI = [
+    {"kvkNummer": "85135291", "vestigingsnummer": "000001427474", "naam": "Onesti B.V.",
+     "adres": {"binnenlandsAdres": {"type": "bezoekadres", "plaats": "Leusden"}},
+     "type": "hoofdvestiging"},
+    {"kvkNummer": "85135291", "naam": "Onesti B.V.", "type": "rechtspersoon"},
+]
+
+
+def test_een_bedrijf_met_twee_records_wordt_een_regel():
+    gegroepeerd = groepeer_resultaten(ZOEKRESULTAAT_ONESTI)
+    assert len(gegroepeerd) == 1
+
+
+def test_de_regel_met_het_adres_blijft_over():
+    """De rechtspersoon heeft geen adres; die regel toonde een lege plaatsnaam."""
+    regel = groepeer_resultaten(ZOEKRESULTAAT_ONESTI)[0]
+    assert regel["type"] == "hoofdvestiging"
+    assert regel["vestigingsnummer"] == "000001427474"
+    assert regel["adres"]["binnenlandsAdres"]["plaats"] == "Leusden"
+
+
+def test_groeperen_maakt_directe_opvraging_weer_mogelijk():
+    """Door de dubbeling telde de pagina twee treffers, waardoor het automatisch
+    ophalen bij één treffer nooit aansloeg bij een zoekopdracht op KvK-nummer."""
+    assert len(ZOEKRESULTAAT_ONESTI) == 2
+    assert len(groepeer_resultaten(ZOEKRESULTAAT_ONESTI)) == 1
+
+
+def test_verschillende_bedrijven_blijven_apart():
+    resultaten = [
+        {"kvkNummer": "11111111", "naam": "Eerste B.V.", "type": "rechtspersoon"},
+        {"kvkNummer": "22222222", "naam": "Tweede B.V.", "type": "hoofdvestiging"},
+        {"kvkNummer": "11111111", "naam": "Eerste B.V.", "type": "hoofdvestiging"},
+    ]
+    gegroepeerd = groepeer_resultaten(resultaten)
+    assert [r["kvkNummer"] for r in gegroepeerd] == ["11111111", "22222222"]
+
+
+def test_volgorde_van_de_kvk_blijft_behouden():
+    resultaten = [{"kvkNummer": str(n) * 8, "naam": f"Bedrijf {n}"} for n in range(1, 6)]
+    assert [r["naam"] for r in groepeer_resultaten(resultaten)] == \
+           [f"Bedrijf {n}" for n in range(1, 6)]
+
+
+def test_aantal_vestigingen_wordt_geteld():
+    resultaten = [
+        {"kvkNummer": "33333333", "naam": "Keten B.V.", "type": "rechtspersoon"},
+        {"kvkNummer": "33333333", "naam": "Keten B.V.", "type": "hoofdvestiging",
+         "vestigingsnummer": "1"},
+        {"kvkNummer": "33333333", "naam": "Keten B.V.", "type": "nevenvestiging",
+         "vestigingsnummer": "2"},
+    ]
+    regel = groepeer_resultaten(resultaten)[0]
+    assert regel["vestigingen_in_resultaat"] == 2
+    assert regel["type"] == "hoofdvestiging"
+
+
+def test_record_zonder_kvk_nummer_verdwijnt_niet():
+    """Beter een regel te veel dan een treffer die stil wegvalt."""
+    resultaten = [
+        {"naam": "Zonder nummer 1"},
+        {"naam": "Zonder nummer 2"},
+        {"kvkNummer": "44444444", "naam": "Met nummer"},
+    ]
+    assert len(groepeer_resultaten(resultaten)) == 3
+
+
+@pytest.mark.parametrize("leeg", [None, []])
+def test_groeperen_van_niets(leeg):
+    assert groepeer_resultaten(leeg) == []
