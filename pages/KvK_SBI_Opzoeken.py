@@ -116,7 +116,7 @@ st.caption(f"{len(resultaten)} " + ("resultaat" if len(resultaten) == 1 else "re
 # dan is de bevraging toch wat je wilde. Bij meer treffers wacht de pagina op een
 # klik, zodat een zoekopdracht op naam niet tien bevragingen kost.
 if len(resultaten) > 1:
-    st.caption(f"Zoeken is gratis. Per opgevraagd profiel rekent de KvK {PRIJS_PER_PROFIEL}.")
+    st.caption(f"Klik op een naam voor de gegevens. Zoeken is gratis; per opgevraagd profiel rekent de KvK {PRIJS_PER_PROFIEL}.")
     geopend = st.session_state.get("kvk_geopend")
 else:
     geopend = regel_sleutel(resultaten[0], 0)
@@ -132,21 +132,33 @@ for index, res in enumerate(resultaten):
 
     sleutel = regel_sleutel(res, index)
 
+    # Regels onder de naam: plaats en, als het bedrijf meerdere vestigingen in de
+    # resultaten had, dat aantal.
+    onder = " · ".join(deel for deel in (
+        f"KvK {kvk_nr}",
+        plaats,
+        f"{res['vestigingen_in_resultaat']} vestigingen"
+        if res.get("vestigingen_in_resultaat", 0) > 1 else "",
+    ) if deel)
+
     with st.container(border=True):
-        kop, knop = st.columns([4, 1])
-        with kop:
+        if sleutel != geopend and href:
+            # De naam is zelf de knop, zodat je erop kunt klikken in plaats van op
+            # een knop ernaast. Een tertiaire knop heeft geen kader en leest als
+            # een link; de regel eronder blijft gewone tekst.
+            if st.button(f"**{naam}**", key=f"open_{sleutel}", type="tertiary"):
+                st.session_state["kvk_geopend"] = sleutel
+                st.rerun()
             st.markdown(
-                f'<div style="font-size:17px;font-weight:700;color:#24304A;">{veilig(naam)}</div>'
-                f'<div style="font-size:13px;color:#6b7a99;">KvK {veilig(kvk_nr)}'
-                f'{" &nbsp;·&nbsp; " + veilig(plaats) if plaats else ""}'
-                f'{" &nbsp;·&nbsp; " + str(res["vestigingen_in_resultaat"]) + " vestigingen" if res.get("vestigingen_in_resultaat", 0) > 1 else ""}</div>',
+                f'<div style="font-size:13px;color:#6b7a99;margin-top:-8px;">{veilig(onder)}</div>',
                 unsafe_allow_html=True,
             )
-        with knop:
-            if sleutel != geopend and href:
-                if st.button("Gegevens", key=f"open_{sleutel}", use_container_width=True):
-                    st.session_state["kvk_geopend"] = sleutel
-                    st.rerun()
+        else:
+            st.markdown(
+                f'<div style="font-size:17px;font-weight:700;color:#24304A;">{veilig(naam)}</div>'
+                f'<div style="font-size:13px;color:#6b7a99;">{veilig(onder)}</div>',
+                unsafe_allow_html=True,
+            )
 
         if sleutel != geopend:
             continue
