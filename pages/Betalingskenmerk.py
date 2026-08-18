@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 from _auto_paste import auto_paste_input as _auto_paste_input
-from _kenmerk import decode_kenmerk, build_omschrijving
+from _kenmerk import build_omschrijving, decode_kenmerk, mag_naar_kvk, nummer_label
 from _ui import is_kvk_url, kvk_sleutel_blok, paginakop, paginastijl, veilig
 
 
@@ -141,7 +141,7 @@ with col2:
     if result["rsin"]:
         st.markdown(f"""
         <div class="bk-tile">
-          <div class="label">BSN / RSIN</div>
+          <div class="label">{veilig(nummer_label(result))}</div>
           <div class="value" style="font-family:monospace;font-size:17px;">{result['rsin']}</div>
         </div>""", unsafe_allow_html=True)
     else:
@@ -164,7 +164,17 @@ def _naam_tile(waarde: str) -> str:
     </div>"""
 
 if not rsin9:
-    pass  # Geen geldig RSIN afgeleid: KvK-opzoeking heeft geen zin.
+    pass  # Geen geldig nummer afgeleid: KvK-opzoeking heeft geen zin.
+elif not mag_naar_kvk(result):
+    # K5: een BSN gaat niet naar de KvK. Dat is een privacykeuze en tegelijk een
+    # praktische, want de KvK kent geen particulieren. Het nummer wordt wel
+    # getoond, zodat een medewerker ziet dat het om een natuurlijk persoon gaat.
+    st.info(
+        "Dit kenmerk levert een **BSN** op en geen RSIN. Het nummer is niet naar de "
+        "KvK gestuurd: die kent alleen ingeschreven organisaties, en een BSN hoort "
+        "niet naar een externe partij te gaan. Het staat hierboven, zodat u het kunt "
+        "gebruiken."
+    )
 elif kvk_key:
     # Eerder deed deze pagina eerst een volledige herberekening om een laadtekst
     # te kunnen tonen en haalde de gegevens pas in de tweede ronde op. Een
@@ -174,10 +184,10 @@ elif kvk_key:
         try:
             info = lookup_kvk_info(rsin9, kvk_key)
             if info:
-                naam_value = info["naam"] or "Niet gevonden in KvK-register (mogelijk BSN van particulier)"
+                naam_value = info["naam"] or "Niet gevonden in het KvK-register"
                 sbi_codes = info["sbi"]
             else:
-                naam_value = "Niet gevonden in KvK-register (mogelijk BSN van particulier)"
+                naam_value = "Niet gevonden in het KvK-register"
         except ValueError as e:
             naam_value = f"⚠ {e}"
         except Exception as e:

@@ -6,7 +6,7 @@
 verificatieronde waarin het rekenwerk van álle vier de rekenpagina's is getoetst aan de bron
 **Branch:** `master` (gepusht)
 **Omvang:** 17 commits, 26 bestanden, +4.200 / −752 regels
-**Tests:** van 0 naar 303 (alle groen)
+**Tests:** van 0 naar 327 (alle groen)
 
 > **Scope.** Dit rapport gaat uitsluitend over de repository `betalingskenmerk-tool`.
 > Die bevat inmiddels zes pagina's — Betalingskenmerk, VIES BTW-controle, KvK/SBI
@@ -15,8 +15,9 @@ verificatieronde waarin het rekenwerk van álle vier de rekenpagina's is getoets
 > **niet** bekeken.
 >
 > Let op de naamgeving: de app presenteert zichzelf intern als "Bouwman Tools"
-> (in `app.py` en bovenaan de README), terwijl dat de naam van de héle verzameling is.
-> Zie **actiepunt 6**.
+> (in `app.py` en bovenaan de README), terwijl dat de naam is van de portal
+> **bouwman.tools** waarop meerdere losse tools achter een login staan. Deze app heet daar
+> **Belastingtool**. Zie **actiepunt 6**.
 
 ---
 
@@ -492,7 +493,7 @@ De bevindingen staan in paragraaf 2b; hier staat waar ze terechtkwamen.
 | `pages/Auto_BTW_Prive.py` | marge per auto; youngtimerblok; maandweergave; kentekenvalidatie; escaping van de RDW-velden |
 | `pages/VIES_BTW_Controle.py`, `pages/KvK_SBI_Opzoeken.py` | dode knop weg; gedeeld stijlblok; escaping; KvK-sleutelblok en URL-controle |
 | `_format.py`, `_ui.py` | nieuw — zie paragraaf 6 |
-| `tests/` | van 203 naar 303 tests; `tests/test_ui.py` is nieuw |
+| `tests/` | van 203 naar 327 tests; `tests/test_ui.py` is nieuw |
 
 ---
 
@@ -518,7 +519,7 @@ tool niet zelf bepalen; die wordt gevraagd.
 
 ## 5. Hoe het is gecontroleerd
 
-Naast de 303 tests is de app gestart en met echte data doorlopen. Eerst de controles uit
+Naast de 327 tests is de app gestart en met echte data doorlopen. Eerst de controles uit
 ronde 3 (18 augustus):
 
 | Pagina | Testgeval | Uitkomst |
@@ -579,7 +580,7 @@ Deze punten stonden in ronde 2 nog open en zijn op 18 augustus opgelost (commit 
 | K2 | Het kenteken werd server-side niet gevalideerd; willekeurige tekens kwamen in de RDW-querystring | normaliseren en tegen een patroon toetsen vóór de aanroep |
 | K3 | De KvK-API-sleutel ging naar een URL uit het antwoord zonder controle op de host | `is_kvk_url()` eist https en hostnaam `api.kvk.nl` |
 | K4 | De devcontainer startte Streamlit met CORS en XSRF-bescherming uit | die twee vlaggen zijn weg |
-| K5 | **Privacy/AVG:** uit een kenmerk van een particulier rolt een BSN. Die wordt getoond, een uur gecachet en als zoekterm naar de KvK gestuurd — terwijl de KvK particulieren niet kent. Op Streamlit Community Cloud loopt dat over infrastructuur van derden | **nog te bespreken — actiepunt 3** |
+| K5 | **Privacy/AVG:** uit een kenmerk van een particulier rolt een BSN. Die werd getoond, een uur gecachet en als zoekterm naar de KvK gestuurd — terwijl de KvK particulieren niet kent | opgelost, zie paragraaf 6a |
 
 ### Opruimwerk
 
@@ -605,76 +606,85 @@ Deze punten stonden in ronde 2 nog open en zijn op 18 augustus opgelost (commit 
 
 ---
 
+## 6a. K5: het BSN gaat niet meer naar de KvK
+
+Besloten op 18 augustus: het nummer mag worden getoond — een medewerker moet kunnen zien
+dat het om een natuurlijk persoon gaat — maar als het niet nodig is om het naar de KvK te
+sturen, dan gebeurt dat niet.
+
+Dat blijkt scherper te kunnen dan het leek. De tool weet namelijk vooraf of een opzoeking
+zin heeft, op twee gronden:
+
+1. **Het middel.** Inkomstenbelasting, de conserverende aanslag IH, de Zorgverzekeringswet
+   en de zes toeslagen worden uitsluitend aan natuurlijke personen opgelegd. Bij die
+   middelcodes staat vast dat het nummer een BSN is.
+2. **De beginposities.** Bij loonheffing, omzetbelasting, houderschapsbelasting, MOA,
+   Eurovignet en middelcode 97 kan het beide zijn: een eenmanszaak draagt omzetbelasting af
+   onder een nummer dat op het BSN is gebaseerd. Daar geldt de regel die in paragraaf 2 van
+   de specificatie staat: "RSIN-s beginnen altijd met 00, of 80 t/m 89". Begint het nummer
+   daar niet mee, dan is het geen RSIN en levert een opzoeking bij de KvK toch niets op.
+
+Bij vennootschapsbelasting is het altijd een RSIN — de specificatie stelt uitdrukkelijk dat
+een VpB-aanslagnummer nooit een BSN bevat.
+
+De privacywinst en de functionele winst lopen hier gelijk op: elk nummer dat nu niet meer
+wordt verstuurd, is een nummer waarvoor de KvK per definitie geen antwoord had. En omdat de
+KvK-opzoeking de enige plek was waar het nummer een uur werd gecachet, verdwijnt daarmee
+ook de caching van BSN's.
+
+In de app nagelopen: een voorlopige aanslag IB toont "BSN (natuurlijk persoon)" met een
+uitleg dat er niet is opgezocht en zonder netwerkverkeer naar de KvK; het gevalideerde
+OB-kenmerk toont "RSIN" en haalt nog gewoon Onesti B.V. met SBI-code 69204 op.
+
+> **Context die dit punt lichter maakt dan het in ronde 2 leek.** Deze Streamlit-versie is
+> een testomgeving voor collega's. De versie die in productie gaat, komt in een beveiligde
+> omgeving te staan waar de AVG-waarborgen zijn geregeld. Dat neemt de vraag niet weg, maar
+> het betekent dat er geen productiegegevens over Streamlit Community Cloud lopen.
+
+---
+
 ## 7. Actielijst
 
-Bijgewerkt op 18 augustus. Alles wat zonder beslissing kon worden opgepakt, is opgepakt.
+Bijgewerkt op 18 augustus, na de terugkoppeling van Sylvain. Er staat nog één punt open.
 
-### Voor Sylvain — vraagt jouw oordeel
-
-- [ ] **0. Laat Bram de huidige `master` ophalen. Dit gaat vóór al het andere.**
-      De versie in DK/Join is van 15-07-2026 en rekent aantoonbaar fout — zie §1a. Sinds
-      ronde 3 staan daar nog vier fouten bij: middelcodes 85 t/m 88 met een verzonnen RSIN,
-      de ontbrekende nulemissiekorting voor 2026, het plafond dat onterecht op
-      waterstofauto's werd toegepast en de ontbrekende youngtimerregeling.
-
-- [ ] **3. Neem een besluit over de BSN-verwerking (punt K5).**
-      Wil je dat de tool BSN's toont, cachet en naar de KvK stuurt? En is Streamlit
-      Community Cloud daarvoor de juiste plek? Dit is een verwerkersvraag, geen technische.
-      Dit is nu het enige openstaande punt uit de kwetsbaarhedenlijst.
-
-- [ ] **4. Controleer of eerdere berekeningen herzien moeten worden.**
-      Zijn er klanten waarvoor met een oude versie is gerekend? Dat kan zowel via jouw
-      lokale versie als via DK/Join zijn gebeurd. De volledige lijst, nu inclusief ronde 3:
-      - Belastingrente IB en VpB — **rente waar niets verschuldigd was** (vrijstelling bij
-        tijdige aangifte) en **tot 2,6× te hoog** (19-wekenregel).
-      - Belastingrente VpB over **boekjaren t/m 2013** — aantoonbaar te hoog.
-      - Bijtelling van **elektrische auto's** — verkeerd jaarregime.
-      - Bijtelling van **nulemissieauto's met eerste toelating in 2026** — 22% in plaats van
-        18%, dus te hoog. Dit is het lopende jaar.
-      - Bijtelling van **waterstofauto's** — plafond onterecht toegepast, dus te hoog.
-      - Bijtelling van **auto's ouder dan 16 jaar** — 22% van de catalogusprijs in plaats van
-        35% van de waarde in het economisch verkeer.
-      - Bijtelling van **nulemissieauto's uit 2025** — 16% in plaats van 17%, dus te laag.
-      - BTW-correctie van auto's die **langer dan 4 jaar in gebruik** zijn — 2,7% in plaats
-        van 1,5%.
-      - BTW-correctie over een **gedeeltelijk jaar** — enkele euro's te hoog door de
-        dagmethode.
-      - Berekeningen met **meerdere auto's** waarvan er één een marge-auto was — dan kreeg
-        er minstens één het verkeerde forfait.
-      - Betalingskenmerken met **middelcode 85 t/m 88** — die leverden een verzonnen RSIN op.
-
-- [ ] **5. Corrigeer §12 van de rekenmodule-specificatie vóór die wordt uitgeleverd.**
-      De pseudocode telt eerst alle deelbedragen op en rondt daarna één keer af. Dat geeft
-      € 103 waar de Belastingdienst € 102 publiceert. §11 zegt het goed — per tariefperiode
-      afronden — maar een ontwikkelaar implementeert de pseudocode.
+### Nog te doen
 
 - [ ] **6. Besluit hoe deze app moet heten.**
-      De repository heet `betalingskenmerk-tool`, maar bevat zes pagina's en presenteert
-      zichzelf als "Bouwman Tools" — de naam van de héle verzameling, waarvan dit er één is.
-      Het speelt op twee plekken:
-      - `app.py` regel 4: `page_title="Bouwman Tools"` (bepaalt de browsertabtitel)
+      De verzameling heet inmiddels **bouwman.tools**: een portal waarop meerdere losse
+      tools staan, achter een gebruikersnaam en wachtwoord. Deze app staat daar als
+      **Belastingtool** (`belastingtooljoindk.streamlit.app`). Maar `app.py` zet de
+      browsertabtitel nog op "Bouwman Tools", en dat is dus de naam van de portal en niet
+      van deze app. Twee plekken:
+      - `app.py` regel 4: `page_title="Bouwman Tools"`
       - `README.md` regel 1: `# Bouwman Tools — Belastingtools`
 
-      Denk ook aan wat er in `CLAUDE.md` staat: het plan is deze pagina's later onder te
-      brengen in de WWFT multi-page app. Geef aan welke naam je wilt, dan pas ik beide
-      plekken aan.
+      Sylvain kijkt er nog naar. Zeg het woord en beide regels gaan op "Belastingtool",
+      of op de naam die je kiest.
 
-### Afgerond
+### Afgehandeld met een beslissing
+
+- [x] **0. Bram laat de huidige `master` ophalen.** Bram pullt later. Zolang dat niet is
+      gebeurd, draait in DK/Join de versie van 15-07-2026 — zie §1a voor wat daar fout aan
+      is.
+- [x] **3. BSN-verwerking (K5).** Besloten: tonen mag, versturen naar de KvK niet.
+      Uitgevoerd, zie paragraaf 6a.
+- [x] **4. Eerdere berekeningen herzien.** Niet nodig: de tool is nog in testfase, er is
+      nog niet met een oude versie voor klanten gerekend.
+- [x] **5. §12 van de rekenmodule-specificatie.** Wordt aangepast.
+
+### Afgerond in de derde ronde
 
 - [x] **1. Nulemissiepercentages en plafonds** — de hele reeks 2017 t/m 2026 is bij de bron
-      bevestigd. De jaren tot 2021 uit de wettekst en de memories van toelichting die
-      Sylvain heeft aangeleverd; 2021 t/m 2026 uit de jaarpagina's. Zie paragraaf 2c.
+      bevestigd; zie paragraaf 2c.
 - [x] **2. Middelcodes 85 t/m 88** — beslecht door specificatie v1.5: Eurovignet en MOA.
-      De VpB-range was fout, de labels waren goed.
-- [x] **7. Kwetsbaarheden K1 t/m K4** — opgelost, zie paragraaf 6.
-- [x] **8. Knoppen die niets doen** — weg. Daarbij kwam een derde geval boven: de
-      kopieerknop op de Betalingskenmerk-pagina deed helemaal niets.
-- [x] **9. Verificatieronde afmaken** — gedaan voor Betalingskenmerk en Auto BTW privé. Zes
-      van de 27 specificatievoorbeelden decodeerde de tool fout, en de bijtelling week op
-      vier punten af van de bron.
-- [x] **10. Controlecijfer valideren** — gedaan. Het algoritme is uit de voorbeelden
-      afgeleid en klopt op 28 van de 28 bekende gevallen.
+- [x] **7. Kwetsbaarheden K1 t/m K4** — opgelost, zie paragraaf 6. Met K5 erbij is de hele
+      kwetsbaarhedenlijst afgehandeld.
+- [x] **8. Knoppen die niets doen** — weg, inclusief de kopieerknop die helemaal niets deed.
+- [x] **9. Verificatieronde afmaken** — gedaan voor Betalingskenmerk en Auto BTW privé.
+- [x] **10. Controlecijfer valideren** — gedaan, klopt op 28 van de 28 bekende gevallen.
 - [x] **11. Duplicatie opruimen** — gedaan; `_format.py` en `_ui.py` zijn nieuw.
+- [x] **Navordering bij een gebroken boekjaar** — stond als voorbehoud in de README en is nu
+      als combinatie getoetst.
 
 ### Ter kennisgeving voor Bram
 
