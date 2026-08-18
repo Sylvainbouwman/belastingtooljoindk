@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-from _kvk import profiel_kort, sbi_gesplitst
+from _kvk import groepeer_resultaten, profiel_kort, sbi_gesplitst
 from _ui import is_kvk_url, kvk_sleutel_blok, paginakop, paginastijl, veilig
 
 KVK_ZOEKEN_URL = "https://api.kvk.nl/api/v2/zoeken"
@@ -100,6 +100,15 @@ if not resultaten:
     st.warning("Geen resultaten gevonden. Controleer de spelling of probeer een KvK-nummer.")
     st.stop()
 
+# De KvK geeft per bedrijf meerdere records terug - een rechtspersoon zonder adres
+# en een hoofdvestiging met adres - wat twee bijna identieke regels opleverde.
+# Eén regel per KvK-nummer; het basisprofiel hangt toch aan dat nummer.
+gevonden = len(resultaten)
+resultaten = groepeer_resultaten(resultaten)
+if gevonden > len(resultaten):
+    st.caption(f"{gevonden} records samengevoegd tot "
+               f"{len(resultaten)} {'bedrijf' if len(resultaten) == 1 else 'bedrijven'}")
+
 # "resultaat" + "en" gaf "resultaaten"; het meervoud verliest een a.
 st.caption(f"{len(resultaten)} " + ("resultaat" if len(resultaten) == 1 else "resultaten") + " gevonden")
 
@@ -127,7 +136,8 @@ for res in resultaten:
             st.markdown(
                 f'<div style="font-size:17px;font-weight:700;color:#24304A;">{veilig(naam)}</div>'
                 f'<div style="font-size:13px;color:#6b7a99;">KvK {veilig(kvk_nr)}'
-                f'{" &nbsp;·&nbsp; " + veilig(plaats) if plaats else ""}</div>',
+                f'{" &nbsp;·&nbsp; " + veilig(plaats) if plaats else ""}'
+                f'{" &nbsp;·&nbsp; " + str(res["vestigingen_in_resultaat"]) + " vestigingen" if res.get("vestigingen_in_resultaat", 0) > 1 else ""}</div>',
                 unsafe_allow_html=True,
             )
         with knop:
