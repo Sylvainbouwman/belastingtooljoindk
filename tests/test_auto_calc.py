@@ -355,3 +355,55 @@ def test_standaardpercentage_kent_geen_stille_terugval():
     assert standaardpercentage(2016) == 25.0
     assert standaardpercentage(2017) == 22.0
     assert standaardpercentage(2035) == 22.0
+
+
+# ── De tabel tegen de wettelijke kortingsbedragen ────────────────────────────
+
+@pytest.mark.parametrize("jaar,maximale_korting", [
+    (2019, 9_000),   # Stb. 2016, 275, art. III: "ten hoogste EUR 9.000"
+    (2020, 6_300),   # Kst. 35 304, nr. 3: korting 14%-punt over een cap van EUR 45.000
+])
+def test_maximale_korting_uit_de_wet(jaar, maximale_korting):
+    """De wet formuleert de korting als een verlaging in procentpunten met een
+    maximumbedrag; deze tabel noteert het resulterende percentage plus plafond.
+    Die twee moeten hetzelfde zeggen: plafond x (standaard - percentage) hoort
+    precies het maximale kortingsbedrag uit de wet te zijn. Twee bedragen worden
+    letterlijk in de stukken genoemd en zijn hier vastgelegd."""
+    pct, plafond = KORTING_NULEMISSIE[jaar]
+    assert plafond * (standaardpercentage(jaar) - pct) / 100 == pytest.approx(maximale_korting)
+
+
+def test_korting_kan_nooit_boven_het_wettelijk_maximum_uitkomen():
+    """Boven het plafond loopt de bijtelling met het standaardpercentage door, dus
+    de korting blijft staan op het maximum van dat jaar."""
+    for jaar, (pct, plafond) in KORTING_NULEMISSIE.items():
+        if plafond is None:
+            continue
+        standaard = standaardpercentage(jaar)
+        maximum = plafond * (standaard - pct) / 100
+        for prijs in (plafond, plafond + 1, plafond * 3, 250_000):
+            grondslag, _ = bijtelling_regime(prijs, nulemissie=True, jaar=jaar)
+            zonder_korting = prijs * standaard / 100
+            assert zonder_korting - grondslag == pytest.approx(maximum), (jaar, prijs)
+
+
+def test_nulemissiepercentages_volgen_uit_de_wettelijke_procentpunten():
+    """De wet noemt een verlaging in procentpunten op het standaardpercentage.
+    18 procentpunt in 2017-2019, 14 in 2020, 10 in 2021, 6 in 2022-2024, 5 in 2025
+    en 4 in 2026."""
+    verwacht = {2017: 18, 2018: 18, 2019: 18, 2020: 14, 2021: 10,
+                2022: 6, 2023: 6, 2024: 6, 2025: 5, 2026: 4}
+    voor_elk_jaar = {j: standaardpercentage(j) - p for j, (p, _) in KORTING_NULEMISSIE.items()}
+    assert voor_elk_jaar == verwacht
+
+
+def test_waterstof_ontloopt_het_plafond_in_elk_jaar_met_een_plafond():
+    """Stb. 2016, 275 art. III maakt de begrenzing uitdrukkelijk niet van
+    toepassing op auto's die op waterstof rijden."""
+    for jaar, (pct, plafond) in KORTING_NULEMISSIE.items():
+        if plafond is None:
+            continue
+        grondslag, label = bijtelling_regime(100_000, nulemissie=True, jaar=jaar,
+                                             plafondvrij=True)
+        assert grondslag == pytest.approx(100_000 * pct / 100), jaar
+        assert "plafond" in label
