@@ -11,17 +11,25 @@ Een Streamlit-app met belastingtools voor dagelijks gebruik.
 ### 🏦 Betalingskenmerk
 Decodeert 16-cijferige Belastingdienst betalingskenmerken.
 
-- Herkent belastingsoort: LH, OB, VpB, IB en toeslagen
+- Herkent belastingsoort: LH, OB, VpB, IB, ZVW, HSB, MOA, Eurovignet, LIR/VHR en toeslagen
+- **Controleert het controlecijfer op positie 1** en weigert een kenmerk dat de proef niet
+  haalt, met vermelding van het cijfer dat er hoort te staan — een typefout levert dus geen
+  geloofwaardig ogend maar verkeerd RSIN meer op
 - Reconstrueert het RSIN via de 11-proef (inclusief BTW-nummer)
-- Toont jaar en tijdvak (maand of kwartaal)
+- Toont jaar, tijdvak (maand of kwartaal) en bij een aanslag of het een **voorlopige of
+  definitieve** aanslag is
 - Genereert een boekhoudingomschrijving met kopieerknop, per soort passend geformuleerd:
   `Afdr. OB mei 2026` · `Naheff. LH 1e kwartaal 2025` · `Aanslag IB 2025` ·
-  `Aanslag VpB boekjaar 2024` · `Zorgtoeslag 2025`
+  `Voorl. aanslag VpB boekjaar 0112` · `Zorgtoeslag 2025` · `Naheff. MOA 2023`
 - Zoekt automatisch de bedrijfsnaam **en SBI-code** op via de KvK API (RSIN-lookup)
 - **Auto-decode bij plakken** — geen klik nodig
 
 Gevalideerd kenmerk: `4863521721601050` = Aangifte OB, mei 2026, RSIN 863521721
 (vastgelegd als regressietest)
+
+Alle **27 voorbeelden** uit de officiële Specificatie Betalingskenmerk_bepaling v1.5 staan
+als regressietest in `tests/test_kenmerk.py`, met het BSN/RSIN uit het bijbehorende
+aanslagnummer als verwachte uitkomst.
 
 > Gaat de 11-proef niet op, dan wordt geen RSIN getoond maar een melding dat het
 > kenmerk waarschijnlijk verkeerd is overgenomen. Soort, jaar en tijdvak blijven
@@ -88,16 +96,29 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 
 - Kenteken invoeren → automatische opzoekservice via het **RDW kentekenregister** (gratis, geen API-sleutel)
 - Haalt op: merk, model, bouwjaar, brandstof, CO₂-uitstoot en catalogusprijs
-- **BTW-correctie** (art. 4 lid 2 Wet OB): 2,7% van de catalogusprijs, of 1,5% bij een
-  marge-auto én zodra het jaar van ingebruikname plus de vier jaren daarna voorbij zijn
-  (dat laatste wordt afgeleid uit de datum tenaamstelling)
+- **BTW-correctie** (art. 4 lid 2 Wet OB): 2,7% van de catalogusprijs inclusief BTW en BPM,
+  of 1,5% bij een marge-auto én zodra het jaar van ingebruikname plus de vier jaren daarna
+  voorbij zijn (dat laatste wordt afgeleid uit de datum tenaamstelling). De correctie wordt
+  **naar maanden** berekend, conform het rekenvoorbeeld van de Belastingdienst
+  (`4/12 × 2,7% × € 45.000 = € 405`); een gedeeltelijke maand telt naar rato van de dagen
+  binnen die maand
 - **Bijtelling**: het percentage ligt vanaf de datum eerste toelating **60 maanden vast**
   en wordt dus niet op het berekeningsjaar bepaald. Loopt die termijn midden in het jaar
   af, dan wordt de periode gesplitst
-  - Benzine/diesel: 22% (2017+), 25% (2012–2016)
-  - Elektrisch/waterstof: korting met plafond, oplopend van 4% naar 16%; vervalt vanaf 2026
+  - Benzine/diesel: 22% (2017 en later), 25% (tot en met 2016)
+  - Nulemissie: korting met plafond — 4% (2017–2019), 8% (2020), 12% (2021), 16% (2022–2024),
+    17% (2025), 18% (2026), telkens tot het plafond van dat jaar en daarboven 22%
+  - **Waterstof** (en auto's volledig op geïntegreerde zonnecellen): het verlaagde percentage
+    geldt over de hele catalogusprijs, zonder plafond
+  - **Youngtimer**: is de auto op 1 januari ouder dan 16 jaar (tot 2026: 15 jaar), dan is de
+    bijtelling 35% van de waarde in het economisch verkeer. De pagina herkent dat aan de datum
+    eerste toelating en vraagt die waarde; zonder waarde wordt géén bedrag getoond
+- Marge-auto per auto in te stellen, dus ook goed bij meerdere auto's in één berekening
 - Keuze volledig jaar of eigen periode
 - Catalogusprijs handmatig invullen als RDW geen waarde heeft
+
+> De bijtelling is bij een IB-ondernemer nooit hoger dan de totale autokosten van het jaar.
+> Die kosten kent de tool niet, dus dat maximum wordt niet toegepast; de pagina meldt dat.
 
 ---
 
@@ -119,7 +140,9 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 | `_vies.py` | BTW-nummerlogica en duiding van VIES-antwoorden (zonder Streamlit) |
 | `_rente.py` | Belastingrenteberekening: 30/360, renteperiode, afronding (zonder Streamlit) |
 | `_tarieven_check.py` | Maandelijkse check op nieuwe tarieven (belastingdienst.nl) |
-| `tests/` | Pytest-suite (203 tests) |
+| `_format.py` | Nederlandse notatie voor bedragen, datums en percentages (zonder Streamlit) |
+| `_ui.py` | Gedeeld stijlblok, koptekst, HTML-escaping en het KvK-sleutelblok |
+| `tests/` | Pytest-suite (293 tests) |
 | `requirements.txt` | Python dependencies |
 | `requirements-dev.txt` | Alleen voor de tests (pytest) |
 
@@ -158,7 +181,11 @@ python -m pytest tests/ -q
 ```
 
 De rekenlogica staat bewust los van Streamlit in `_kenmerk.py`, `_auto_calc.py`,
-`_vies.py` en `_rente.py`, zodat die zonder draaiende app te testen is.
+`_vies.py`, `_rente.py` en `_format.py`, zodat die zonder draaiende app te testen is.
+
+Twee testbestanden zijn tegen een officiële bron gelegd. `tests/test_kenmerk.py` bevat alle
+27 voorbeelden uit de Specificatie Betalingskenmerk_bepaling v1.5; `tests/test_auto_calc.py`
+bevat het rekenvoorbeeld van de Belastingdienst voor de BTW-correctie (€ 405).
 
 De belangrijkste tests staan in `tests/test_rente.py`: die reproduceren de
 rekenvoorbeelden die de Belastingdienst zelf publiceert, tot op de euro. Zolang die
@@ -174,27 +201,30 @@ VpB-tarieventabel aan het licht gebracht.
 
 ## Openstaande punten
 
-Enkele zaken zijn bewust nog niet opgelost omdat ze een fiscaal-inhoudelijke
-bevestiging vragen. Ze staan als waarschuwing in de code zelf.
+De verificatieronde is afgerond: alle vier de rekenpagina's zijn tegen de bron getoetst.
+Zie [WIJZIGINGSRAPPORT.md](WIJZIGINGSRAPPORT.md) voor wat dat opleverde en voor de
+actielijst.
 
-Zie [WIJZIGINGSRAPPORT.md](WIJZIGINGSRAPPORT.md) voor de volledige actielijst en wat er
-in de codereview van 17-08-2026 is gewijzigd.
+Wat nu nog open staat, vraagt een beslissing en geen code:
 
-1. **Middelcodes 85 t/m 88.** `MIDDEL2_LABEL` kent deze als Eurovignet en MOA
-   vrachtwagens, maar de VpB-tak vangt de hele range 80–96 af en gaat voor. Daardoor
-   worden die vier codes nu als Vennootschapsbelasting getoond. Eén van beide klopt niet.
-   De [officiële specificatie](https://odb.belastingdienst.nl/wp-content/uploads/2025/07/Specificatie-Betalingskenmerk_bepaling_1.5.pdf)
-   zou dit moeten beslechten. Het huidige gedrag is met een test vastgelegd, zodat het
-   niet ongemerkt verschuift.
+1. **Drie gegevens van vóór 2021 zijn niet bij de bron bevestigd.** Het plafond van 2020
+   (€ 45.000) en het ontbreken van een plafond in 2017 en 2018 staan niet op de
+   jaarpagina's van belastingdienst.nl. Ze spelen alleen bij een herberekening van een oud
+   jaar: de 60-maandstermijn van elke auto met eerste toelating tot en met 2020 is
+   uiterlijk in 2025 verlopen. Staat als waarschuwing in `_auto_calc.py`.
 
-2. **Nulemissiepercentages bijtelling.** De reeks in `_auto_calc.py` is gecorrigeerd naar
-   4/4/4/8/12/16 (2017–2025), maar de officiële overzichtspagina gaf een 404 bij het
-   naslaan. Controleer deze waarden voordat je er klanten mee bedient.
+2. **BSN-verwerking (punt K5).** Uit het kenmerk van een particulier rolt een BSN. Die
+   wordt getoond, een uur gecachet en als zoekterm naar de KvK gestuurd — terwijl de KvK
+   particulieren niet kent. Op Streamlit Community Cloud loopt dat over infrastructuur van
+   derden. Dit is een verwerkersvraag.
 
-3. **Verificatieronde nog niet afgerond.** Alleen de rentepagina's zijn tegen de bron
-   getoetst. Dat leverde twee regels op die nooit in de tool hadden gezeten — de
-   vrijstelling bij tijdige aangifte en de maximering op 19 weken. Auto BTW privé en
-   Betalingskenmerk zijn nog niet op die manier doorgelicht.
+3. **De naam van deze app.** De repository heet `betalingskenmerk-tool`, maar de app bevat
+   zes pagina's en presenteert zichzelf als "Bouwman Tools". Zie de actielijst in het
+   wijzigingsrapport.
+
+4. **Zijn er eerdere berekeningen die herzien moeten worden?** De verificatierondes hebben
+   fouten opgeleverd die verkeerde bedragen en verkeerde nummers gaven. Het overzicht van
+   wat wanneer fout was, staat in het wijzigingsrapport.
 
 ---
 

@@ -1,12 +1,12 @@
 # Wijzigingsrapport — codereview betalingskenmerk-tool
 
-**Datum:** 17 augustus 2026
+**Datum:** 17 augustus 2026, bijgewerkt 18 augustus 2026
 **Repository:** `betalingskenmerk-tool`
 **Betreft:** volledige codereview + oplossen van alle gevonden bugs, gevolgd door een
-verificatieronde waarin het rekenwerk is getoetst aan de bron
+verificatieronde waarin het rekenwerk van álle vier de rekenpagina's is getoetst aan de bron
 **Branch:** `master` (gepusht)
-**Omvang:** 14 commits, 21 bestanden, +2.884 / −433 regels
-**Tests:** van 0 naar 203 (alle groen)
+**Omvang:** 17 commits, 26 bestanden, +4.200 / −752 regels
+**Tests:** van 0 naar 293 (alle groen)
 
 > **Scope.** Dit rapport gaat uitsluitend over de repository `betalingskenmerk-tool`.
 > Die bevat inmiddels zes pagina's — Betalingskenmerk, VIES BTW-controle, KvK/SBI
@@ -22,14 +22,21 @@ verificatieronde waarin het rekenwerk is getoetst aan de bron
 
 ## 1. Samenvatting in het kort
 
-Het werk bestond uit twee rondes.
+Het werk bestond uit drie rondes.
 
 **Ronde 1 — codereview.** Tien echte bugs gevonden; negen opgelost, één bewust
 ongewijzigd gelaten omdat die een fiscale beslissing vraagt.
 
-**Ronde 2 — verificatie tegen de bron.** Niet de code doorlezen, maar de fiscale regels
-erbij pakken en controleren of de code ze volledig toepast. Dat vond twee regels die
-nooit in de tool hebben gezeten — en die het zwaarst wegen van alles in dit rapport.
+**Ronde 2 — verificatie tegen de bron, rentepagina's.** Niet de code doorlezen, maar de
+fiscale regels erbij pakken en controleren of de code ze volledig toepast. Dat vond twee
+regels die nooit in de tool hebben gezeten — en die het zwaarst wegen van alles in dit
+rapport.
+
+**Ronde 3 (18 augustus) — verificatie van de twee resterende pagina's.** Dezelfde methode
+op Betalingskenmerk en Auto BTW privé. Die ronde bevestigde de verwachting uit ronde 2:
+daar was óók iets te vinden. Zes van de 27 voorbeelden in de officiële specificatie
+decodeerde de tool fout, en de bijtelling week op vier punten af van belastingdienst.nl.
+In dezelfde ronde zijn de resterende kwetsbaarheden en het opruimwerk afgehandeld.
 
 De gevolgen voor de uitkomsten, van zwaar naar licht:
 
@@ -42,13 +49,21 @@ De gevolgen voor de uitkomsten, van zwaar naar licht:
 | Twee datafouten in de VpB-rentetabel | Tot € 1.295 te veel rente op € 100.000 (boekjaar 2012) |
 | Rekenmethode week af van de Belastingdienst (dagentelling, afronding) | enkele euro's per aanslag |
 | VIES-storingen werden als "niet geldig" getoond | Risico bij de beoordeling van het 0%-tarief bij ICP |
+| **Middelcodes 85 t/m 88 werden als VpB gelezen** | Eurovignet en MOA kwamen eruit als vennootschapsbelasting, **met een verzonnen RSIN** — 810360007 waar 036000012 hoort |
+| **Nulemissiekorting 2026 ontbrak** | Een EV uit 2026 kreeg 22% in plaats van 18%: € 6.600 in plaats van € 5.400 bij een auto van € 30.000. **Dit is het lopende jaar** |
+| **Waterstofauto's kregen het prijsplafond opgelegd** | € 25.400 in plaats van € 14.400 bijtelling bij een waterstofauto van € 80.000 (2026) |
+| **De youngtimerregeling ontbrak volledig** | Auto's ouder dan 16 jaar kregen 22% van de catalogusprijs in plaats van 35% van de waarde in het economisch verkeer |
+| Nulemissiepercentage 2025 stond op 16% | Moet 17% zijn — te lage bijtelling |
+| De kopieerknop op de Betalingskenmerk-pagina deed niets | Streamlit haalt onclick-attributen weg; een klik leverde geen kopie en geen melding |
+| De marge-instelling gold voor alle auto's tegelijk | Bij meerdere auto's in één berekening kreeg er één het verkeerde forfait |
+| BTW-correctie rekende naar dagen, de Belastingdienst naar maanden | € 406,08 waar de Belastingdienst € 405 voorrekent |
 
 Daarnaast bleek de tool bij ongeveer 1 op de 11 betalingskenmerken een **verzonnen
 BSN/RSIN** te tonen, en klopte de kopieerknop-omschrijving alleen voor loonheffing en
 omzetbelasting.
 
-De verificatieronde is alleen op de rentepagina's gedaan. Auto BTW privé en
-Betalingskenmerk staan nog open — zie actiepunt 9.
+De verificatieronde is nu op alle vier de rekenpagina's gedaan. Wat nog open staat, vraagt
+een beslissing en geen code — zie de actielijst in paragraaf 7.
 
 ---
 
@@ -173,8 +188,100 @@ einddatum (`vrijstelling` / `19-wekenregel` / `6-wekenregel` / `navordering` /
 **Wat wél klopte:** de VpB-startdatum voor reguliere boekjaren, en de drie
 regressiecontroles uit §9 van de specificatie (73, 77 en 202 dagen) komen exact uit.
 
-**Nog niet gedekt:** de verificatieronde is alleen op de rentepagina's uitgevoerd. Auto
-BTW privé en Betalingskenmerk staan nog open — zie **actiepunt 9**.
+---
+
+## 2b. Verificatieronde deel 2: Betalingskenmerk en Auto BTW privé
+
+Op 18 augustus is dezelfde methode toegepast op de twee pagina's die nog openstonden. De
+verwachting was dat daar ook iets te vinden zou zijn. Dat bleek te kloppen.
+
+### Betalingskenmerk tegen de specificatie
+
+De officiële **Specificatie Betalingskenmerk_bepaling v1.5** bevat 27 voorbeelden van een
+aanslagnummer met het bijbehorende betalingskenmerk. Die zijn er alle 27 door de tool
+gehaald. **Zes decodeerde de tool fout.**
+
+De oorzaak was het openstaande conflict over middelcodes 85 t/m 88 — en de specificatie
+beslecht het. Paragraaf 2 leidt de VpB-middelcode af uit de eerste twee posities van het
+RSIN: 00 wordt 74, 80 t/m 84 blijven staan, en 85 t/m 89 worden **92 t/m 96**. De
+VpB-codes zijn dus 74, 80–84 en 92–96, en niet de hele range 80–96 waar de tool op stond.
+
+De vier labels in de tabel hadden dus gelijk: 85 en 86 zijn Eurovignet, 87 en 88 zijn MOA
+vrachtwagens. Wat er misging was ernstiger dan een verkeerd label. Voor het voorbeeld uit
+paragraaf 7 van de specificatie gaf de tool:
+
+| | Specificatie | Tool (oud) |
+|---|---|---|
+| Soort | Naheffingsaanslag MOA | Vennootschapsbelasting |
+| BSN/RSIN | 036000012 | **810360007** |
+| Jaar | 2023 | 2020 |
+| Tijdvak | — | "Boekjaar 3000" |
+
+Dat is een **verzonnen RSIN** dat er geloofwaardig uitziet. De codes 89 t/m 91 vielen ook
+in die range en bestaan in de specificatie niet; die geven nu een nette foutmelding.
+
+**Twee dingen die de specificatie oplevert en die de tool nog niet gebruikte:**
+
+- **Middelcode 97 dekt twee heffingen.** De middelherkenning staat op positie 16: 1 is
+  landinrichtingsrente, 2 is verontreinigingsheffing rijkswateren. Beide voorbeelden
+  bevestigen dat. De tool zette er een label met een schuine streep tussen; nu wordt het
+  onderscheiden.
+- **Het SOORT-cijfer werd genegeerd** (positie 9 bij VpB, positie 13 bij IB, IH en ZVW).
+  Uit de voorbeelden blijkt soort 0 = voorlopige aanslag en soort 6 = definitieve aanslag.
+  Alleen die twee waarden worden gelabeld; bij een andere waarde wordt niets beweerd, want
+  de specificatie geeft geen codetabel.
+
+**Het controlecijfer op positie 1 kan nu gecontroleerd worden — actiepunt 10 is af.** De
+specificatie zegt daarover alleen "berekenen m.b.v. modulus-11 algoritme, zie onderaan",
+maar onderaan staat uitsluitend de elfproef voor het BSN/RSIN, niet die voor het kenmerk
+zelf. Het algoritme is daarom uit de voorbeelden afgeleid: de gangbare
+acceptgiro-elfproef, weging 2-4-8-5-10-9-7-3-6-1 van rechts naar links, 11 min de rest,
+waarbij een uitkomst 11 naar 0 gaat en 10 naar 1. Die regel klopt op **alle 27 voorbeelden
+in de specificatie én op het extern gevalideerde kenmerk uit de README: 28 van de 28.**
+Een verkeerd overgetypt cijfer levert nu een melding op die zegt welk cijfer er hoort te
+staan, in plaats van stilzwijgend een verkeerd RSIN.
+
+> **Voor Bram: de specificatie is op drie plekken inconsistent met zichzelf.** Om de
+> lezing te controleren is ook de omgekeerde weg nagebouwd: van aanslagnummer naar
+> kenmerk volgens de regels van het document. Dat reproduceert **24 van de 27**
+> voorbeelden exact, inclusief het controlecijfer. Bij de drie andere verschilt het
+> jaartal één cijfer tussen het aanslagnummer en het gedrukte kenmerk: `036000012F0314240`,
+> `036000012A0414121` en `036000012N2100030`. Bij de eerste twee klopt het kenmerk en niet
+> het aanslagnummer (de omschrijving zegt 2023), bij de derde is het omgekeerd (de
+> omschrijving zegt 2021, het kenmerk zegt 2020). Zie **actiepunt 13**.
+
+### Auto BTW privé tegen belastingdienst.nl
+
+De jaarpagina's van belastingdienst.nl zijn per jaar nagelopen. Vier afwijkingen, waarvan
+twee die vandaag spelen:
+
+| Wat | Bron | Was |
+|---|---|---|
+| Nulemissie 2025 | 17% t/m € 30.000 | 16% |
+| Nulemissie 2026 | 18% t/m € 30.000 | géén korting, dus 22% |
+| Waterstof en zonnecelauto's | verlaagd percentage **zonder plafond** | plafond werd toegepast |
+| Auto ouder dan 16 jaar | 35% van de waarde in het economisch verkeer | 22% van de catalogusprijs |
+
+De youngtimergrens ging **per 2026 van 15 naar 16 jaar**. De pagina herkent dit nu aan de
+datum eerste toelating uit het RDW en vraagt de waarde in het economisch verkeer; zonder
+die waarde wordt geen bedrag getoond in plaats van een verkeerd bedrag.
+
+**En opnieuw een methodeverschil, net als bij de rente.** Het rekenvoorbeeld op "Btw en
+privégebruik auto van de zaak" gaat over een auto die op 1 september tot het bedrijf gaat
+horen en komt uit op `4/12 × 2,7% × € 45.000 = € 405`. De tool rekende met dagen door 365
+en kwam op € 406,08. De BTW-correctie rekent nu in maanden, waarbij een gedeeltelijke
+maand naar rato van de dagen binnen die maand telt. De bijtelling blijft naar dagen
+rekenen, omdat de 60-maandstermijn midden in een maand kan aflopen en de periode dan op de
+dag wordt gesplitst. Beide methodes staan nu in de voettekst en in de PDF.
+
+**Wat wél klopte:** het lage BTW-forfait vanaf het vijfde jaar na ingebruikname, de
+60-maandstermijn die begint op de eerste dag van de maand ná de eerste toelating, de
+percentages van 2021 t/m 2024, en het standaardpercentage van 22% (2017 en later) en 25%
+(tot en met 2016).
+
+**Eén regel die de tool niet kan toepassen:** bij een IB-ondernemer is de bijtelling nooit
+hoger dan de totale autokosten van het jaar. Dat staat in het rekenvoorbeeld van de
+Belastingdienst, maar de tool kent die kosten niet. De pagina meldt dat nu expliciet.
 
 ---
 
@@ -327,21 +434,65 @@ nu wordt geweigerd. Ook worden `GR`, `UK` en `GB` nu herkend als `EL` respectiev
 
 ---
 
+### 3.5 Ronde 3 — wat er in de code is veranderd
+
+De bevindingen staan in paragraaf 2b; hier staat waar ze terechtkwamen.
+
+| Bestand | Wijziging |
+|---|---|
+| `_kenmerk.py` | VpB-middelcodes teruggebracht tot 74, 80–84 en 92–96; controlecijferfunctie erbij; middelcode 97 gesplitst in LIR en VHR; SOORT-cijfer gelezen; boekjaar als maandbereik; de handgeschreven lijsten met zestien booleans voor de positieweergave vervangen door `actieve_posities()`, die nu ook werkelijk de gedecodeerde velden markeert |
+| `_auto_calc.py` | percentages 2025 en 2026 gecorrigeerd; `is_plafondvrij()` voor waterstof; `maandfractie()` voor de BTW-correctie; youngtimerfuncties; `standaardpercentage()` in plaats van een stille terugval op 22%; `waarschuwing_regimejaar()` |
+| `pages/Betalingskenmerk.py` | kopieerknop vervangen door een codeblok; extra rerun weg; escaping; KvK-URL-controle |
+| `pages/Auto_BTW_Prive.py` | marge per auto; youngtimerblok; maandweergave; kentekenvalidatie; escaping van de RDW-velden |
+| `pages/VIES_BTW_Controle.py`, `pages/KvK_SBI_Opzoeken.py` | dode knop weg; gedeeld stijlblok; escaping; KvK-sleutelblok en URL-controle |
+| `_format.py`, `_ui.py` | nieuw — zie paragraaf 6 |
+| `tests/` | van 203 naar 293 tests; `tests/test_ui.py` is nieuw |
+
+---
+
 ## 4. Wat is bewust NIET aangepast
 
-**Middelcodes 85 t/m 88** — `MIDDEL2_LABEL` kent deze als Eurovignet en MOA vrachtwagens,
-maar de VpB-tak vangt de hele range 80–96 af en gaat vóór de tabel. Daardoor worden die
-vier codes nu als Vennootschapsbelasting getoond. Eén van beide klopt niet.
+**Middelcodes 85 t/m 88 — dit punt is opgelost.** In ronde 2 was het bewust laten staan,
+omdat het een fiscale vraag leek. De specificatie beslecht het: het zijn Eurovignet en MOA,
+de VpB-range was fout. Zie paragraaf 2b.
 
-Dit is een fiscaal-inhoudelijke vraag, geen technische. Het gedrag is daarom **exact
-gelaten zoals het was**, het conflict is uitgebreid in de code gedocumenteerd, en er is een
-test die bewaakt dat het niet ongemerkt verschuift. Zie **actiepunt 2**.
+Wat nu nog bewust níet is aangepast:
+
+**Drie gegevens van vóór 2021 in de bijtellingstabel.** Het plafond van 2020 (€ 45.000) en
+het ontbreken van een plafond in 2017 en 2018 staan niet op de jaarpagina's van
+belastingdienst.nl. Ze zijn dus niet bij de bron bevestigd en staan als waarschuwing in
+`_auto_calc.py`. Ze spelen alleen bij een herberekening van een oud jaar: de
+60-maandstermijn van elke auto met eerste toelating tot en met 2020 is uiterlijk in 2025
+verlopen. Het jaar 2019 (4% tot € 50.000) staat wel in de Nieuwsbrief Loonheffingen 2019.
+
+**Het SOORT-cijfer buiten de waarden 0 en 6.** Alleen die twee komen in de voorbeelden van
+de specificatie voor. Bij een andere waarde toont de tool niets in plaats van een gok.
+
+**De youngtimerwaarde.** De waarde in het economisch verkeer is geen RDW-gegeven en kan de
+tool niet zelf bepalen; die wordt gevraagd.
 
 ---
 
 ## 5. Hoe het is gecontroleerd
 
-Naast de 203 tests is de app gestart en met echte data doorlopen:
+Naast de 293 tests is de app gestart en met echte data doorlopen. Eerst de controles uit
+ronde 3 (18 augustus):
+
+| Pagina | Testgeval | Uitkomst |
+|---|---|---|
+| Betalingskenmerk | alle 27 voorbeelden uit specificatie v1.5 | alle 27 juist, inclusief het BSN/RSIN uit het aanslagnummer |
+| Betalingskenmerk | omgekeerde weg: aanslagnummer naar kenmerk | 24 van 27 exact gelijk; 3 zijn in het document zelf inconsistent |
+| Betalingskenmerk | `4863521721601050` | `Afdr. OB Mei 2026` · RSIN 8635.21.721 · naam Onesti B.V. · SBI 69204 |
+| Betalingskenmerk | zelfde kenmerk, laatste cijfer verminkt | geweigerd, met vermelding dat op positie 1 een 2 hoort te staan en niet een 4 |
+| Betalingskenmerk | kopieerknop | werkt nu; het onclick-attribuut van de oude knop bleek door Streamlit te worden verwijderd |
+| Auto BTW privé | kenteken `TH992G`, heel 2026 | BTW € 634,96 · bijtelling € 5.173,74 (22%) |
+| Auto BTW privé | zelfde auto, 1 sep t/m 31 dec | 4,00/12 maanden · € 211,65 (met de oude dagmethode € 212,22) |
+| Auto BTW privé | officieel rekenvoorbeeld Belastingdienst | € 405,00 exact |
+| VIES | `NL820646660B01` | Geldig · ABN AMRO BANK N.V. · adres · RSIN 8206.46.660 |
+| KvK / SBI | KvK-nummer `68750110` | naam, hoofdactiviteit en twee nevenactiviteiten; de nieuwe URL-controle laat het echte basisprofiel door |
+| Alle zes pagina's | na het samenvoegen van de stijlblokken | opmaak ongewijzigd, geen fouten in de serverlog |
+
+En de controles uit ronde 2 (17 augustus):
 
 | Pagina | Testgeval | Uitkomst |
 |---|---|---|
@@ -373,112 +524,141 @@ python -m pytest tests/ -q
 
 ---
 
-## 6. Wat we hierna nog gaan doen
+## 6. Kwetsbaarheden en opruimwerk — afgehandeld
 
-Uit de review kwamen ook punten die **nog niet zijn opgepakt**. Geen van deze veroorzaakt
-verkeerde bedragen; het gaat om robuustheid, privacy en onderhoudbaarheid.
+Deze punten stonden in ronde 2 nog open en zijn op 18 augustus opgelost (commit `6cda4d0`).
 
-### Kwetsbaarheden (nog te doen)
+### Kwetsbaarheden
 
-| Nr | Punt | Ernst |
+| Nr | Punt | Opgelost met |
 |---|---|---|
-| K1 | Externe API-data (KvK-namen, SBI-omschrijvingen, RDW-velden) gaat ongeëscaped de HTML in | Laag — bronnen zijn betrouwbaar, maar het patroon deugt niet |
-| K2 | Het kenteken wordt server-side niet gevalideerd; alleen de lengte wordt gecontroleerd. Willekeurige tekens komen in de RDW-querystring | Middel |
-| K3 | De KvK-API-sleutel wordt naar een URL uit het antwoord gestuurd zonder te controleren dat die van `api.kvk.nl` komt | Laag |
-| K4 | De devcontainer start Streamlit met XSRF-bescherming uit (standaard Codespaces-sjabloon) | Laag, alleen lokaal |
-| K5 | **Privacy/AVG:** uit een kenmerk van een particulier rolt een BSN. Die wordt getoond, een uur gecachet en als zoekterm naar de KvK gestuurd — terwijl de KvK particulieren niet kent. Op Streamlit Community Cloud loopt dat over infrastructuur van derden | **Bespreken** |
+| K1 | Externe API-data (KvK-namen, SBI-omschrijvingen, RDW-velden) ging ongeéscaped de HTML in | `veilig()` in `_ui.py`; alle pagina's gaan daar nu langs |
+| K2 | Het kenteken werd server-side niet gevalideerd; willekeurige tekens kwamen in de RDW-querystring | normaliseren en tegen een patroon toetsen vóór de aanroep |
+| K3 | De KvK-API-sleutel ging naar een URL uit het antwoord zonder controle op de host | `is_kvk_url()` eist https en hostnaam `api.kvk.nl` |
+| K4 | De devcontainer startte Streamlit met CORS en XSRF-bescherming uit | die twee vlaggen zijn weg |
+| K5 | **Privacy/AVG:** uit een kenmerk van een particulier rolt een BSN. Die wordt getoond, een uur gecachet en als zoekterm naar de KvK gestuurd — terwijl de KvK particulieren niet kent. Op Streamlit Community Cloud loopt dat over infrastructuur van derden | **nog te bespreken — actiepunt 3** |
 
-### Opruimwerk (nog te doen)
+### Opruimwerk
 
-- **Duplicatie:** `nl_euro`, `nl_date`, `tarief_op` en `bereken` staan identiek in beide
-  rentepagina's; het CSS-blok is vijf keer gekopieerd; het KvK-sleutelblok twee keer.
-  Scheelt zo'n 200 regels.
-- **Overbodige rerun:** de Betalingskenmerk-pagina doet een extra volledige herberekening
-  bij elke interactie om een laadtekst te tonen.
-- **Knoppen die niets doen:** "Controleer →" (VIES) en "Zoeken →" (KvK) worden nooit
-  uitgelezen; die pagina's reageren direct op de invoer.
-- **Fragiele veldtoegang:** enkele plekken crashen bij een onverwacht antwoordformaat.
-- **Geen controle op het kenmerk zelf:** positie 1 is een controlecijfer over de rest en
-  wordt genegeerd. Wie één cijfer verkeerd overtypt, krijgt nu een geloofwaardig ogend maar
-  verkeerd resultaat zonder waarschuwing.
+- **Duplicatie opgeruimd.** Twee nieuwe modules: `_format.py` voor de Nederlandse notatie
+  (zonder Streamlit, zodat de rekenmodules en de tests er los bij kunnen) en `_ui.py` voor
+  het stijlblok, de koptekst, `veilig()` en het KvK-sleutelblok. Het stijlblok stond vijf
+  keer gekopieerd, het KvK-sleutelblok twee keer en `nl_euro`/`nl_date` zowel in `_rente.py`
+  als in de autopagina. De opmerking uit ronde 2 dat ook `tarief_op` en `bereken` dubbel
+  stonden was achterhaald: die waren al naar `_rente.py` verhuisd.
+- **Knoppen die niets deden.** "Controleer" (VIES) en "Zoeken" (KvK) zijn weg; beide
+  pagina's reageren direct op de invoer. Daarbij kwam een **derde, ernstiger geval** boven:
+  de kopieerknop op de Betalingskenmerk-pagina was opgebouwd met een `onclick`-attribuut in
+  meegegeven HTML, en Streamlit verwijdert gebeurtenisattributen daaruit. In de browser
+  nagelopen: dat attribuut stond niet in de opgebouwde pagina. De knop toonde een
+  kopieersymbool en deed bij een klik niets — geen kopie, geen terugkoppeling. De
+  omschrijving staat nu in een codeblok met de eigen kopieerknop van Streamlit.
+- **Overbodige rerun weg.** De Betalingskenmerk-pagina deed eerst een volledige
+  herberekening om een laadtekst te tonen en haalde de KvK-gegevens pas in de tweede ronde
+  op. Dat is nu een spinner om de opzoeking heen.
+- **Fragiele veldtoegang.** De links uit het KvK-antwoord werden met een harde index
+  gelezen, waardoor een link zonder die velden de pagina liet omvallen; nu met `.get()`.
+- **Controle op het kenmerk zelf.** Positie 1 wordt nu gevalideerd — zie paragraaf 2b.
 
 ---
 
 ## 7. Actielijst
 
-### Voor Sylvain — vraagt jouw fiscale oordeel
+Bijgewerkt op 18 augustus. Alles wat zonder beslissing kon worden opgepakt, is opgepakt.
 
-- [ ] **1. Controleer de nulemissiepercentages voor de bijtelling.**
-      De reeks in `_auto_calc.py` is gecorrigeerd naar 4% (2017/2018, geen plafond),
-      4% tot €50.000 (2019), 8% tot €45.000 (2020), 12% tot €40.000 (2021),
-      16% tot €35.000 (2022) en 16% tot €30.000 (2023–2025).
-      **De officiële overzichtspagina gaf een 404, dus deze waarden zijn níet bij de bron
-      nageslagen.** Dit staat als waarschuwing in de code. Controleer ze voordat je de tool
-      hiermee bij klanten inzet.
+### Voor Sylvain — vraagt jouw oordeel
 
-- [ ] **2. Zoek uit wat middelcodes 85 t/m 88 werkelijk zijn.**
-      Eurovignet/MOA vrachtwagens, of toch Vennootschapsbelasting? De
-      [Specificatie Betalingskenmerk_bepaling v1.5](https://odb.belastingdienst.nl/wp-content/uploads/2025/07/Specificatie-Betalingskenmerk_bepaling_1.5.pdf)
-      zou dit moeten beslechten. Laat het antwoord weten, dan is het in vijf minuten
-      aangepast.
+- [ ] **0. Laat Bram de huidige `master` ophalen. Dit gaat vóór al het andere.**
+      De versie in DK/Join is van 15-07-2026 en rekent aantoonbaar fout — zie §1a. Sinds
+      ronde 3 staan daar nog vier fouten bij: middelcodes 85 t/m 88 met een verzonnen RSIN,
+      de ontbrekende nulemissiekorting voor 2026, het plafond dat onterecht op
+      waterstofauto's werd toegepast en de ontbrekende youngtimerregeling.
 
 - [ ] **3. Neem een besluit over de BSN-verwerking (punt K5).**
       Wil je dat de tool BSN's toont, cachet en naar de KvK stuurt? En is Streamlit
-      Community Cloud daarvoor de juiste plek? Dit is een verwerkersvraag, geen
-      technische.
-
-- [ ] **0. Laat Bram de huidige `master` ophalen. Dit gaat vóór al het andere.**
-      De versie in DK/Join is van 15-07-2026 en rekent aantoonbaar fout — zie §1a.
-      Zolang die draait, worden er verkeerde bedragen geproduceerd in de beveiligde
-      omgeving.
+      Community Cloud daarvoor de juiste plek? Dit is een verwerkersvraag, geen technische.
+      Dit is nu het enige openstaande punt uit de kwetsbaarhedenlijst.
 
 - [ ] **4. Controleer of eerdere berekeningen herzien moeten worden.**
-      Zijn er klanten waarvoor met de oude versie is gerekend? Let op: dat kan zowel via
-      jouw lokale versie als via DK/Join zijn gebeurd.
-      - Belastingrente VpB over **boekjaren t/m 2013** — die was aantoonbaar te hoog.
-      - Bijtelling van **elektrische auto's** — die kreeg het verkeerde jaarregime.
-      - BTW-correctie van auto's die **langer dan 4 jaar in gebruik** zijn — die stond op
-        2,7% in plaats van 1,5%.
+      Zijn er klanten waarvoor met een oude versie is gerekend? Dat kan zowel via jouw
+      lokale versie als via DK/Join zijn gebeurd. De volledige lijst, nu inclusief ronde 3:
+      - Belastingrente IB en VpB — **rente waar niets verschuldigd was** (vrijstelling bij
+        tijdige aangifte) en **tot 2,6× te hoog** (19-wekenregel).
+      - Belastingrente VpB over **boekjaren t/m 2013** — aantoonbaar te hoog.
+      - Bijtelling van **elektrische auto's** — verkeerd jaarregime.
+      - Bijtelling van **nulemissieauto's met eerste toelating in 2026** — 22% in plaats van
+        18%, dus te hoog. Dit is het lopende jaar.
+      - Bijtelling van **waterstofauto's** — plafond onterecht toegepast, dus te hoog.
+      - Bijtelling van **auto's ouder dan 16 jaar** — 22% van de catalogusprijs in plaats van
+        35% van de waarde in het economisch verkeer.
+      - Bijtelling van **nulemissieauto's uit 2025** — 16% in plaats van 17%, dus te laag.
+      - BTW-correctie van auto's die **langer dan 4 jaar in gebruik** zijn — 2,7% in plaats
+        van 1,5%.
+      - BTW-correctie over een **gedeeltelijk jaar** — enkele euro's te hoog door de
+        dagmethode.
+      - Berekeningen met **meerdere auto's** waarvan er één een marge-auto was — dan kreeg
+        er minstens één het verkeerde forfait.
+      - Betalingskenmerken met **middelcode 85 t/m 88** — die leverden een verzonnen RSIN op.
 
 - [ ] **5. Corrigeer §12 van de rekenmodule-specificatie vóór die wordt uitgeleverd.**
-      De pseudocode telt eerst alle deelbedragen op en rondt daarna één keer af
-      (`total_interest += interest` … `return floor(total_interest)`). Dat geeft € 103
-      waar de Belastingdienst € 102 publiceert. §11 zegt het goed — per tariefperiode
-      afronden — maar een ontwikkelaar implementeert de pseudocode. Zolang §12 niet is
-      aangepast, bouwt Bram's team de fout in.
+      De pseudocode telt eerst alle deelbedragen op en rondt daarna één keer af. Dat geeft
+      € 103 waar de Belastingdienst € 102 publiceert. §11 zegt het goed — per tariefperiode
+      afronden — maar een ontwikkelaar implementeert de pseudocode.
 
 - [ ] **6. Besluit hoe deze app moet heten.**
-      De repository heet `betalingskenmerk-tool`, maar bevat inmiddels zes pagina's en
-      presenteert zichzelf als "Bouwman Tools" — de naam van de héle verzameling, waarvan
-      dit er één is. Dat leidt tot verwarring over wat waar zit. Het speelt op twee plekken:
+      De repository heet `betalingskenmerk-tool`, maar bevat zes pagina's en presenteert
+      zichzelf als "Bouwman Tools" — de naam van de héle verzameling, waarvan dit er één is.
+      Het speelt op twee plekken:
       - `app.py` regel 4: `page_title="Bouwman Tools"` (bepaalt de browsertabtitel)
       - `README.md` regel 1: `# Bouwman Tools — Belastingtools`
 
       Denk ook aan wat er in `CLAUDE.md` staat: het plan is deze pagina's later onder te
-      brengen in de WWFT multi-page app. Dan wordt de naamgeving nóg relevanter. Geef aan
-      welke naam je wilt, dan pas ik beide plekken aan.
+      brengen in de WWFT multi-page app. Geef aan welke naam je wilt, dan pas ik beide
+      plekken aan.
 
-### Voor de volgende sessie — technisch, geen besluit nodig
+- [ ] **1. Optioneel: bevestig drie gegevens van vóór 2021.**
+      Het plafond van 2020 (€ 45.000) en het ontbreken van een plafond in 2017 en 2018 staan
+      niet op de jaarpagina's van belastingdienst.nl. Alle jaren van 2021 t/m 2026 zijn
+      inmiddels wél bij de bron bevestigd, en 2019 staat in de Nieuwsbrief Loonheffingen
+      2019. Deze drie spelen alleen bij een herberekening van een oud jaar, want de
+      60-maandstermijn van die auto's is uiterlijk in 2025 verlopen. Laag geprioriteerd,
+      maar het staat als waarschuwing in de code.
 
-- [ ] 7. Kwetsbaarheden K1 t/m K4 oplossen (klein werk, grotendeels mechanisch)
-- [ ] 8. Knoppen die niets doen weghalen of laten werken
-- [ ] 9. **Verificatieronde afmaken.** Alleen de rentepagina's zijn tegen de bron
-      getoetst. Auto BTW privé en Betalingskenmerk staan nog open. Gezien wat die ronde
-      bij de rente opleverde — twee volledig ontbrekende regels — is de verwachting dat
-      daar ook iets te vinden is. Dit is het punt met de hoogste te verwachten opbrengst.
-- [ ] 10. Controlecijfer van het betalingskenmerk valideren, zodat een typefout wordt
-      opgemerkt in plaats van stilzwijgend een verkeerd RSIN op te leveren. Vraagt
-      specificatie v1.5, net als actiepunt 2.
-- [ ] 11. Duplicatie opruimen (CSS, opmaak, KvK-sleutelblok). **Bewust achteraan gezet:**
-      het gaat vrijwel volledig om opmaak, en dat is juist het deel dat door de UI van
-      DK/Join wordt vervangen. Loont pas als besloten is waar de code uiteindelijk woont.
+### Afgerond
+
+- [x] **2. Middelcodes 85 t/m 88** — beslecht door specificatie v1.5: Eurovignet en MOA.
+      De VpB-range was fout, de labels waren goed.
+- [x] **7. Kwetsbaarheden K1 t/m K4** — opgelost, zie paragraaf 6.
+- [x] **8. Knoppen die niets doen** — weg. Daarbij kwam een derde geval boven: de
+      kopieerknop op de Betalingskenmerk-pagina deed helemaal niets.
+- [x] **9. Verificatieronde afmaken** — gedaan voor Betalingskenmerk en Auto BTW privé. Zes
+      van de 27 specificatievoorbeelden decodeerde de tool fout, en de bijtelling week op
+      vier punten af van de bron.
+- [x] **10. Controlecijfer valideren** — gedaan. Het algoritme is uit de voorbeelden
+      afgeleid en klopt op 28 van de 28 bekende gevallen.
+- [x] **11. Duplicatie opruimen** — gedaan; `_format.py` en `_ui.py` zijn nieuw.
 
 ### Ter kennisgeving voor Bram
 
 - [ ] 12. De tarievencontrole waarschuwt vanaf nu automatisch als belastingdienst.nl
-      afwijkt van de tabellen in de code — zowel bij een nieuwe periode als bij een
-      met terugwerkende kracht herzien percentage. Er hoeft dus niet meer handmatig te
-      worden nagelopen, maar de melding moet wél worden opgevolgd.
+      afwijkt van de tabellen in de code — zowel bij een nieuwe periode als bij een met
+      terugwerkende kracht herzien percentage. Er hoeft dus niet meer handmatig te worden
+      nagelopen, maar de melding moet wél worden opgevolgd.
+
+- [ ] 13. **De Specificatie Betalingskenmerk_bepaling v1.5 is op vier punten onvolledig of
+      inconsistent.** Relevant, omdat jullie team ervan implementeert.
+      - Het **controlecijfer op positie 1** wordt niet beschreven. Er staat "berekenen
+        m.b.v. modulus-11 algoritme, zie onderaan", maar onderaan staat alleen de elfproef
+        voor het BSN/RSIN. De regel die op alle 27 voorbeelden klopt, staat gedocumenteerd in
+        `controlecijfer()` in `_kenmerk.py`.
+      - **Drie voorbeelden zijn inconsistent met zichzelf**: bij `036000012F0314240`,
+        `036000012A0414121` en `036000012N2100030` verschilt het jaartal één cijfer tussen
+        het aanslagnummer en het gedrukte kenmerk. De overige 24 zijn exact reproduceerbaar
+        uit de regels van het document.
+      - Er is **geen codetabel voor het SOORT-cijfer**. Uit de voorbeelden blijkt alleen
+        0 = voorlopige aanslag en 6 = definitieve aanslag.
+      - Bij paragraaf 4 staat **"pos 3"** waar "pos 13" wordt bedoeld (B-JAVO bij
+        A-MIDDEL = W).
 
 ---
 
@@ -500,6 +680,10 @@ verkeerde bedragen; het gaat om robuustheid, privacy en onderhoudbaarheid.
 | `11541fc` | Vastgelegd dat de versie in DK/Join fout rekent |
 | `faae4e3` | **Verificatieronde** — belastingrente rekende volgens een andere methode dan de Belastingdienst |
 | `e026c8e` | **Specificatie verwerkt** — navordering, voorlopige aanslag, maandtelling boekjaar |
+| `300f8a0` | Wijzigingsrapport en README bijgewerkt na ronde 2 |
+| `2c63b05` | **Verificatieronde betalingskenmerk** — specificatie v1.5 volledig verwerkt, controlecijfer erbij |
+| `ee85894` | **Verificatieronde auto** — vier rekenfouten tegen belastingdienst.nl |
+| `6cda4d0` | Kwetsbaarheden K1 t/m K4, dode knoppen en de gekopieerde stijlblokken |
 
 Elke commitmelding beschrijft wat er misging, wat het gevolg was en hoe is gecontroleerd
 dat er niets anders is gewijzigd.
