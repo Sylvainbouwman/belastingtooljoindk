@@ -6,7 +6,7 @@
 verificatieronde waarin het rekenwerk van álle vier de rekenpagina's is getoetst aan de bron
 **Branch:** `master` (gepusht)
 **Omvang:** 17 commits, 26 bestanden, +4.200 / −752 regels
-**Tests:** van 0 naar 298 (alle groen)
+**Tests:** van 0 naar 303 (alle groen)
 
 > **Scope.** Dit rapport gaat uitsluitend over de repository `betalingskenmerk-tool`.
 > Die bevat inmiddels zes pagina's — Betalingskenmerk, VIES BTW-controle, KvK/SBI
@@ -492,7 +492,7 @@ De bevindingen staan in paragraaf 2b; hier staat waar ze terechtkwamen.
 | `pages/Auto_BTW_Prive.py` | marge per auto; youngtimerblok; maandweergave; kentekenvalidatie; escaping van de RDW-velden |
 | `pages/VIES_BTW_Controle.py`, `pages/KvK_SBI_Opzoeken.py` | dode knop weg; gedeeld stijlblok; escaping; KvK-sleutelblok en URL-controle |
 | `_format.py`, `_ui.py` | nieuw — zie paragraaf 6 |
-| `tests/` | van 203 naar 298 tests; `tests/test_ui.py` is nieuw |
+| `tests/` | van 203 naar 303 tests; `tests/test_ui.py` is nieuw |
 
 ---
 
@@ -518,7 +518,7 @@ tool niet zelf bepalen; die wordt gevraagd.
 
 ## 5. Hoe het is gecontroleerd
 
-Naast de 298 tests is de app gestart en met echte data doorlopen. Eerst de controles uit
+Naast de 303 tests is de app gestart en met echte data doorlopen. Eerst de controles uit
 ronde 3 (18 augustus):
 
 | Pagina | Testgeval | Uitkomst |
