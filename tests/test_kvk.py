@@ -13,6 +13,7 @@ from _kvk import (
     kvk_datum,
     profiel_kort,
     rechtsvorm,
+    regel_sleutel,
     sbi_gesplitst,
     websites,
     werkzame_personen,
@@ -264,3 +265,48 @@ def test_record_zonder_kvk_nummer_verdwijnt_niet():
 @pytest.mark.parametrize("leeg", [None, []])
 def test_groeperen_van_niets(leeg):
     assert groepeer_resultaten(leeg) == []
+
+
+# ── Widgetsleutels: de crash die de app plat legde ──────────────────────────
+
+def test_twee_resultaten_met_hetzelfde_kvk_nummer_geven_verschillende_sleutels():
+    """Dit legde de pagina plat met StreamlitDuplicateElementKey. De Zoeken-API
+    geeft per bedrijf een rechtspersoon én een hoofdvestiging, dus twee records
+    met hetzelfde nummer. Het KvK-nummer alleen is geen veilige widgetsleutel."""
+    sleutels = [regel_sleutel(r, i) for i, r in enumerate(ZOEKRESULTAAT_ONESTI)]
+    assert len(set(sleutels)) == len(sleutels)
+
+
+def test_records_zonder_kvk_nummer_botsen_ook_niet():
+    """Het randgeval dat na het groeperen overbleef."""
+    resultaten = [{"naam": "Eerste"}, {"naam": "Tweede"}, {"naam": "Derde"}]
+    sleutels = [regel_sleutel(r, i) for i, r in enumerate(resultaten)]
+    assert len(set(sleutels)) == 3
+
+
+def test_sleutels_zijn_uniek_over_een_volle_pagina_resultaten():
+    """Breed vangnet: tien resultaten waarvan sommige hetzelfde nummer of geen
+    nummer hebben, mogen nooit twee dezelfde sleutels opleveren."""
+    resultaten = (
+        [{"kvkNummer": "85135291", "type": "rechtspersoon"}] * 3
+        + [{"kvkNummer": "12345678"}] * 2
+        + [{"naam": "geen nummer"}] * 3
+        + [{"kvkNummer": ""}, {"kvkNummer": None}]
+    )
+    sleutels = [regel_sleutel(r, i) for i, r in enumerate(resultaten)]
+    assert len(set(sleutels)) == len(resultaten) == 10
+
+
+def test_sleutel_blijft_gelijk_bij_dezelfde_positie():
+    """De sleutel bepaalt welke regel open staat; die mag niet per herberekening
+    verschuiven, anders klapt de regel weer dicht."""
+    record = {"kvkNummer": "85135291"}
+    assert regel_sleutel(record, 3) == regel_sleutel(dict(record), 3)
+
+
+def test_sleutel_van_het_eerste_resultaat_matcht_het_automatisch_openen():
+    """Bij één treffer opent de pagina die regel zelf; dan moeten de sleutel van
+    het openen en die van de regel dezelfde zijn."""
+    gegroepeerd = groepeer_resultaten(ZOEKRESULTAAT_ONESTI)
+    assert len(gegroepeerd) == 1
+    assert regel_sleutel(gegroepeerd[0], 0) == regel_sleutel(gegroepeerd[0], 0)

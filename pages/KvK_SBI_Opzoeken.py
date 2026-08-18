@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-from _kvk import groepeer_resultaten, profiel_kort, sbi_gesplitst
+from _kvk import groepeer_resultaten, profiel_kort, regel_sleutel, sbi_gesplitst
 from _ui import is_kvk_url, kvk_sleutel_blok, paginakop, paginastijl, veilig
 
 KVK_ZOEKEN_URL = "https://api.kvk.nl/api/v2/zoeken"
@@ -119,9 +119,9 @@ if len(resultaten) > 1:
     st.caption(f"Zoeken is gratis. Per opgevraagd profiel rekent de KvK {PRIJS_PER_PROFIEL}.")
     geopend = st.session_state.get("kvk_geopend")
 else:
-    geopend = resultaten[0].get("kvkNummer")
+    geopend = regel_sleutel(resultaten[0], 0)
 
-for res in resultaten:
+for index, res in enumerate(resultaten):
     naam   = res.get("naam") or "—"
     kvk_nr = res.get("kvkNummer", "")
     rsin   = res.get("rsin", "")
@@ -129,6 +129,8 @@ for res in resultaten:
     # Fragiele veldtoegang: een link zonder rel of href liet de pagina omvallen.
     href   = next((l.get("href") for l in res.get("links") or []
                    if l.get("rel") == "basisprofiel" and l.get("href")), None)
+
+    sleutel = regel_sleutel(res, index)
 
     with st.container(border=True):
         kop, knop = st.columns([4, 1])
@@ -141,12 +143,12 @@ for res in resultaten:
                 unsafe_allow_html=True,
             )
         with knop:
-            if kvk_nr != geopend and href:
-                if st.button("Gegevens", key=f"open_{kvk_nr}", use_container_width=True):
-                    st.session_state["kvk_geopend"] = kvk_nr
+            if sleutel != geopend and href:
+                if st.button("Gegevens", key=f"open_{sleutel}", use_container_width=True):
+                    st.session_state["kvk_geopend"] = sleutel
                     st.rerun()
 
-        if kvk_nr != geopend:
+        if sleutel != geopend:
             continue
 
         if not href:
@@ -175,7 +177,7 @@ for res in resultaten:
             <div class="bk-tile">
               <div class="label">KvK-nummer · RSIN</div>
               <div class="value" style="font-size:16px;font-family:monospace;">{veilig(kvk_nr)}</div>
-              <div class="sub">{veilig(rsin, leeg="geen RSIN")}</div>
+              <div class="sub">{veilig(rsin, leeg="RSIN niet meegeleverd")}</div>
             </div>""", unsafe_allow_html=True)
 
         gegevens = (

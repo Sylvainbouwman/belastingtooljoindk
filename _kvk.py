@@ -14,6 +14,12 @@ Alles wat deze module uitleest komt uit het Basisprofiel, dus uit één bevragin
 Meer velden tonen kost dus niets extra; de tool haalde dat antwoord al op en
 gebruikte er alleen sbiActiviteiten uit. De veldnamen hieronder zijn op
 18-08-2026 gecontroleerd tegen een echt antwoord van de API.
+
+LET OP: het RSIN zit NIET in het basisprofiel, ook niet bij een BV. Dat is op
+18-08-2026 nagegaan op het profiel van een BV. Het RSIN komt alleen mee in het
+antwoord van de Zoeken-API, en ook daar niet altijd. Ontbreekt het, dan betekent
+dat dus niet dat het bedrijf geen RSIN heeft - alleen dat de KvK het niet
+meestuurde. De pagina zegt daarom "RSIN niet meegeleverd" en niet "geen RSIN".
 """
 
 HOOFDACTIVITEIT = "Ja"
@@ -131,6 +137,19 @@ def _bruikbaarheid(record: dict) -> tuple:
         1 if record.get("adres") else 0,
         1 if record.get("vestigingsnummer") else 0,
     )
+
+
+def regel_sleutel(record: dict, index: int) -> str:
+    """Unieke sleutel voor de widgets bij een zoekresultaat.
+
+    Streamlit weigert twee widgets met dezelfde sleutel en laat dan de hele pagina
+    omvallen met StreamlitDuplicateElementKey. Dat gebeurde bij een zoekopdracht
+    waarvan twee resultaten hetzelfde KvK-nummer hadden - de Zoeken-API geeft per
+    bedrijf immers een rechtspersoon en een hoofdvestiging terug. Het KvK-nummer
+    alleen is dus geen veilige sleutel, ook niet na het groeperen: een record
+    zonder nummer zou opnieuw botsen. De index erbij maakt hem altijd uniek.
+    """
+    return f"{index}-{record.get('kvkNummer') or 'zonder-nummer'}"
 
 
 def profiel_kort(profiel: dict | None) -> dict:
