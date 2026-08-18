@@ -57,9 +57,22 @@ Valideert Europese BTW-nummers via de officiële EU VIES-database.
 Zoek bedrijfsgegevens op via de KvK Handelsregister API.
 
 - Zoeken op bedrijfsnaam, KvK-nummer (8 cijfers) of RSIN (9 cijfers)
-- Toont naam, KvK-nummer, RSIN en SBI-activiteitscode(s)
-- Onderscheid hoofd- en nevenactiviteiten
+- Toont per bedrijf de **statutaire naam en handelsnamen**, KvK-nummer en RSIN,
+  **rechtsvorm**, registratiedatum, **aantal werkzame personen**, adres van de
+  hoofdvestiging, website en vestigingsnummer
+- SBI-activiteiten, met onderscheid tussen hoofd- en nevenactiviteit
+- Meldt het als een bedrijf op **non-mailing** staat
 - Tot 10 resultaten per zoekopdracht
+
+**Kosten in de gaten gehouden.** De *Zoeken*-API is gratis; elk opgevraagd basisprofiel
+kost € 0,02 ([tarieven](https://developers.kvk.nl/nl/pricing)). Bij één treffer — dus bij
+een KvK-nummer of RSIN — wordt het profiel meteen opgehaald. Bij meerdere treffers gebeurt
+dat pas als je op **Gegevens** klikt, want anders kost een zoekopdracht op naam tien
+bevragingen in plaats van één. Antwoorden worden een uur gecachet.
+
+> Alle bovenstaande velden komen uit datzelfde ene basisprofiel, dus het uitbreiden van de
+> weergave heeft de kosten niet verhoogd. Bestuurders en UBO's zitten **niet** in deze
+> API's; daarvoor is een uittreksel nodig.
 
 ### 📊 Belastingrente IB en VpB
 Berekent de belastingrente voor een aanslag inkomstenbelasting of vennootschapsbelasting,
@@ -146,11 +159,12 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 | `_kenmerk.py` | Decodeerlogica betalingskenmerk (zonder Streamlit, los testbaar) |
 | `_auto_calc.py` | BTW-correctie en bijtelling zakelijke auto (zonder Streamlit) |
 | `_vies.py` | BTW-nummerlogica en duiding van VIES-antwoorden (zonder Streamlit) |
+| `_kvk.py` | Uitlezen van het KvK-basisprofiel (zonder Streamlit) |
 | `_rente.py` | Belastingrenteberekening: 30/360, renteperiode, afronding (zonder Streamlit) |
 | `_tarieven_check.py` | Maandelijkse check op nieuwe tarieven (belastingdienst.nl) |
 | `_format.py` | Nederlandse notatie voor bedragen, datums en percentages (zonder Streamlit) |
 | `_ui.py` | Gedeeld stijlblok, koptekst, HTML-escaping en het KvK-sleutelblok |
-| `tests/` | Pytest-suite (327 tests) |
+| `tests/` | Pytest-suite (352 tests) |
 | `requirements.txt` | Python dependencies |
 | `requirements-dev.txt` | Alleen voor de tests (pytest) |
 
@@ -160,7 +174,7 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 
 | API | Gebruikt door | Kosten | Sleutel vereist |
 |-----|--------------|--------|-----------------|
-| KvK Handelsregister | Betalingskenmerk, KvK/SBI | ~€0,02–0,04 per aanroep | Ja — via `.streamlit/secrets.toml` |
+| KvK Handelsregister | Betalingskenmerk, KvK/SBI | €6,40 p/m + €0,02 per basisprofiel; zoeken gratis | Ja — via `.streamlit/secrets.toml` |
 | RDW Open Data | Auto BTW privé | Gratis | Nee |
 | EU VIES | VIES BTW-controle | Gratis | Nee |
 
@@ -189,7 +203,7 @@ python -m pytest tests/ -q
 ```
 
 De rekenlogica staat bewust los van Streamlit in `_kenmerk.py`, `_auto_calc.py`,
-`_vies.py`, `_rente.py` en `_format.py`, zodat die zonder draaiende app te testen is.
+`_vies.py`, `_rente.py`, `_kvk.py` en `_format.py`, zodat die zonder draaiende app te testen is.
 
 Twee testbestanden zijn tegen een officiële bron gelegd. `tests/test_kenmerk.py` bevat alle
 27 voorbeelden uit de Specificatie Betalingskenmerk_bepaling v1.5; `tests/test_auto_calc.py`

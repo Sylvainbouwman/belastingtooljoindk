@@ -1,9 +1,14 @@
 import streamlit as st
 import requests
 
+from _kvk import profiel_kort, sbi_gesplitst
 from _ui import is_kvk_url, kvk_sleutel_blok, paginakop, paginastijl, veilig
 
 KVK_ZOEKEN_URL = "https://api.kvk.nl/api/v2/zoeken"
+
+# Zoeken is gratis, elk opgevraagd basisprofiel kost EUR 0,02
+# (developers.kvk.nl/nl/pricing, nagelopen 18-08-2026).
+PRIJS_PER_PROFIEL = "€ 0,02"
 
 # ── Lookup functies ───────────────────────────────────────────────────────────
 
@@ -27,22 +32,40 @@ def zoek_bedrijf(zoekterm: str, api_key: str) -> list:
 
 
 @st.cache_data(ttl=3600)
-def haal_sbi(href: str, api_key: str) -> list:
+def haal_basisprofiel(href: str, api_key: str) -> dict:
+    """Het volledige basisprofiel achter een zoekresultaat.
+
+    Deze aanroep kost een bevraging. De pagina doet hem daarom alleen voor het
+    resultaat dat je openklapt; eerder werd hij voor alle tien de resultaten
+    gedaan, ook voor de negen die je nooit bekeek. Het antwoord wordt een uur
+    gecachet, dus hetzelfde bedrijf nog eens openen is gratis.
+    """
     # K3: de href komt uit het antwoord van de KvK. Wijst hij naar een andere
     # host, dan gaat de API-sleutel daar niet naartoe.
     if not is_kvk_url(href):
-        return []
+        return {}
     try:
         r = requests.get(href, headers={"apikey": api_key}, timeout=8)
-        return r.json().get("sbiActiviteiten", []) if r.ok else []
+        return r.json() if r.ok else {}
     except Exception:
-        return []
+        return {}
+
+
+def _rij(label: str, waarde) -> str:
+    """Eén regel in het gegevensblok. Lege waarden vallen weg."""
+    if waarde in (None, "", []):
+        return ""
+    return (f'<div style="display:flex;gap:10px;margin-bottom:3px;">'
+            f'<div style="min-width:150px;color:#6b7a99;">{veilig(label)}</div>'
+            f'<div style="color:#24304A;font-weight:600;">{veilig(waarde)}</div></div>')
+
 
 paginastijl()
 
 paginakop(
     "KvK / SBI opzoeken",
-    "Zoek op bedrijfsnaam, KvK-nummer of RSIN en zie direct de SBI-activiteitencode(s).",
+    "Zoek op bedrijfsnaam, KvK-nummer of RSIN en zie de bedrijfsgegevens en de "
+    "SBI-activiteitencode(s).",
 )
 
 # ── Invoer ────────────────────────────────────────────────────────────────────
@@ -77,62 +100,119 @@ if not resultaten:
     st.warning("Geen resultaten gevonden. Controleer de spelling of probeer een KvK-nummer.")
     st.stop()
 
-st.caption(f"{len(resultaten)} resultaat{'en' if len(resultaten) != 1 else ''} gevonden")
+# "resultaat" + "en" gaf "resultaaten"; het meervoud verliest een a.
+st.caption(f"{len(resultaten)} " + ("resultaat" if len(resultaten) == 1 else "resultaten") + " gevonden")
+
+# Bij één treffer meteen ophalen — dat is het geval bij een KvK-nummer of RSIN, en
+# dan is de bevraging toch wat je wilde. Bij meer treffers wacht de pagina op een
+# klik, zodat een zoekopdracht op naam niet tien bevragingen kost.
+if len(resultaten) > 1:
+    st.caption(f"Zoeken is gratis. Per opgevraagd profiel rekent de KvK {PRIJS_PER_PROFIEL}.")
+    geopend = st.session_state.get("kvk_geopend")
+else:
+    geopend = resultaten[0].get("kvkNummer")
 
 for res in resultaten:
-    naam     = res.get("naam") or "—"
-    kvk_nr   = res.get("kvkNummer", "")
-    rsin     = res.get("rsin", "")
-    adres    = (res.get("adres") or {}).get("binnenlandsAdres") or {}
-    plaats   = adres.get("plaats", "")
+    naam   = res.get("naam") or "—"
+    kvk_nr = res.get("kvkNummer", "")
+    rsin   = res.get("rsin", "")
+    plaats = ((res.get("adres") or {}).get("binnenlandsAdres") or {}).get("plaats", "")
     # Fragiele veldtoegang: een link zonder rel of href liet de pagina omvallen.
-    href     = next((l.get("href") for l in res.get("links") or []
-                     if l.get("rel") == "basisprofiel" and l.get("href")), None)
+    href   = next((l.get("href") for l in res.get("links") or []
+                   if l.get("rel") == "basisprofiel" and l.get("href")), None)
 
-    with st.expander(f"**{naam}** — KvK {kvk_nr}  ·  {plaats}", expanded=len(resultaten) == 1):
+    with st.container(border=True):
+        kop, knop = st.columns([4, 1])
+        with kop:
+            st.markdown(
+                f'<div style="font-size:17px;font-weight:700;color:#24304A;">{veilig(naam)}</div>'
+                f'<div style="font-size:13px;color:#6b7a99;">KvK {veilig(kvk_nr)}'
+                f'{" &nbsp;·&nbsp; " + veilig(plaats) if plaats else ""}</div>',
+                unsafe_allow_html=True,
+            )
+        with knop:
+            if kvk_nr != geopend and href:
+                if st.button("Gegevens", key=f"open_{kvk_nr}", use_container_width=True):
+                    st.session_state["kvk_geopend"] = kvk_nr
+                    st.rerun()
+
+        if kvk_nr != geopend:
+            continue
+
+        if not href:
+            st.caption("Geen basisprofiel beschikbaar bij dit resultaat.")
+            continue
+
+        with st.spinner("Basisprofiel ophalen…"):
+            profiel = haal_basisprofiel(href, kvk_key)
+
+        if not profiel:
+            st.warning("Het basisprofiel kon niet worden opgehaald.")
+            continue
+
+        p = profiel_kort(profiel)
+
         col1, col2 = st.columns(2)
         with col1:
             st.markdown(f"""
             <div class="bk-tile">
-              <div class="label">Bedrijfsnaam</div>
-              <div class="value" style="font-size:16px;">{veilig(naam)}</div>
+              <div class="label">Statutaire naam</div>
+              <div class="value" style="font-size:16px;">{veilig(p["statutaire_naam"] or p["naam"] or naam)}</div>
+              {f'<div class="sub">Handelsnamen: {veilig(" · ".join(p["handelsnamen"]))}</div>' if p["handelsnamen"] else ''}
             </div>""", unsafe_allow_html=True)
         with col2:
             st.markdown(f"""
             <div class="bk-tile">
               <div class="label">KvK-nummer · RSIN</div>
               <div class="value" style="font-size:16px;font-family:monospace;">{veilig(kvk_nr)}</div>
-              <div class="sub">{veilig(rsin)}</div>
+              <div class="sub">{veilig(rsin, leeg="geen RSIN")}</div>
             </div>""", unsafe_allow_html=True)
 
-        if href:
-            sbi_codes = haal_sbi(href, kvk_key)
-            if sbi_codes:
-                hoofd = [s for s in sbi_codes if s.get("indHoofdactiviteit") == "Ja"]
-                neven = [s for s in sbi_codes if s.get("indHoofdactiviteit") != "Ja"]
+        gegevens = (
+            _rij("Rechtsvorm", p["rechtsvorm"])
+            + _rij("Geregistreerd sinds", p["geregistreerd"])
+            + _rij("Werkzame personen", p["werkzame_personen"])
+            + _rij("Adres hoofdvestiging", p["adres"])
+            + _rij("Website", " · ".join(p["websites"]) if p["websites"] else None)
+            + _rij("Vestigingsnummer", p["vestigingsnummer"])
+        )
+        if gegevens:
+            st.markdown(
+                f'<div class="bk-tile"><div class="label">Bedrijfsgegevens</div>'
+                f'<div style="margin-top:8px;font-size:14px;">{gegevens}</div></div>',
+                unsafe_allow_html=True,
+            )
 
-                badges_hoofd = "".join(
-                    f'<span class="sbi-badge">{veilig(a.get("sbiCode"))}</span> '
-                    f'{veilig(a.get("sbiOmschrijving"))}<br>'
-                    for a in hoofd
-                )
-                badges_neven = "".join(
-                    f'<span class="sbi-badge sbi-badge-neven">{veilig(a.get("sbiCode"))}</span> '
-                    f'{veilig(a.get("sbiOmschrijving"))}<br>'
-                    for a in neven
-                ) if neven else ""
+        hoofd, neven = sbi_gesplitst(profiel)
+        if hoofd or neven:
+            badges_hoofd = "".join(
+                f'<span class="sbi-badge">{veilig(a.get("sbiCode"))}</span> '
+                f'{veilig(a.get("sbiOmschrijving"))}<br>'
+                for a in hoofd
+            )
+            badges_neven = "".join(
+                f'<span class="sbi-badge sbi-badge-neven">{veilig(a.get("sbiCode"))}</span> '
+                f'{veilig(a.get("sbiOmschrijving"))}<br>'
+                for a in neven
+            )
+            st.markdown(f"""
+            <div class="bk-tile">
+              <div class="label">Hoofdactiviteit</div>
+              <div style="margin-top:6px;font-size:15px;line-height:2;">{badges_hoofd or "—"}</div>
+              {f'<div class="label" style="margin-top:10px;">Nevenactiviteit</div><div style="margin-top:6px;font-size:15px;line-height:2;">{badges_neven}</div>' if badges_neven else ''}
+            </div>""", unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="bk-tile">
+              <div class="label">SBI-code</div>
+              <div class="sub" style="margin-top:4px;">Tijdelijk niet beschikbaar (KvK verwerkt de gegevens)</div>
+            </div>""", unsafe_allow_html=True)
 
-                st.markdown(f"""
-                <div class="bk-tile">
-                  <div class="label">Hoofdactiviteit</div>
-                  <div style="margin-top:6px;font-size:15px;line-height:2;">{badges_hoofd or "—"}</div>
-                  {f'<div class="label" style="margin-top:10px;">Nevenactiviteit</div><div style="margin-top:6px;font-size:15px;line-height:2;">{badges_neven}</div>' if badges_neven else ''}
-                </div>""", unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                <div class="bk-tile">
-                  <div class="label">SBI-code</div>
-                  <div class="sub" style="margin-top:4px;">Tijdelijk niet beschikbaar (KvK verwerkt de gegevens)</div>
-                </div>""", unsafe_allow_html=True)
+        if p["non_mailing"]:
+            st.caption("Dit bedrijf staat als **non-mailing** geregistreerd: niet gebruiken "
+                       "voor ongevraagde reclame per post of telefoon.")
 
-st.caption("Bron: KvK Handelsregister API")
+st.caption(
+    f"Bron: KvK Handelsregister API · zoeken gratis, basisprofiel {PRIJS_PER_PROFIEL} "
+    "per bevraging · antwoorden worden een uur gecachet"
+)
