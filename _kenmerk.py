@@ -2,6 +2,9 @@
 
 Bewust vrij van Streamlit-afhankelijkheden, zodat deze functies los testbaar zijn
 (zie tests/test_kenmerk.py).
+
+Bron: Specificatie Betalingskenmerk_bepaling v1.5 (Belastingdienst, 20-04-2023).
+Alle 27 voorbeelden uit die specificatie zijn als regressietest vastgelegd.
 """
 
 from datetime import date
@@ -22,35 +25,90 @@ MIDDEL_LABEL = {
 # de formulering van de boekhoudomschrijving (zie build_omschrijving).
 TOESLAG_CODES = {23, 24, 25, 26, 27, 28}
 
-# LET OP — onopgelost conflict, bewust ongewijzigd gelaten.
-# De VpB-tak in decode_kenmerk() vangt middelcode 80 t/m 96 af en staat vóór de
-# opzoeking in deze tabel. Daardoor zijn de entries 85, 86, 87 en 88 hieronder
-# in de praktijk onbereikbaar: een kenmerk met middelcode 87 wordt nu als
-# Vennootschapsbelasting getoond, niet als MOA vrachtwagens.
-# Eén van beide klopt niet. Fiscaal uit te zoeken:
-#   - klopt deze tabel, dan moet de VpB-range naar 80 t/m 84;
-#   - klopt de VpB-range, dan moeten de vier entries hieronder weg.
-# Tot die vraag beantwoord is blijft het gedrag zoals het was.
+# Middelcodes op positie 10-11, conform de paragrafen 3 t/m 17 van de
+# specificatie. De VpB-codes staan hier niet in; die hebben een eigen indeling
+# (zie VPB_MIDDELCODES).
 MIDDEL2_LABEL = {
-    70: {"kort": "IB",  "lang": "Inkomstenbelasting"},
-    71: {"kort": "IH",  "lang": "Conserverende aanslag IH"},
-    73: {"kort": "IB",  "lang": "Inkomstenbelasting (gemoedsbezwaarde)"},
-    74: {"kort": "VpB", "lang": "Vennootschapsbelasting"},
-    75: {"kort": "ZVW", "lang": "Zorgverzekeringswet"},
-    76: {"kort": "HSB", "lang": "Motorrijtuigenbelasting (naheffing)"},
-    78: {"kort": "HSB", "lang": "Motorrijtuigenbelasting"},
-    85: {"kort": "EVN", "lang": "Eurovignet"},                                  # onbereikbaar, zie boven
-    86: {"kort": "EVN", "lang": "Eurovignet (naheffing)"},                      # onbereikbaar, zie boven
-    87: {"kort": "MOA", "lang": "Motorrijtuigenbelasting vrachtwagens (aangifte)"},   # onbereikbaar, zie boven
-    88: {"kort": "MOA", "lang": "Motorrijtuigenbelasting vrachtwagens (naheffing)"},  # onbereikbaar, zie boven
-    97: {"kort": "LIR", "lang": "Landinrichtingsrente / Verontreinigingsheffing"},
-    23: {"kort": "KOT", "lang": "Kinderopvangtoeslag"},
-    24: {"kort": "HT",  "lang": "Huurtoeslag"},
-    25: {"kort": "ZT",  "lang": "Zorgtoeslag"},
-    26: {"kort": "KGB", "lang": "Kindgebonden budget"},
-    27: {"kort": "VB",  "lang": "Verzuimboete Toeslagen"},
-    28: {"kort": "VGB", "lang": "Vergrijpboete Toeslagen"},
+    70: {"kort": "IB",  "lang": "Inkomstenbelasting"},                           # par. 4, A-MIDDEL H
+    71: {"kort": "IH",  "lang": "Conserverende aanslag IH"},                      # par. 3, A-MIDDEL P
+    73: {"kort": "IB",  "lang": "Inkomstenbelasting (gemoedsbezwaarde)"},         # par. 4, A-MIDDEL N
+    75: {"kort": "ZVW", "lang": "Zorgverzekeringswet"},                           # par. 4, A-MIDDEL W
+    76: {"kort": "HSB", "lang": "Motorrijtuigenbelasting (naheffing)"},           # par. 8
+    78: {"kort": "HSB", "lang": "Motorrijtuigenbelasting"},                       # par. 6
+    85: {"kort": "EVN", "lang": "Eurovignet"},                                    # par. 10
+    86: {"kort": "EVN", "lang": "Eurovignet (naheffing)"},                        # par. 11
+    87: {"kort": "MOA", "lang": "Motorrijtuigenbelasting vrachtwagens (aangifte)"},     # par. 5
+    88: {"kort": "MOA", "lang": "Motorrijtuigenbelasting vrachtwagens (naheffing)"},    # par. 7
+    97: {"kort": "LIR", "lang": "Landinrichtingsrente / Verontreinigingsheffing"},      # par. 9
+    23: {"kort": "KOT", "lang": "Kinderopvangtoeslag"},                           # par. 12
+    24: {"kort": "HT",  "lang": "Huurtoeslag"},                                   # par. 13
+    25: {"kort": "ZT",  "lang": "Zorgtoeslag"},                                   # par. 14
+    26: {"kort": "KGB", "lang": "Kindgebonden budget"},                           # par. 15
+    27: {"kort": "VB",  "lang": "Verzuimboete Toeslagen"},                        # par. 16
+    28: {"kort": "VGB", "lang": "Vergrijpboete Toeslagen"},                       # par. 17
 }
+
+# Middelcode 97 dekt twee heffingen. Welke van de twee staat op positie 16
+# (A-MIDHERK): 1 = Landinrichtingsrente, 2 = Verontreinigingsheffing
+# Rijkswateren. Beide voorbeelden in paragraaf 9 bevestigen dit.
+MIDHERK_97 = {
+    1: {"kort": "LIR", "lang": "Landinrichtingsrente"},
+    2: {"kort": "VHR", "lang": "Verontreinigingsheffing Rijkswateren"},
+}
+
+# Vennootschapsbelasting, paragraaf 2. B-MIDDEL is afgeleid van de eerste twee
+# posities van het RSIN: 00 wordt 74, 80 t/m 84 blijven staan, en 85 t/m 89
+# worden 92 t/m 96. De codes 85 t/m 91 zijn dus GEEN VpB — 85 t/m 88 zijn
+# Eurovignet en MOA (paragrafen 5, 7, 10 en 11) en 89 t/m 91 bestaan niet.
+VPB_MIDDELCODES = frozenset({74}) | frozenset(range(80, 85)) | frozenset(range(92, 97))
+
+# SOORT-cijfer uit het aanslagnummer (JAVO positie 3). De specificatie geeft geen
+# codetabel; deze twee waarden komen uit de voorbeelden zelf: soort 0 staat bij
+# "Voorlopige aanslag" (paragraaf 2 VpB en paragraaf 4 IB/ZVW) en soort 6 bij
+# "Definitieve aanslag" (paragraaf 2). Overige waarden worden bewust niet
+# gelabeld: dan is onbekend wat er staat, en een gok levert een stille fout op.
+SOORT_LABEL = {0: "Voorlopige aanslag", 6: "Definitieve aanslag"}
+
+# Middelcodes waarbij positie 13 het SOORT-cijfer is. Bij HSB, MOA en Eurovignet
+# is positie 13 het begin van het volgnummer, niet het soort; bij toeslagen staat
+# er wel een SOORT-cijfer, maar wat de waarden daar betekenen is niet vastgelegd.
+SOORT_OP_POSITIE_13 = {70, 71, 73, 75}
+
+# Middelcodes die per definitie een naheffingsaanslag zijn (paragrafen 8, 7 en 11).
+NAHEFFING_CODES = {76, 88, 86}
+
+# Weging voor het controlecijfer op positie 1, van rechts naar links toegepast
+# over de posities 2 t/m 16. Zie controlecijfer() voor de verantwoording.
+CONTROLE_WEGING = (2, 4, 8, 5, 10, 9, 7, 3, 6, 1)
+
+
+def controlecijfer(posities_2_tot_16: str) -> int:
+    """Het controlecijfer dat op positie 1 van het betalingskenmerk hoort.
+
+    De specificatie zegt hierover alleen "berekenen m.b.v. modulus-11 algoritme,
+    zie onderaan", maar onderaan staat uitsluitend de elfproef voor het BSN/RSIN
+    en niet die voor het kenmerk zelf. Onderstaande regel is daarom afgeleid uit
+    de voorbeelden en daarna geverifieerd: hij klopt op alle 27 voorbeelden in de
+    specificatie en op het extern gevalideerde kenmerk uit de README, dus 28 van
+    28. Het is de gangbare acceptgiro-elfproef.
+
+    Weeg van rechts naar links met 2, 4, 8, 5, 10, 9, 7, 3, 6, 1 (herhalend),
+    tel op en neem 11 min de rest bij deling door 11. Een uitkomst 11 wordt 0 en
+    een uitkomst 10 wordt 1; dat laatste is in drie voorbeelden bevestigd.
+    """
+    som = sum(int(d) * CONTROLE_WEGING[i % len(CONTROLE_WEGING)]
+              for i, d in enumerate(reversed(posities_2_tot_16)))
+    c = 11 - som % 11
+    if c == 11:
+        return 0
+    if c == 10:
+        return 1
+    return c
+
+
+def controlecijfer_klopt(raw16: str) -> bool:
+    """Of positie 1 past bij de overige vijftien posities."""
+    return int(raw16[0]) == controlecijfer(raw16[1:])
 
 
 def rsin_check_digit(d8: str) -> int:
@@ -105,17 +163,49 @@ def decode_tijdvak(code: str) -> str:
     return mapping.get(n, f"tijdvak {code}")
 
 
+def decode_boekjaar(tydvak4: str) -> str:
+    """Leest B-TYDVAK (positie 12 t/m 15) als beginmaand plus eindmaand.
+
+    In het voorbeeld van paragraaf 2 staat 0112 bij een boekjaar 2022, dus 01
+    t/m 12. Staat er iets anders dan twee geldige maandnummers, dan wordt de ruwe
+    code getoond in plaats van een verzonnen periode.
+    """
+    begin, eind = tydvak4[:2], tydvak4[2:]
+    if begin.isdigit() and eind.isdigit() and 1 <= int(begin) <= 12 and 1 <= int(eind) <= 12:
+        return f"{MAANDEN[int(begin) - 1]} t/m {MAANDEN[int(eind) - 1]}"
+    return tydvak4
+
+
+def actieve_posities(*posities: int) -> list[bool]:
+    """Vlaggenlijst voor de positieweergave: True op elke gedecodeerde positie.
+
+    De weergave onder "Positieweergave" belooft dat de donkere cijfers de
+    gedecodeerde velden zijn. Deze functie houdt die belofte na, in plaats van
+    per tak een handgeschreven lijst van zestien booleans.
+    """
+    gevraagd = set(posities)
+    return [i in gevraagd for i in range(1, 17)]
+
+
 def format_rsin(rsin9: str | None) -> str | None:
     if rsin9 is None:
         return None
     return f"{rsin9[:4]}.{rsin9[4:6]}.{rsin9[6:]}"
 
 
-def decode_kenmerk(raw: str):
+def decode_kenmerk(raw: str, negeer_controlecijfer: bool = False):
     """Returns (result_dict, error_str). One of them is None."""
     raw = raw.replace(" ", "")
     if not raw.isdigit() or len(raw) != 16:
         return None, "Voer een geldig 16-cijferig betalingskenmerk in."
+
+    if not negeer_controlecijfer and not controlecijfer_klopt(raw):
+        return None, (
+            f"Het controlecijfer klopt niet. Op positie 1 hoort een "
+            f"{controlecijfer(raw[1:])} te staan en niet een {raw[0]}, dus er is "
+            f"minstens één cijfer verkeerd overgenomen. Controleer het kenmerk — "
+            f"anders volgt een verkeerd BSN/RSIN of een verkeerd tijdvak."
+        )
 
     p = lambda i: int(raw[i - 1])
     s = lambda f, t: raw[f - 1:t]
@@ -131,40 +221,57 @@ def decode_kenmerk(raw: str):
             "jaar": reconstruct_year(p(11)),
             "tijdvak": decode_tijdvak(s(14, 15)),
             "rsin": format_rsin(rsin9), "rsin9": rsin9,
-            "digit_active": [False,False,False,False,False,False,False,False,False,True,True,False,False,True,True,False],
+            # 2-9 BSN/RSIN, 10 middel, 11 jaar, 14-15 tijdvak (paragraaf 1)
+            "digit_active": actieve_posities(*range(2, 10), 10, 11, 14, 15),
         }, None
 
     middel2 = int(s(10, 11))
 
-    if middel2 == 74 or (80 <= middel2 <= 96):
+    if middel2 in VPB_MIDDELCODES:
         rsin6 = s(2, 7)
         if middel2 == 74:
             prefix = "00"
         elif middel2 <= 84:
             prefix = str(middel2)
         else:
-            prefix = str(middel2 - 7)
+            prefix = str(middel2 - 7)          # 92 t/m 96 hoort bij RSIN 85 t/m 89
         rsin9 = rsin_uit(prefix + rsin6)
+        boekjaar = s(12, 15)
         return {
-            "soort": "Vennootschapsbelasting", "soort_sub": "", "kort": "VpB",
+            "soort": "Vennootschapsbelasting",
+            "soort_sub": SOORT_LABEL.get(p(9), ""),
+            "kort": "VpB",
             "categorie": "vpb",
             "jaar": reconstruct_year(p(8)),
-            "tijdvak": f"Boekjaar {s(12, 15)}",
-            "boekjaar": s(12, 15),
+            "tijdvak": f"Boekjaar {decode_boekjaar(boekjaar)}",
+            "boekjaar": boekjaar,
             "rsin": format_rsin(rsin9), "rsin9": rsin9,
-            "digit_active": [False,True,True,True,True,True,True,True,False,True,True,False,False,False,False,False],
+            # 2-7 RSIN, 8 jaar, 9 soort, 10-11 middel, 12-15 boekjaar (paragraaf 2)
+            "digit_active": actieve_posities(*range(2, 8), 8, 9, 10, 11, *range(12, 16)),
         }, None
 
     if middel2 in MIDDEL2_LABEL:
         rsin9 = rsin_uit(s(2, 9))
         m = MIDDEL2_LABEL[middel2]
+        if middel2 == 97:
+            m = MIDHERK_97.get(p(16), m)       # onderscheid LIR / VHR staat op positie 16
+        leest_soort = middel2 in SOORT_OP_POSITIE_13
+        soort_sub = SOORT_LABEL.get(p(13), "") if leest_soort else ""
+        # 2-9 BSN/RSIN, 10-11 middel, 12 jaar; daarbij positie 13 waar dat het
+        # soortcijfer is en positie 16 bij middelcode 97 (LIR of VHR).
+        posities = [*range(2, 10), 10, 11, 12]
+        if leest_soort:
+            posities.append(13)
+        if middel2 == 97:
+            posities.append(16)
         return {
-            "soort": m["lang"], "soort_sub": "", "kort": m["kort"],
+            "soort": m["lang"], "soort_sub": soort_sub, "kort": m["kort"],
             "categorie": "toeslag" if middel2 in TOESLAG_CODES else "aanslag",
+            "naheffing": middel2 in NAHEFFING_CODES,
             "jaar": reconstruct_year(p(12)),
             "tijdvak": "—",
             "rsin": format_rsin(rsin9), "rsin9": rsin9,
-            "digit_active": [False,True,True,True,True,True,True,True,True,True,True,True,False,False,False,False],
+            "digit_active": actieve_posities(*posities),
         }, None
 
     return None, f"Onbekend middelcode ({middel2}). Mogelijk een bijzonder kenmerk dat niet algoritmisch te decoderen is."
@@ -178,12 +285,20 @@ def build_omschrijving(r: dict) -> str:
     boekjaar de relevante periode, niet het jaarcijfer uit het kenmerk.
     """
     categorie = r.get("categorie", "aangifte")
+    voorlopig = r.get("soort_sub") == "Voorlopige aanslag"
 
     if categorie == "vpb":
-        return f"Aanslag VpB boekjaar {r['boekjaar']}"
+        aanhef = "Voorl. aanslag VpB" if voorlopig else "Aanslag VpB"
+        return f"{aanhef} boekjaar {r['boekjaar']}"
 
     if categorie == "aanslag":
-        return f"Aanslag {r['kort']} {r['jaar']}"
+        if voorlopig:
+            aanhef = "Voorl. aanslag"
+        elif r.get("naheffing"):
+            aanhef = "Naheff."
+        else:
+            aanhef = "Aanslag"
+        return f"{aanhef} {r['kort']} {r['jaar']}"
 
     if categorie == "toeslag":
         return f"{r['soort']} {r['jaar']}"
