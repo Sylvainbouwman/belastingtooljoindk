@@ -164,7 +164,7 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 | `_tarieven_check.py` | Maandelijkse check op nieuwe tarieven (belastingdienst.nl) |
 | `_format.py` | Nederlandse notatie voor bedragen, datums en percentages (zonder Streamlit) |
 | `_ui.py` | Gedeeld stijlblok, koptekst, HTML-escaping en het KvK-sleutelblok |
-| `tests/` | Pytest-suite (352 tests) |
+| `tests/` | Pytest-suite (366 tests) |
 | `WIJZIGINGSRAPPORT.md` | Volledig verslag van de codereview en de drie verificatierondes |
 | `update-bram.md` | Overzicht voor Bram: wat er in deze repo zit en wat er van DK/Join nodig is |
 | `requirements.txt` | Python dependencies |

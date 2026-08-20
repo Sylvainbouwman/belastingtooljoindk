@@ -5,8 +5,7 @@
 **Betreft:** volledige codereview + oplossen van alle gevonden bugs, gevolgd door een
 verificatieronde waarin het rekenwerk van álle vier de rekenpagina's is getoetst aan de bron
 **Branch:** `master` (gepusht)
-**Omvang:** 17 commits, 26 bestanden, +4.200 / −752 regels
-**Tests:** van 0 naar 327 (alle groen)
+**Tests:** van 0 naar 366 (alle groen)
 
 > **Scope.** Dit rapport gaat uitsluitend over de repository `belastingtooljoindk`, die
 > tot 18-08-2026 `betalingskenmerk-tool` heette. Die bevat inmiddels zes pagina's —
@@ -498,7 +497,7 @@ De bevindingen staan in paragraaf 2b; hier staat waar ze terechtkwamen.
 | `pages/Auto_BTW_Prive.py` | marge per auto; youngtimerblok; maandweergave; kentekenvalidatie; escaping van de RDW-velden |
 | `pages/VIES_BTW_Controle.py`, `pages/KvK_SBI_Opzoeken.py` | dode knop weg; gedeeld stijlblok; escaping; KvK-sleutelblok en URL-controle |
 | `_format.py`, `_ui.py` | nieuw — zie paragraaf 6 |
-| `tests/` | van 203 naar 327 tests; `tests/test_ui.py` is nieuw |
+| `tests/` | van 203 naar 366 tests; `tests/test_ui.py` en `tests/test_kvk.py` zijn nieuw |
 
 ---
 
@@ -654,15 +653,14 @@ Bijgewerkt op 18 augustus, na de terugkoppeling van Sylvain. Er staat nog één 
 
 ### Nog te doen
 
-Niets meer aan de code. Wat resteert is werk buiten de repository:
-
-- [ ] **De repository omdopen op GitHub** naar `belastingtooljoindk`, en daarna de app in
-      Streamlit Cloud opnieuw uitrollen. Let op de volgorde: eerst de oude app in Streamlit
-      Cloud verwijderen zodat het subdomein `belastingtooljoindk` vrijkomt, dan opnieuw
-      deployen vanaf de nieuwe reponaam en de KvK-sleutel opnieuw in Settings → Secrets
-      zetten. Alle verwijzingen ín de repository zijn al omgezet.
+Niets. Zowel in de code als in de omgeving is alles afgerond.
 
 ### Afgehandeld met een beslissing
+
+- [x] **De repository omgedoopt** op GitHub naar `belastingtooljoindk`, en de app opnieuw
+      uitgerold in Streamlit Cloud vanaf die nieuwe naam, op hetzelfde subdomein en met de
+      KvK-sleutel opnieuw ingesteld. Daarmee rolt een push weer automatisch uit; zolang de
+      app nog aan de oude naam hing moest dat handmatig met een reboot.
 
 - [x] **0. Bram laat de huidige `master` ophalen.** Bram pullt later. Zolang dat niet is
       gebeurd, draait in DK/Join de versie van 15-07-2026 — zie §1a voor wat daar fout aan
