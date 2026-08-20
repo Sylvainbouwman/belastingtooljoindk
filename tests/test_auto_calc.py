@@ -240,7 +240,7 @@ def test_label_toont_geen_regimewissel_als_het_percentage_gelijk_blijft():
 def test_officieel_rekenvoorbeeld_van_de_belastingdienst():
     """Het voorbeeld op "Btw en privegebruik auto van de zaak": een auto die op
     1 september tot het bedrijf gaat horen geeft 4/12 x 2,7% x EUR 45.000 =
-    EUR 405. Met de oude dagmethode kwam daar EUR 406,08 uit."""
+    EUR 405. Met de oude dagmethode kwam daar EUR 406,11 uit."""
     bedrag, _ = btw_correctie(45_000, marge=False,
                               van=date(2026, 9, 1), tot=date(2026, 12, 31),
                               ingebruikname=date(2026, 9, 1), jaar=2026)

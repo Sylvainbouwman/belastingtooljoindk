@@ -49,12 +49,12 @@ De gevolgen voor de uitkomsten, van zwaar naar licht:
 | VIES-storingen werden als "niet geldig" getoond | Risico bij de beoordeling van het 0%-tarief bij ICP |
 | **Middelcodes 85 t/m 88 werden als VpB gelezen** | Eurovignet en MOA kwamen eruit als vennootschapsbelasting, **met een verzonnen RSIN** — 810360007 waar 036000012 hoort |
 | **Nulemissiekorting 2026 ontbrak** | Een EV uit 2026 kreeg 22% in plaats van 18%: € 6.600 in plaats van € 5.400 bij een auto van € 30.000. **Dit is het lopende jaar** |
-| **Waterstofauto's kregen het prijsplafond opgelegd** | € 25.400 in plaats van € 14.400 bijtelling bij een waterstofauto van € 80.000 (2026) |
+| **Waterstofauto's kregen het prijsplafond opgelegd** | € 16.400 in plaats van € 14.400 bijtelling bij een waterstofauto van € 80.000 (2026) |
 | **De youngtimerregeling ontbrak volledig** | Auto's ouder dan 16 jaar kregen 22% van de catalogusprijs in plaats van 35% van de waarde in het economisch verkeer |
 | Nulemissiepercentage 2025 stond op 16% | Moet 17% zijn — te lage bijtelling |
 | De kopieerknop op de Betalingskenmerk-pagina deed niets | Streamlit haalt onclick-attributen weg; een klik leverde geen kopie en geen melding |
 | De marge-instelling gold voor alle auto's tegelijk | Bij meerdere auto's in één berekening kreeg er één het verkeerde forfait |
-| BTW-correctie rekende naar dagen, de Belastingdienst naar maanden | € 406,08 waar de Belastingdienst € 405 voorrekent |
+| BTW-correctie rekende naar dagen, de Belastingdienst naar maanden | € 406,11 waar de Belastingdienst € 405 voorrekent |
 
 Daarnaast bleek de tool bij ongeveer 1 op de 11 betalingskenmerken een **verzonnen
 BSN/RSIN** te tonen, en klopte de kopieerknop-omschrijving alleen voor loonheffing en
@@ -274,7 +274,7 @@ die waarde wordt geen bedrag getoond in plaats van een verkeerd bedrag.
 **En opnieuw een methodeverschil, net als bij de rente.** Het rekenvoorbeeld op "Btw en
 privégebruik auto van de zaak" gaat over een auto die op 1 september tot het bedrijf gaat
 horen en komt uit op `4/12 × 2,7% × € 45.000 = € 405`. De tool rekende met dagen door 365
-en kwam op € 406,08. De BTW-correctie rekent nu in maanden, waarbij een gedeeltelijke
+en kwam op € 406,11. De BTW-correctie rekent nu in maanden, waarbij een gedeeltelijke
 maand naar rato van de dagen binnen die maand telt. De bijtelling blijft naar dagen
 rekenen, omdat de 60-maandstermijn midden in een maand kan aflopen en de periode dan op de
 dag wordt gesplitst. Beide methodes staan nu in de voettekst en in de PDF.

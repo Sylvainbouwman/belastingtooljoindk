@@ -99,12 +99,12 @@ om een natuurlijk persoon, en een RSIN begint altijd met 00 of 80–89.
 | Regel | Wat het moet zijn | Wat de versie van 15-07 doet |
 |---|---|---|
 | **Laag BTW-forfait** | 1,5% bij een marge-auto, én zodra het privégebruik later valt dan 4 jaar na het jaar van ingebruikname | altijd 2,7%: bijna een verdubbeling, € 1.350 waar € 750 hoort op € 50.000 |
-| **Deel van een jaar (BTW)** | naar **maanden**: 4/12 × 2,7% × € 45.000 = € 405, conform het voorbeeld van de Belastingdienst | dagen / 365 → € 406,08 |
+| **Deel van een jaar (BTW)** | naar **maanden**: 4/12 × 2,7% × € 45.000 = € 405, conform het voorbeeld van de Belastingdienst | dagen / 365 → € 406,11 |
 | **Schrikkeljaar** | een vol jaar is 1,0 | 366/365 = 100,27% van het forfait |
 | **Bijtellingsregime** | staat 60 maanden vast, gerekend vanaf de **eerste dag van de maand ná de eerste toelating** | percentage van het berekeningsjaar |
 | **Standaardpercentage** | 25% tot en met 2016, 22% vanaf 2017 | valt voor onbekende jaren stil terug op 22% |
 | **Nulemissie** | zie tabel hieronder | 2026 ontbrak → 22% in plaats van 18% |
-| **Waterstof en zonnecelauto's** | verlaagd percentage over de **hele** catalogusprijs, geen plafond | plafond toegepast: € 25.400 waar € 14.400 hoort bij € 80.000 |
+| **Waterstof en zonnecelauto's** | verlaagd percentage over de **hele** catalogusprijs, geen plafond | plafond toegepast: € 16.400 waar € 14.400 hoort bij € 80.000 |
 | **Auto ouder dan 16 jaar** | 35% van de waarde in het economisch verkeer (grens was 15 jaar tot 2026) | 22% van de catalogusprijs |
 
 **Nulemissiereeks**, getoetst aan de jaarpagina's én aan de wettekst. De wet noemt een
