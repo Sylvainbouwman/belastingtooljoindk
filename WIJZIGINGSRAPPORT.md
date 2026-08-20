@@ -649,7 +649,8 @@ OB-kenmerk toont "RSIN" en haalt nog gewoon Onesti B.V. met SBI-code 69204 op.
 
 ## 7. Actielijst
 
-Bijgewerkt op 18 augustus, na de terugkoppeling van Sylvain. Er staat nog één punt open.
+Bijgewerkt op 18 augustus, na de terugkoppeling van Sylvain. Er staat niets meer open;
+hieronder staat per punt hoe het is afgedaan.
 
 ### Nog te doen
 
@@ -662,9 +663,12 @@ Niets. Zowel in de code als in de omgeving is alles afgerond.
       KvK-sleutel opnieuw ingesteld. Daarmee rolt een push weer automatisch uit; zolang de
       app nog aan de oude naam hing moest dat handmatig met een reboot.
 
-- [x] **0. Bram laat de huidige `master` ophalen.** Bram pullt later. Zolang dat niet is
-      gebeurd, draait in DK/Join de versie van 15-07-2026 — zie §1a voor wat daar fout aan
-      is.
+- [x] **0. De huidige `master` is het uitgangspunt voor DK/Join.** Bram's team werkt niet
+      in Python: zij lezen de repository en zetten de rekenregels om naar hun eigen taal.
+      Er valt voor hen dus niets te installeren, maar zolang zij zich baseren op de code van
+      15-07-2026 nemen ze de fouten uit §1a mee. Daarvoor is
+      [`update-bram.md`](update-bram.md) gemaakt: dat zet per regel naast elkaar wat het
+      moet zijn en wat die oude versie doet, taalonafhankelijk.
 - [x] **3. BSN-verwerking (K5).** Besloten: tonen mag, versturen naar de KvK niet.
       Uitgevoerd, zie paragraaf 6a.
 - [x] **4. Eerdere berekeningen herzien.** Niet nodig: de tool is nog in testfase, er is
