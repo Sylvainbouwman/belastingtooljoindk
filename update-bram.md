@@ -1,158 +1,178 @@
-# Belastingtool JoinDK — overzicht voor Bram
+# Belastingtool JoinDK — wat er in de rekenregels is veranderd
 
 **Datum:** 18 augustus 2026
-**Repository:** `Sylvainbouwman/belastingtooljoindk` (heette tot 18-08-2026 `betalingskenmerk-tool`)
-**Live testomgeving:** [belastingtooljoindk.streamlit.app](https://belastingtooljoindk.streamlit.app)
+**Repository:** [`Sylvainbouwman/belastingtooljoindk`](https://github.com/Sylvainbouwman/belastingtooljoindk) — heette tot 18-08-2026 `betalingskenmerk-tool`
+**Volledig verslag:** [`WIJZIGINGSRAPPORT.md`](WIJZIGINGSRAPPORT.md)
 
 ---
 
 Hoi Bram,
 
-Hieronder staat wat er in deze repository zit, wat er sinds jullie ophaalmoment is
-veranderd, en wat er van jou of je team nodig is. De details staan in
-[`WIJZIGINGSRAPPORT.md`](WIJZIGINGSRAPPORT.md); ik verwijs per punt naar de paragraaf.
+Jullie bouwen dit in een andere taal, dus dit document gaat niet over code maar over
+**regels**: wat de tool nu doet, wat de versie van 15 juli deed, en waarom. Alles wat
+hieronder staat is taalonafhankelijk — percentages, datums, formules en de volgorde waarin
+controles moeten gebeuren. De bestandsnamen staan erbij zodat je in de repo kunt nakijken
+hoe het is uitgewerkt; je hoeft niets te installeren.
 
-## Eerst het onderscheid, want dat wordt door elkaar gehaald
+De rekenregels staan bewust los van de schermen. `_kenmerk.py`, `_rente.py`,
+`_auto_calc.py`, `_vies.py` en `_kvk.py` bevatten geen Streamlit-code. Bij elke fiscale
+waarde staat de vindplaats in een commentaar: een jaarpagina, een wetsartikel of een
+paragraaf uit een specificatie. Er zitten 366 tests op, waarvan een deel de gepubliceerde
+rekenvoorbeelden van de Belastingdienst letterlijk nabouwt.
 
-**Deze repository is de Belastingtool.** Eén Streamlit-app met zes rekentools erin. Dit is
-de code die bij DK/Join in de beveiligde omgeving wordt ingebouwd.
-
-**bouwman.tools is iets anders.** Dat is een portaal waar Sylvain allerlei losse tools bij
-elkaar zet, achter een login, zodat collega's ze kunnen uitproberen. De Belastingtool is
-daar sinds 18-08-2026 als tegel te vinden, maar die portal is alleen een verzamelplek voor
-intern testen — geen onderdeel van deze code en geen leveringsobject. Kijk je naar wat er
-naar DK/Join gaat, dan is deze repository het enige dat telt.
-
-De naam "Bouwman Tools" stond eerder ook in deze app zelf. Dat was onjuist en is
-rechtgezet: de app heet **Belastingtool JoinDK**.
-
----
-
-## De zes tools in deze repository
-
-**1. Betalingskenmerk** — `pages/Betalingskenmerk.py`
-Decodeert een 16-cijferig betalingskenmerk naar belastingmiddel, jaar, tijdvak en
-BSN/RSIN, en levert een omschrijving voor de boekhouding. Getoetst aan de officiële
-*Specificatie Betalingskenmerk_bepaling v1.5*: alle 27 voorbeelden uit dat document staan
-als test vastgelegd. Het controlecijfer op positie 1 wordt gevalideerd, dus een verkeerd
-overgetypt cijfer wordt geweigerd in plaats van stilzwijgend tot een verkeerd RSIN te
-leiden. Zie §2b.
-
-**2. VIES BTW-controle** — `pages/VIES_BTW_Controle.py`
-Controleert een Europees BTW-nummer bij de EU-database en leidt bij NL-nummers het RSIN af.
-Onderscheidt drie uitkomsten: geldig, niet geldig, en *niet gecontroleerd*. Dat laatste is
-wezenlijk: VIES antwoordt bij een storing met HTTP 200 en `isValid: false`, wat eerder als
-"ongeldig nummer" werd getoond. Zie §3.4.
-
-**3. KvK / SBI opzoeken** — `pages/KvK_SBI_Opzoeken.py`
-Zoekt een bedrijf op naam, KvK-nummer of RSIN en toont rechtsvorm, handelsnamen,
-registratiedatum, werkzame personen, adres en SBI-activiteiten. Let op de kosten: zoeken is
-gratis, elk opgevraagd basisprofiel kost € 0,02. De pagina haalt een profiel daarom alleen
-op voor het bedrijf dat je aanklikt.
-
-**4. Belastingrente IB** — `pages/Belastingrente_IB.py`
-**5. Belastingrente VpB** — `pages/Belastingrente_VpB.py`
-Berekenen de belastingrente volgens de methode van de Belastingdienst: 30 dagen per maand,
-360 dagen per jaar, per tariefperiode naar beneden afgerond. De testsuite reproduceert de
-rekenvoorbeelden die de Belastingdienst zelf publiceert, tot op de euro. Herkennen de
-vrijstelling bij tijdige aangifte, de maximering op 19 weken, navordering, en bij VpB het
-tijdig verzoek om een voorlopige aanslag en gebroken boekjaren. Zie §2a en §3.2.
-
-**6. Auto BTW privé** — `pages/Auto_BTW_Prive.py`
-BTW-correctie privégebruik en bijtelling van een zakelijke auto, met kentekenlookup via het
-RDW. De BTW-correctie rekent naar maanden, conform het rekenvoorbeeld van de
-Belastingdienst. Het bijtellingspercentage ligt 60 maanden vast vanaf de eerste toelating.
-De nulemissiereeks 2017 t/m 2026 is getoetst aan de jaarpagina's én aan de wettekst.
-Inclusief de youngtimerregeling en de waterstofuitzondering. Zie §2b en §2c.
-
-**Rekenlogica staat los van de UI.** `_kenmerk.py`, `_rente.py`, `_auto_calc.py`,
-`_vies.py`, `_kvk.py` en `_format.py` bevatten geen Streamlit-code en zijn dus los testbaar
-en los overneembaar. Bij elke fiscale waarde staat de vindplaats in een commentaar: een
-jaarpagina, een wetsartikel of een paragraaf uit een specificatie. Op dit moment 366 tests,
-alle groen.
+**Eén ding vooraf, omdat het door elkaar wordt gehaald.** Deze repository is de
+Belastingtool: zes rekentools in één app, en dit is wat bij DK/Join wordt ingebouwd.
+*bouwman.tools* is iets anders — een portaal waar Sylvain losse tools bij elkaar zet zodat
+collega's ze kunnen uitproberen. Die portal is geen leveringsobject.
 
 ---
 
-## Wat er van jou nodig is
+## 1. Belastingrente IB en VpB — `_rente.py`
 
-### 1. Haal de huidige `master` op. Dit gaat vóór al het andere.
+De zwaarste bevindingen zitten hier. Twee regels ontbraken volledig.
 
-De code die rond 17 juli is opgehaald is commit `821b575` van 15-07-2026. **Die versie
-rekent aantoonbaar fout.** §1a somt dertien punten op met de bedragen erbij; de
-verificatieronde van 18 augustus vond daar nog vier bij, die in §2b staan en in diezelfde
-oude versie zitten. De zwaarste:
+| Regel | Wat het moet zijn | Wat de versie van 15-07 doet |
+|---|---|---|
+| **Vrijstelling bij tijdige aangifte** | Aangifte vóór 1 mei (IB) of 1 juni (VpB) én ongewijzigd gevolgd → **geen rente verschuldigd** | rekent gewoon door: € 264 op € 10.000 waar € 0 hoort |
+| **Maximering op 19 weken** | Te laat maar ongewijzigd gevolgd → einddatum is 19 weken na ontvangst van de aangifte, of 6 weken na dagtekening, het vroegste | ontbreekt: 198 dagen waar 74 hoort, tot 2,6× te hoog |
+| **Dagentelling** | 30 dagen per maand, 360 per jaar | werkelijke dagen, 365 |
+| **Einddatum** | telt mee in de periode | telt niet mee |
+| **Afronding** | naar beneden op hele euro's, **per tariefperiode** | op centen, over het totaal |
+| **Navordering** | rente tot 1 maand na dagtekening; op eigen verzoek maximaal 12 weken na het verzoek | als gewone aanslag: 6 weken |
+| **Startdatum VpB** | eerste dag van de 7e maand na het boekjaar | boekjaareinde + 6 maanden + 1 dag → bij boekjaar t/m 30-06 of 28-02 een dag te vroeg |
+| **Voorlopige aanslag VpB** | tijdig verzocht en conform opgelegd → geen rente | ontbreekt |
+| **Tarieftabel VpB** | boekjaren t/m 2013: 3% | valt terug op 8,25%, tot € 1.295 te veel op € 100.000 |
+| **Tarieftabel VpB** | 1-3-2015 t/m 29-2-2016: 8,05% | 8,15% |
 
-- de vrijstelling bij tijdige aangifte ontbreekt volledig, waardoor er rente wordt berekend
-  waar niets verschuldigd is (€ 264 waar € 0 hoort, op € 10.000)
-- de maximering op 19 weken ontbreekt, wat tot 2,6× te hoge rente geeft
-- middelcodes 85 t/m 88 worden als vennootschapsbelasting gelezen, met een verzonnen RSIN
-  erbij: 810360007 waar 036000012 hoort
-- de nulemissiekorting voor 2026 ontbreekt, dus een te hoge bijtelling in het lopende jaar
-- de BTW-correctie mist de 1,5%-regel na vier jaar, wat bijna een verdubbeling geeft
+Dat de afronding **per tariefperiode** gaat en niet over het totaal blijkt uit hun eigen
+voorbeeld: 93 + 9 = 102, terwijl 93,75 + 9,93 zou afronden naar 103.
 
-**De repository is omgedopt**: `betalingskenmerk-tool` heet nu `belastingtooljoindk`. Je
-bestaande clone blijft werken via de doorverwijzing van GitHub, maar werk de remote bij:
+> **Let op bij jullie specificatie.** §12 van de rekenmodule-specificatie telt eerst alle
+> deelbedragen op en rondt daarna één keer af. Dat geeft € 103 waar de Belastingdienst
+> € 102 publiceert. §11 zegt het goed. Zolang §12 niet is gecorrigeerd, implementeert een
+> ontwikkelaar de fout — dat is het enige punt waar wij iets van jullie nodig hebben.
 
-```
-git remote set-url origin https://github.com/Sylvainbouwman/belastingtooljoindk.git
-```
-
-### 2. Corrigeer §12 van de rekenmodule-specificatie vóór uitlevering
-
-De pseudocode telt alle deelbedragen op en rondt daarna één keer af. Dat geeft € 103 waar de
-Belastingdienst € 102 publiceert. §11 van dezelfde specificatie zegt het goed — per
-tariefperiode afronden — maar een ontwikkelaar implementeert de pseudocode. Zolang §12 niet
-is aangepast, bouwt je team de afrondingsfout in.
+**Volgorde van de controles** — deze wijkt bewust af van de pseudocode: bij een
+navorderingsaanslag zijn de aangiftevragen niet van toepassing, dus de navorderingscheck
+gaat **vóór** de vrijstelling. Een navorderingsaanslag volgt per definitie niet de
+oorspronkelijke aangifte.
 
 ---
 
-## Ter kennisgeving
+## 2. Betalingskenmerk — `_kenmerk.py`
 
-**De tarievencontrole waarschuwt vanaf nu automatisch.** Eens per maand wordt de
-tarieventabel op belastingdienst.nl uitgelezen en regel voor regel vergeleken met de
-tabellen in de code. Dat signaleert zowel een nieuwe periode als een percentage dat met
-terugwerkende kracht is herzien. Er hoeft dus niet meer handmatig te worden nagelopen, maar
-**de melding moet wél worden opgevolgd**.
+Getoetst aan *Specificatie Betalingskenmerk_bepaling v1.5*. Zes van de 27 voorbeelden in
+dat document werden fout gedecodeerd.
 
-**De Specificatie Betalingskenmerk_bepaling v1.5 is op vier punten onvolledig of
-inconsistent.** Relevant omdat jullie er van implementeren:
+| Regel | Wat het moet zijn | Wat de versie van 15-07 doet |
+|---|---|---|
+| **VpB-middelcodes** | 74, 80–84 en 92–96. Prefix: 74 → `00`, 80–84 → zichzelf, 92–96 → code min 7 | hele reeks 80–96 als VpB |
+| **Codes 85–88** | 85/86 = Eurovignet, 87/88 = MOA vrachtwagens | als VpB, met **verzonnen RSIN**: 810360007 waar 036000012 hoort, plus verkeerd jaar |
+| **Codes 89–91** | bestaan niet → nette foutmelding | als VpB |
+| **Controlecijfer positie 1** | valideren (zie hieronder) | wordt genegeerd |
+| **11-proef restwaarde 10** | er bestaat geen geldig nummer → geen nummer tonen | plakt "10" aan: nummer van 10 cijfers, bij 1 op de 11 invoeren |
+| **Middelcode 97** | positie 16 bepaalt welke heffing: 1 = landinrichtingsrente, 2 = verontreinigingsheffing | één label met een schuine streep |
+| **SOORT-cijfer** | positie 9 (VpB) of 13 (IB, IH, ZVW): 0 = voorlopige, 6 = definitieve aanslag | wordt genegeerd |
+| **Jaarreconstructie** | venster van vorig jaar tot en met volgend jaar, want voorlopige aanslagen komen vooruit | cijfer 7 werd in 2026 gelezen als 2017 in plaats van 2027 |
 
-1. Het **controlecijfer op positie 1** wordt niet beschreven. Er staat "berekenen m.b.v.
-   modulus-11 algoritme, zie onderaan", maar onderaan staat alleen de elfproef voor het
-   BSN/RSIN. De regel die op alle 27 voorbeelden klopt staat gedocumenteerd in
-   `controlecijfer()` in `_kenmerk.py`.
-2. **Drie voorbeelden zijn inconsistent met zichzelf**: bij `036000012F0314240`,
+**Het controlecijfer, want dat staat niet in de specificatie.** Daar staat alleen "berekenen
+m.b.v. modulus-11 algoritme, zie onderaan", maar onderaan staat uitsluitend de elfproef voor
+het BSN/RSIN. De regel die wél klopt is de acceptgiro-elfproef:
+
+1. weeg de posities 2 t/m 16 van **rechts naar links** met 2, 4, 8, 5, 10, 9, 7, 3, 6, 1 en
+   herhaal die reeks
+2. tel op, neem 11 min de rest bij deling door 11
+3. uitkomst 11 → 0, uitkomst 10 → 1
+
+Dat klopt op alle 27 voorbeelden in de specificatie én op een extern gevalideerd kenmerk uit
+de praktijk: 28 van de 28. Zonder deze controle levert één verkeerd overgetypt cijfer een
+geloofwaardig maar verkeerd BSN/RSIN op.
+
+**Privacy.** Uit een kenmerk van een particulier komt een BSN. Dat wordt getoond, maar gaat
+niet naar de KvK. Vooraf te bepalen: bij middelcodes 70, 71, 73, 75 en 23–28 gaat het altijd
+om een natuurlijk persoon, en een RSIN begint altijd met 00 of 80–89.
+
+---
+
+## 3. Auto BTW privé — `_auto_calc.py`
+
+| Regel | Wat het moet zijn | Wat de versie van 15-07 doet |
+|---|---|---|
+| **Laag BTW-forfait** | 1,5% bij een marge-auto, én zodra het privégebruik later valt dan 4 jaar na het jaar van ingebruikname | altijd 2,7%: bijna een verdubbeling, € 1.350 waar € 750 hoort op € 50.000 |
+| **Deel van een jaar (BTW)** | naar **maanden**: 4/12 × 2,7% × € 45.000 = € 405, conform het voorbeeld van de Belastingdienst | dagen / 365 → € 406,08 |
+| **Schrikkeljaar** | een vol jaar is 1,0 | 366/365 = 100,27% van het forfait |
+| **Bijtellingsregime** | staat 60 maanden vast, gerekend vanaf de **eerste dag van de maand ná de eerste toelating** | percentage van het berekeningsjaar |
+| **Standaardpercentage** | 25% tot en met 2016, 22% vanaf 2017 | valt voor onbekende jaren stil terug op 22% |
+| **Nulemissie** | zie tabel hieronder | 2026 ontbrak → 22% in plaats van 18% |
+| **Waterstof en zonnecelauto's** | verlaagd percentage over de **hele** catalogusprijs, geen plafond | plafond toegepast: € 25.400 waar € 14.400 hoort bij € 80.000 |
+| **Auto ouder dan 16 jaar** | 35% van de waarde in het economisch verkeer (grens was 15 jaar tot 2026) | 22% van de catalogusprijs |
+
+**Nulemissiereeks**, getoetst aan de jaarpagina's én aan de wettekst. De wet noemt een
+verlaging in procentpunten met een maximumbedrag; onderstaande percentages met plafond zeggen
+hetzelfde. Boven het plafond geldt het standaardpercentage.
+
+| Regimejaar | Percentage | Plafond | Maximale korting |
+|---|---|---|---|
+| 2017, 2018 | 4% | geen | n.v.t. |
+| 2019 | 4% | € 50.000 | € 9.000 |
+| 2020 | 8% | € 45.000 | € 6.300 |
+| 2021 | 12% | € 40.000 | € 4.000 |
+| 2022 | 16% | € 35.000 | € 2.100 |
+| 2023, 2024 | 16% | € 30.000 | € 1.800 |
+| 2025 | 17% | € 30.000 | € 1.500 |
+| 2026 | 18% | € 30.000 | € 1.200 |
+
+Die maximale korting is plafond × (standaard − percentage). Voor 2019 en 2020 worden de
+bedragen € 9.000 en € 6.300 letterlijk in de wetsstukken genoemd, dus daar sluit de tabel
+aantoonbaar op aan.
+
+**Twee dingen die de tool niet kan en jullie misschien wel.** De bijtelling is bij een
+IB-ondernemer nooit hoger dan de totale autokosten van het jaar; die kosten kent de tool
+niet. En een auto die volledig op geïntegreerde zonnecellen rijdt valt ook onder de
+plafondvrijstelling, maar dat is niet uit de RDW-gegevens af te leiden.
+
+---
+
+## 4. VIES BTW-controle — `_vies.py`
+
+Eén regel, met gevolgen voor de onderbouwing van het 0%-tarief bij intracommunautaire
+prestaties: **een storing is geen ongeldig nummer**. VIES antwoordt bij een storing bij een
+lidstaat met HTTP 200 en `isValid: false`. Dat mag niet als "niet geldig" worden getoond,
+maar als *niet gecontroleerd*. Er zijn dus drie uitkomsten, geen twee.
+
+---
+
+## 5. Vier gebreken in de specificatie van de Belastingdienst
+
+Relevant omdat jullie er van implementeren. Zie §2b van het wijzigingsrapport.
+
+1. Het **controlecijfer op positie 1** wordt niet beschreven — zie punt 2 hierboven voor de
+   regel die wel klopt.
+2. **Drie van de 27 voorbeelden zijn inconsistent met zichzelf.** Bij `036000012F0314240`,
    `036000012A0414121` en `036000012N2100030` verschilt het jaartal één cijfer tussen het
-   aanslagnummer en het gedrukte kenmerk. De overige 24 zijn exact reproduceerbaar uit de
-   regels van het document.
+   aanslagnummer en het gedrukte kenmerk. De andere 24 zijn exact reproduceerbaar uit de
+   regels van het document — dat is nagerekend in beide richtingen.
 3. Er is **geen codetabel voor het SOORT-cijfer**. Uit de voorbeelden blijkt alleen
    0 = voorlopige aanslag en 6 = definitieve aanslag.
 4. Bij paragraaf 4 staat **"pos 3"** waar "pos 13" wordt bedoeld (B-JAVO bij A-MIDDEL = W).
 
-**Privacy.** Uit een betalingskenmerk van een particulier rolt een BSN. Dat nummer wordt
-getoond met een label erbij, maar gaat **niet** naar de KvK — die kent geen particulieren.
-De tool bepaalt dat vooraf op het middel en op de beginposities van het nummer. De
-Streamlit-omgeving is een testomgeving; er horen geen productiegegevens in.
-
 ---
 
-## Waar je de details vindt
+## 6. Waar je het in de repo terugvindt
 
-| Wat | Waar |
-|---|---|
-| Wat er misging in de versie van 15-07 | §1a |
-| Verificatie van de rentepagina's | §2a |
-| Verificatie van betalingskenmerk en auto | §2b |
-| De bijtellingsreeks tegen de wettekst | §2c |
-| Alle wijzigingen per pagina | §3 |
-| Wat bewust niet is aangepast | §4 |
-| Hoe het is gecontroleerd | §5 |
-| Kwetsbaarheden K1 t/m K5 | §6 en §6a |
-| Actielijst | §7 |
+| Onderwerp | Bestand | Paragraaf in het rapport |
+|---|---|---|
+| Belastingrente | `_rente.py`, `tests/test_rente.py` | §2a, §3.2 |
+| Betalingskenmerk | `_kenmerk.py`, `tests/test_kenmerk.py` | §2b, §3.1 |
+| Auto | `_auto_calc.py`, `tests/test_auto_calc.py` | §2b, §2c, §3.3 |
+| VIES | `_vies.py`, `tests/test_vies.py` | §3.4 |
+| KvK-gegevens | `_kvk.py`, `tests/test_kvk.py` | — |
+| Wat er misging in de versie van 15-07 | — | §1a |
+| Hoe het is gecontroleerd | — | §5 |
 
-Alles in [`WIJZIGINGSRAPPORT.md`](WIJZIGINGSRAPPORT.md). Elke commitmelding beschrijft
-daarnaast wat er misging, wat het gevolg was en hoe is gecontroleerd dat er niets anders is
-gewijzigd.
+De testbestanden zijn de snelste ingang: daar staan de gepubliceerde rekenvoorbeelden van de
+Belastingdienst en de 27 specificatievoorbeelden als verwachte uitkomsten. Wat jullie
+implementatie op diezelfde invoer moet opleveren, staat daar dus letterlijk.
 
 Met vriendelijke groet,
 Sylvain
