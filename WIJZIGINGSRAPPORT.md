@@ -98,6 +98,13 @@ def _bijtelling(..., jaar, dagen)                  # berekeningsjaar i.p.v. datu
 De twee bovenste regels zijn het ernstigst: die zijn pas bij de verificatieronde
 gevonden (§2a) en betreffen regels die nooit in de tool hebben gezeten.
 
+**Deze tabel is niet volledig meer.** Hij is opgesteld op 17 augustus. De verificatieronde
+van 18 augustus vond nog vier fouten die net zo goed in de versie van 15-07 zitten:
+middelcodes 85 t/m 88 die als vennootschapsbelasting worden gelezen met een verzonnen RSIN
+erbij, de ontbrekende nulemissiekorting voor 2026, het plafond dat onterecht op
+waterstofauto's wordt toegepast en de ontbrekende youngtimerregeling. Zie §2b. Het volledige
+overzicht van wat mogelijk herberekend moet worden staat in §7, actiepunt 4.
+
 **Wat er moet gebeuren:** de huidige `master` ophalen. Het is dezelfde repository, dus
 een `git pull` volstaat — er is geen aparte levering nodig. Daarna geldt actiepunt 4:
 nagaan of er met de oude versie voor klanten is gerekend.

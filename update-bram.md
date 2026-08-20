@@ -78,16 +78,17 @@ alle groen.
 ### 1. Haal de huidige `master` op. Dit gaat vóór al het andere.
 
 De code die rond 17 juli is opgehaald is commit `821b575` van 15-07-2026. **Die versie
-rekent aantoonbaar fout**, op elf punten — zie §1a voor de volledige lijst met bedragen.
-De zwaarste twee:
+rekent aantoonbaar fout.** §1a somt dertien punten op met de bedragen erbij; de
+verificatieronde van 18 augustus vond daar nog vier bij, die in §2b staan en in diezelfde
+oude versie zitten. De zwaarste:
 
 - de vrijstelling bij tijdige aangifte ontbreekt volledig, waardoor er rente wordt berekend
   waar niets verschuldigd is (€ 264 waar € 0 hoort, op € 10.000)
 - de maximering op 19 weken ontbreekt, wat tot 2,6× te hoge rente geeft
-
-Daarnaast onder meer: middelcodes 85 t/m 88 leverden een verzonnen RSIN op, de
-nulemissiekorting voor 2026 ontbrak (te hoge bijtelling in het lopende jaar), en de
-BTW-correctie miste de 1,5%-regel na vier jaar (bijna dubbel).
+- middelcodes 85 t/m 88 worden als vennootschapsbelasting gelezen, met een verzonnen RSIN
+  erbij: 810360007 waar 036000012 hoort
+- de nulemissiekorting voor 2026 ontbreekt, dus een te hoge bijtelling in het lopende jaar
+- de BTW-correctie mist de 1,5%-regel na vier jaar, wat bijna een verdubbeling geeft
 
 **De repository is omgedopt**: `betalingskenmerk-tool` heet nu `belastingtooljoindk`. Je
 bestaande clone blijft werken via de doorverwijzing van GitHub, maar werk de remote bij:
