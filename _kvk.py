@@ -103,8 +103,8 @@ def groepeer_resultaten(resultaten: list | None) -> list[dict]:
 
     De Zoeken-API geeft per bedrijf meerdere records: een `rechtspersoon` zonder
     adres, een `hoofdvestiging` met adres, en bij meer locaties ook
-    `nevenvestiging`-records. Voor Voorbeeld Beheer B.V. leverde dat twee ogenschijnlijk
-    identieke regels op, waarvan één zonder plaatsnaam.
+    `nevenvestiging`-records. Bij een zoekopdracht op één bedrijf leverde dat
+    twee ogenschijnlijk identieke regels op, waarvan één zonder plaatsnaam.
 
     Meer dan één regel per KvK-nummer voegt niets toe, want het basisprofiel hangt
     aan het KvK-nummer en niet aan de vestiging. Van elk nummer blijft daarom het

@@ -530,21 +530,21 @@ ronde 3 (18 augustus):
 |---|---|---|
 | Betalingskenmerk | alle 27 voorbeelden uit specificatie v1.5 | alle 27 juist, inclusief het BSN/RSIN uit het aanslagnummer |
 | Betalingskenmerk | omgekeerde weg: aanslagnummer naar kenmerk | 24 van 27 exact gelijk; 3 zijn in het document zelf inconsistent |
-| Betalingskenmerk | `4863521721601050` | `Afdr. OB Mei 2026` · RSIN 8635.21.721 · naam Voorbeeld Beheer B.V. · SBI 69204 |
+| Betalingskenmerk | het extern gevalideerde kenmerk | `Afdr. OB Mei 2026` · RSIN, naam en SBI-code correct opgehaald |
 | Betalingskenmerk | zelfde kenmerk, laatste cijfer verminkt | geweigerd, met vermelding dat op positie 1 een 2 hoort te staan en niet een 4 |
 | Betalingskenmerk | kopieerknop | werkt nu; het onclick-attribuut van de oude knop bleek door Streamlit te worden verwijderd |
-| Auto BTW privé | kenteken `01GBB5`, heel 2026 | BTW € 634,96 · bijtelling € 5.173,74 (22%) |
+| Auto BTW privé | een echt kenteken, heel 2026 | BTW € 634,96 · bijtelling € 5.173,74 (22%) |
 | Auto BTW privé | zelfde auto, 1 sep t/m 31 dec | 4,00/12 maanden · € 211,65 (met de oude dagmethode € 212,22) |
 | Auto BTW privé | officieel rekenvoorbeeld Belastingdienst | € 405,00 exact |
 | VIES | `NL820646660B01` | Geldig · ABN AMRO BANK N.V. · adres · RSIN 8206.46.660 |
-| KvK / SBI | KvK-nummer `99999999` | naam, hoofdactiviteit en twee nevenactiviteiten; de nieuwe URL-controle laat het echte basisprofiel door |
+| KvK / SBI | een echt KvK-nummer | naam, hoofdactiviteit en twee nevenactiviteiten; de nieuwe URL-controle laat het echte basisprofiel door |
 | Alle zes pagina's | na het samenvoegen van de stijlblokken | opmaak ongewijzigd, geen fouten in de serverlog |
 
 En de controles uit ronde 2 (17 augustus):
 
 | Pagina | Testgeval | Uitkomst |
 |---|---|---|
-| Auto BTW privé | kenteken `01GBB5` (VW Up!, eerste toelating 14-01-2020) | BTW-correctie € 380,97 en bijtelling € 3.104,20 — gelijk aan de losse berekening |
+| Auto BTW privé | een echt kenteken (VW Up!, eerste toelating 14-01-2020) | BTW-correctie € 380,97 en bijtelling € 3.104,20 — gelijk aan de losse berekening |
 | Auto BTW privé | PDF genereren | werkt, met de nieuwe velden eerste toelating en ingebruikname |
 | VIES | `NL820646660B01` | ✓ Geldig · ABN AMRO BANK N.V. · adres · afgeleid RSIN 8206.46.660 |
 | VIES | `nl<img src=x onerror=alert(1)>` | geweigerd, 0 geïnjecteerde elementen |
@@ -638,7 +638,7 @@ ook de caching van BSN's.
 
 In de app nagelopen: een voorlopige aanslag IB toont "BSN (natuurlijk persoon)" met een
 uitleg dat er niet is opgezocht en zonder netwerkverkeer naar de KvK; het gevalideerde
-OB-kenmerk toont "RSIN" en haalt nog gewoon Voorbeeld Beheer B.V. met SBI-code 69204 op.
+OB-kenmerk toont "RSIN" en haalt nog gewoon de vennootschap met haar SBI-code op.
 
 > **Context die dit punt lichter maakt dan het in ronde 2 leek.** Deze Streamlit-versie is
 > een testomgeving voor collega's. De versie die in productie gaat, komt in een beveiligde

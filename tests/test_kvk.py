@@ -1,7 +1,9 @@
 """Tests voor het uitlezen van het KvK-basisprofiel.
 
-Het profiel hieronder is de structuur van een echt antwoord van de Basisprofiel-API,
-opgehaald op 18-08-2026. De veldnamen zijn daarmee geen aanname.
+De structuur van het profiel hieronder komt uit een echt antwoord van de
+Basisprofiel-API van 18-08-2026, zodat de veldnamen geen aanname zijn. Alle
+waarden zijn vervangen door verzonnen gegevens: de repository is publiek en er
+horen geen bestaande bedrijven, adressen of KvK-nummers in.
 """
 
 import pytest
@@ -20,12 +22,12 @@ from _kvk import (
 )
 
 
-ECHT_PROFIEL = {
+VOORBEELD_PROFIEL = {
     "kvkNummer": "99999999",
     "indNonMailing": "Ja",
     "naam": "Voorbeeld Tweewielers",
-    "formeleRegistratiedatum": "20170512",
-    "materieleRegistratie": {"datumAanvang": "20170512"},
+    "formeleRegistratiedatum": "20200115",
+    "materieleRegistratie": {"datumAanvang": "20200115"},
     "totaalWerkzamePersonen": 1,
     "handelsnamen": [
         {"naam": "Voorbeeld Tweewielers", "volgorde": 0},
@@ -53,7 +55,7 @@ ECHT_PROFIEL = {
                 "indAfgeschermd": "Nee",
                 "volledigAdres": "Voorbeeldweg 1 1234AB Voorbeeldstad",
                 "straatnaam": "Voorbeeldweg",
-                "huisnummer": 83,
+                "huisnummer": 1,
                 "postcode": "1234AB",
                 "plaats": "Voorbeeldstad",
                 "land": "Nederland",
@@ -80,7 +82,7 @@ def test_kvk_datum_weigert_wat_geen_datum_is(waarde):
 # ── Losse velden ────────────────────────────────────────────────────────────
 
 def test_rechtsvorm_uit_de_eigenaar():
-    assert rechtsvorm(ECHT_PROFIEL) == "Eenmanszaak"
+    assert rechtsvorm(VOORBEELD_PROFIEL) == "Eenmanszaak"
 
 
 def test_uitgebreide_rechtsvorm_heeft_voorkeur():
@@ -92,7 +94,8 @@ def test_uitgebreide_rechtsvorm_heeft_voorkeur():
 
 
 def test_handelsnamen_in_de_volgorde_van_de_kvk():
-    assert handelsnamen(ECHT_PROFIEL) == ["Voorbeeld Tweewielers", "Voorbeeld Tweewielers Noord"]
+    assert handelsnamen(VOORBEELD_PROFIEL) == [
+        "Voorbeeld Tweewielers", "Voorbeeld Tweewielers Noord"]
 
 
 def test_handelsnamen_worden_gesorteerd_ook_als_de_kvk_ze_omgekeerd_geeft():
@@ -102,7 +105,7 @@ def test_handelsnamen_worden_gesorteerd_ook_als_de_kvk_ze_omgekeerd_geeft():
 
 
 def test_adres_van_de_hoofdvestiging():
-    assert adres(ECHT_PROFIEL) == "Voorbeeldweg 1 1234AB Voorbeeldstad"
+    assert adres(VOORBEELD_PROFIEL) == "Voorbeeldweg 1 1234AB Voorbeeldstad"
 
 
 def test_bezoekadres_heeft_voorkeur_boven_postadres():
@@ -131,18 +134,18 @@ def test_adres_valt_terug_op_de_losse_onderdelen():
 
 
 def test_werkzame_personen_als_getal():
-    assert werkzame_personen(ECHT_PROFIEL) == 1
+    assert werkzame_personen(VOORBEELD_PROFIEL) == 1
     assert werkzame_personen({"totaalWerkzamePersonen": "12"}) == 12
 
 
 def test_websites():
-    assert websites(ECHT_PROFIEL) == ["www.voorbeeld-tweewielers.example"]
+    assert websites(VOORBEELD_PROFIEL) == ["www.voorbeeld-tweewielers.example"]
 
 
 # ── SBI-codes ───────────────────────────────────────────────────────────────
 
 def test_sbi_wordt_gesplitst_in_hoofd_en_neven():
-    hoofd, neven = sbi_gesplitst(ECHT_PROFIEL)
+    hoofd, neven = sbi_gesplitst(VOORBEELD_PROFIEL)
     assert [c["sbiCode"] for c in hoofd] == ["95320"]
     assert [c["sbiCode"] for c in neven] == ["16110", "25530"]
 
@@ -153,17 +156,18 @@ def test_sbi_zonder_activiteiten():
 
 # ── Het volledige blok dat de pagina toont ──────────────────────────────────
 
-def test_profiel_kort_op_het_echte_antwoord():
-    p = profiel_kort(ECHT_PROFIEL)
+def test_profiel_kort_op_een_volledig_antwoord():
+    p = profiel_kort(VOORBEELD_PROFIEL)
     assert p["naam"] == "Voorbeeld Tweewielers"
     assert p["rechtsvorm"] == "Eenmanszaak"
-    assert p["geregistreerd"] == "12-05-2017"
+    assert p["geregistreerd"] == "15-01-2020"
     assert p["werkzame_personen"] == 1
     assert p["adres"] == "Voorbeeldweg 1 1234AB Voorbeeldstad"
     assert p["websites"] == ["www.voorbeeld-tweewielers.example"]
     assert p["vestigingsnummer"] == "000099999999"
     assert p["non_mailing"] is True
-    assert p["handelsnamen"] == ["Voorbeeld Tweewielers", "Voorbeeld Tweewielers Noord"]
+    assert p["handelsnamen"] == [
+        "Voorbeeld Tweewielers", "Voorbeeld Tweewielers Noord"]
 
 
 @pytest.mark.parametrize("profiel", [None, {}, {"_embedded": {}}, {"_embedded": {"eigenaar": None}}])
@@ -183,7 +187,7 @@ def test_profiel_kort_bevat_alleen_velden_uit_een_bevraging():
     """Vangnet tegen kostenkruip: elk veld dat de pagina toont moet uit het
     basisprofiel komen. Zou er ooit een veld bijkomen dat een tweede endpoint
     nodig heeft, dan valt deze test op omdat het uit dit antwoord niet te halen is."""
-    p = profiel_kort(ECHT_PROFIEL)
+    p = profiel_kort(VOORBEELD_PROFIEL)
     gevuld = [k for k, v in p.items() if v not in (None, [], False)]
     assert set(gevuld) <= {
         "naam", "statutaire_naam", "handelsnamen", "rechtsvorm", "geregistreerd",
@@ -193,10 +197,12 @@ def test_profiel_kort_bevat_alleen_velden_uit_een_bevraging():
 
 # ── Dubbele zoekresultaten ──────────────────────────────────────────────────
 
-# Precies wat de Zoeken-API teruggaf voor "voorbeeld beheer bv" op 18-08-2026: één bedrijf,
-# twee records. Dat leverde twee bijna identieke regels op de pagina op.
+# De vorm die de Zoeken-API op 18-08-2026 teruggaf bij een zoekopdracht op één
+# bedrijf: twee records voor hetzelfde KvK-nummer. Dat leverde twee bijna
+# identieke regels op de pagina op. Waarden verzonnen.
 ZOEKRESULTAAT_DUBBEL = [
-    {"kvkNummer": "88888888", "vestigingsnummer": "000088888888", "naam": "Voorbeeld Beheer B.V.",
+    {"kvkNummer": "88888888", "vestigingsnummer": "000088888888",
+     "naam": "Voorbeeld Beheer B.V.",
      "adres": {"binnenlandsAdres": {"type": "bezoekadres", "plaats": "Voorbeeldstad"}},
      "type": "hoofdvestiging"},
     {"kvkNummer": "88888888", "naam": "Voorbeeld Beheer B.V.", "type": "rechtspersoon"},
