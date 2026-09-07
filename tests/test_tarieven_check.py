@@ -11,9 +11,12 @@ import pytest
 from _tarieven_check import (
     KOP_ALGEMEEN,
     KOP_VPB,
+    controleer_nieuwe_tarieven,
+    controleregel,
     parse_tarieventabel,
     vergelijk,
 )
+from _tarieventabellen import tarieven_uit_pagina
 
 # Vereenvoudigd fragment in exact de opmaak die de Belastingdienst gebruikt,
 # inclusief de valstrikken: einddatums in dezelfde cel, een sterretje achter de
@@ -104,16 +107,23 @@ def test_zwijgt_bij_lege_invoer():
 
 # ── Tegen de echte pagina ───────────────────────────────────────────────────
 
-@pytest.mark.parametrize("module,kop", [
-    ("pages.Belastingrente_IB", KOP_ALGEMEEN),
-    ("pages.Belastingrente_VpB", KOP_VPB),
-])
-def test_tarieventabel_in_de_code_komt_overeen_met_belastingdienst_nl(module, kop):
-    """Netwerktest: vergelijkt de hardgecodeerde tabel regel voor regel met de bron.
+# De IB-reeks wijkt op één rij bewust van de algemene tabel af: de
+# coronaverlaging naar 0,01% ging voor de inkomstenbelasting pas op 1 juli 2020
+# in. Dat staat op de bronpagina in voetnoot *** ónder de tabel, dus de
+# tabelvergelijking kan het niet zien. De afwijking staat hier als gegeven, met
+# de brontabelrij als sleutel en de eigen rij als waarde, zodat elke andere rij
+# nog wél 1-op-1 wordt getoetst.
+AFWIJKINGEN_IB = {
+    (date(2020, 6, 1), 0.01): (date(2020, 7, 1), 0.01),
+}
 
-    Deze test heeft de twee datafouten in de VpB-tabel gevonden (1-3-2016 in
-    plaats van 1-3-2015, en de ontbrekende rijen van vóór april 2014).
-    """
+NETWERKTABELLEN = [
+    ("pages.Belastingrente_IB", KOP_ALGEMEEN, AFWIJKINGEN_IB),
+    ("pages.Belastingrente_VpB", KOP_VPB, {}),
+]
+
+
+def _haal_bronpagina():
     requests = pytest.importorskip("requests")
     from _tarieven_check import BELASTINGDIENST_URL
 
@@ -125,31 +135,129 @@ def test_tarieventabel_in_de_code_komt_overeen_met_belastingdienst_nl(module, ko
         resp.raise_for_status()
     except Exception as exc:
         pytest.skip(f"belastingdienst.nl niet bereikbaar: {exc}")
+    return resp.text
 
-    online = parse_tarieventabel(resp.text, kop)
+
+@pytest.mark.parametrize("module,kop,afwijkingen", NETWERKTABELLEN)
+def test_tarieventabel_in_de_code_komt_overeen_met_belastingdienst_nl(module, kop, afwijkingen):
+    """Netwerktest: vergelijkt de hardgecodeerde tabel regel voor regel met de bron.
+
+    Deze test heeft de twee datafouten in de VpB-tabel gevonden (1-3-2016 in
+    plaats van 1-3-2015, en de ontbrekende rijen van vóór april 2014).
+    """
+    online = parse_tarieventabel(_haal_bronpagina(), kop)
     assert online, "tabel niet herkend - opmaak van de pagina is waarschijnlijk gewijzigd"
 
-    eigen = _tarieven_uit_pagina(module)
-    assert eigen == online, (
-        f"\nin de code : {eigen}\nop de site : {online}"
+    verwacht = sorted((afwijkingen.get(rij, rij) for rij in online), reverse=True)
+    eigen = tarieven_uit_pagina(module)
+    assert eigen == verwacht, (
+        f"\nin de code : {eigen}\nverwacht   : {verwacht}\nop de site : {online}"
     )
 
 
-def _tarieven_uit_pagina(modulenaam: str):
-    """Leest de TARIEVEN-constante uit een Streamlit-pagina zonder die te draaien."""
-    import ast
+@pytest.mark.parametrize("module,kop,afwijkingen", NETWERKTABELLEN)
+def test_de_bewuste_afwijkingen_bestaan_nog_op_de_bronpagina(module, kop, afwijkingen):
+    """Een afwijking die de bron niet meer kent, dekt stil niets meer af.
+
+    Zonder deze test zou AFWIJKINGEN_IB blijven staan als de Belastingdienst de
+    rij van 1-6-2020 ooit wijzigt of splitst, en zou de vorige test die
+    wijziging dan verkeerd uitleggen.
+    """
+    online = parse_tarieventabel(_haal_bronpagina(), kop)
+    assert online, "tabel niet herkend - opmaak van de pagina is waarschijnlijk gewijzigd"
+    for bronrij in afwijkingen:
+        assert bronrij in online, (
+            f"{bronrij} staat niet meer in de tabel {kop!r}; de bewuste "
+            f"afwijking in {module} moet opnieuw worden beoordeeld"
+        )
+
+
+def test_de_ib_uitzondering_staat_nog_als_voetnoot_op_de_bronpagina():
+    """De grondslag van de IB-afwijking, aan de bron zelf getoetst.
+
+    Niet als vervanging van Stb. 2020, 200 — dat is de wettelijke grondslag —
+    maar zodat opvalt wanneer de Belastingdienst de uitzondering herformuleert
+    of intrekt.
+    """
+    import re
+    tekst = " ".join(re.sub(r"<[^>]+>", " ", _haal_bronpagina()).split())
+    assert ("Voor de inkomstenbelasting ging de tijdelijke verlaging in "
+            "vanaf 1-7-2020") in tekst
+
+
+# ── De uitkomst van de controle: gecontroleerd of niet ──────────────────────
+# "Geen waarschuwing" betekende voorheen twee dingen: de reeks klopt, of er is
+# niets gecontroleerd. De gebruiker las het tweede als het eerste. Deze tests
+# leggen vast dat de toestanden te onderscheiden zijn.
+
+EIGEN = [(date(2026, 1, 1), 5.00), (date(2025, 1, 1), 6.50)]
+
+
+def test_geslaagde_controle_zonder_afwijking(monkeypatch):
+    monkeypatch.setattr("_tarieven_check._haal_pagina_op", lambda maand: HTML)
+    controle = controleer_nieuwe_tarieven(EIGEN, KOP_ALGEMEEN)
+    assert controle.status == "gelijk"
+    assert controle.melding is None
+
+
+def test_afwijking_levert_status_afwijking(monkeypatch):
+    monkeypatch.setattr("_tarieven_check._haal_pagina_op", lambda maand: HTML)
+    controle = controleer_nieuwe_tarieven([(date(2026, 1, 1), 7.50)], KOP_ALGEMEEN)
+    assert controle.status == "afwijking"
+    assert "5%" in controle.melding
+
+
+def test_onbereikbare_bron_is_te_onderscheiden_van_een_geslaagde_controle(monkeypatch):
+    """De kern van het punt: niet dezelfde uitkomst als een controle die slaagde."""
+    def stuk(maand):
+        raise ConnectionError("geen netwerk")
+
+    monkeypatch.setattr("_tarieven_check._haal_pagina_op", stuk)
+    onbereikbaar = controleer_nieuwe_tarieven(EIGEN, KOP_ALGEMEEN)
+
+    monkeypatch.setattr("_tarieven_check._haal_pagina_op", lambda maand: HTML)
+    gelijk = controleer_nieuwe_tarieven(EIGEN, KOP_ALGEMEEN)
+
+    assert onbereikbaar.status == "onbereikbaar"
+    assert onbereikbaar.status != gelijk.status
+    assert onbereikbaar.melding is not None
+    assert controleregel(onbereikbaar) != controleregel(gelijk)
+
+
+def test_een_netwerkfout_laat_de_pagina_niet_stuklopen(monkeypatch):
+    """Zichtbaar melden mag; een exceptie doorlaten naar de pagina niet."""
+    def stuk(maand):
+        raise TimeoutError("te lang")
+
+    monkeypatch.setattr("_tarieven_check._haal_pagina_op", stuk)
+    assert controleer_nieuwe_tarieven(EIGEN, KOP_ALGEMEEN).status == "onbereikbaar"
+
+
+def test_onleesbare_pagina_meldt_dat_er_niets_is_gecontroleerd(monkeypatch):
+    """Ook een gewijzigde opmaak van de bron gaf eerst stilzwijgend None terug."""
+    monkeypatch.setattr("_tarieven_check._haal_pagina_op",
+                        lambda maand: "<html>niets</html>")
+    controle = controleer_nieuwe_tarieven(EIGEN, KOP_ALGEMEEN)
+    assert controle.status == "onleesbaar"
+    assert controle.melding is not None
+
+
+def test_niet_gedekt_wordt_in_de_voettekst_gemeld(monkeypatch):
+    """Wat de controle niet dekt, moet zij zelf zeggen — ook als zij slaagt."""
+    monkeypatch.setattr("_tarieven_check._haal_pagina_op", lambda maand: HTML)
+    controle = controleer_nieuwe_tarieven(EIGEN, KOP_ALGEMEEN, "voetnoot valt erbuiten")
+    assert controle.status == "gelijk"
+    assert "voetnoot valt erbuiten" in controleregel(controle)
+
+
+def test_alleen_de_ib_pagina_geeft_niet_gedekt_mee():
+    """Het onderscheid uit de code zelf, zodat het niet stil verdwijnt."""
     from pathlib import Path
 
-    pad = Path(__file__).resolve().parent.parent / (modulenaam.replace(".", "/") + ".py")
-    boom = ast.parse(pad.read_text(encoding="utf-8"))
-    for knoop in boom.body:
-        if isinstance(knoop, ast.Assign) and getattr(knoop.targets[0], "id", "") == "TARIEVEN":
-            rijen = []
-            for element in knoop.value.elts:
-                datum_call, pct = element.elts
-                jaar, maand, dag = (a.value for a in datum_call.args)
-                rijen.append((date(jaar, maand, dag), float(pct.value)))
-            return sorted(rijen, reverse=True)
-    raise AssertionError(f"TARIEVEN niet gevonden in {pad}")
+    wortel = Path(__file__).resolve().parent.parent
+    ib = (wortel / "pages/Belastingrente_IB.py").read_text(encoding="utf-8")
+    vpb = (wortel / "pages/Belastingrente_VpB.py").read_text(encoding="utf-8")
 
-
+    assert "controleer_nieuwe_tarieven(TARIEVEN, KOP_ALGEMEEN, NIET_GEDEKT)" in ib
+    assert "1 juli 2020" in ib
+    assert "controleer_nieuwe_tarieven(TARIEVEN, KOP_VPB)" in vpb

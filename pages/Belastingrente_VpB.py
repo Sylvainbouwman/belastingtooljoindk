@@ -14,14 +14,26 @@ from _rente import (
     nl_pct,
     renteperiode,
 )
-from _tarieven_check import KOP_VPB, controleer_nieuwe_tarieven
+from _tarieven_check import KOP_VPB, controleer_nieuwe_tarieven, controleregel
 from _ui import paginakop, paginastijl
 
 # ── Tarieven ────────────────────────────────────────────────────────────────
 # Enkelvoudige belastingrente VpB per jaar. Gesorteerd nieuw → oud.
-# Bron: belastingdienst.nl — "Percentages vennootschapsbelasting"
-# Laatste controle: 17 augustus 2026 (tabel 1-op-1 nagelopen tegen de bron).
-# Let op: 2022 t/m 2026 zijn herziene percentages (oorspronkelijk hoger vastgesteld).
+#
+# Let op: 2022 t/m 2026 zijn herziene percentages (oorspronkelijk hoger
+# vastgesteld). De Hoge Raad besliste op 16 januari 2026 dat voor de VpB
+# hetzelfde percentage moet gelden als voor de overige belastingen; de
+# Belastingdienst heeft de rijen vanaf 2022 daarop aangepast.
+#
+# Let ook op de rij van 1 juni 2020. Die is hier juist en wijkt daarmee af van
+# de IB-tabel in pages/Belastingrente_IB.py, waar 1 juli 2020 staat. De
+# coronaverlaging naar 0,01% ging voor de VpB in op 1 juni 2020 en voor de
+# inkomstenbelasting pas op 1 juli 2020. Op de bronpagina staat bij deze rij in
+# de VpB-tabel geen voetnoot, en bij dezelfde rij in de algemene tabel juist wel
+# ("Voor de inkomstenbelasting ging de tijdelijke verlaging in vanaf 1-7-2020").
+# Grondslag: Verzamelspoedwet COVID-19, Stb. 2020, 200 —
+# https://zoek.officielebekendmakingen.nl/stb-2020-200.html. Het verschil tussen
+# de twee tabellen is dus bedoeld; trek het niet recht.
 TARIEVEN = [
     (date(2026, 1, 1),  5.00),
     (date(2025, 1, 1),  6.50),
@@ -41,7 +53,15 @@ TARIEVEN = [
     (date(2012, 1, 1),  2.85),
 ]
 
-_tarief_waarschuwing = controleer_nieuwe_tarieven(TARIEVEN, KOP_VPB)
+# Grondslag: belastingdienst.nl, "Overzicht percentages belastingrente", tabel
+# "Percentages vennootschapsbelasting".
+#
+# Controle op 7 september 2026: alle zestien rijen zijn regel voor regel
+# vergeleken met de tekst van die tabel zoals die op 7 september 2026 online
+# stond, en de rij van 1 juni 2020 is daarnaast getoetst aan Stb. 2020, 200.
+# Anders dan bij de IB leunt deze reeks niet op een voetnoot: de automatische
+# controle hieronder dekt de hele tabel, dus `niet_gedekt` blijft leeg.
+_controle = controleer_nieuwe_tarieven(TARIEVEN, KOP_VPB)
 
 # ── Opmaak ──────────────────────────────────────────────────────────────────
 paginastijl()
@@ -54,8 +74,12 @@ paginakop(
 )
 
 # ── Invoer ───────────────────────────────────────────────────────────────────
-if _tarief_waarschuwing:
-    st.warning(_tarief_waarschuwing)
+if _controle.status == "afwijking":
+    st.warning(_controle.melding)
+elif _controle.melding:
+    # "onbereikbaar" of "onleesbaar": er is niets vergeleken. Dat moet zichtbaar
+    # zijn, want zonder melding leest de stilte als goedkeuring.
+    st.info(_controle.melding)
 
 huidig_jaar = date.today().year
 
@@ -267,8 +291,8 @@ with st.expander("Uitgangspunten van deze berekening", expanded=False):
 
 st.caption(
     "Rekenmethode volgens belastingdienst.nl: 30 dagen per maand, 360 dagen per jaar, "
-    "per tariefperiode naar beneden afgerond op hele euro's. Tarieventabel nagelopen op "
-    "17 augustus 2026; deze pagina controleert automatisch of de bron inmiddels afwijkt. "
-    "Bij een gebroken boekjaar worden de termijnen in hele maanden na het boekjaar "
-    "geteld: rente vanaf de 7e maand, vrijstellingsgrens in de 6e."
+    "per tariefperiode naar beneden afgerond op hele euro's. Bij een gebroken boekjaar "
+    "worden de termijnen in hele maanden na het boekjaar geteld: rente vanaf de 7e maand, "
+    "vrijstellingsgrens in de 6e. Tarieventabel met de hand nagelopen op "
+    "7 september 2026. " + controleregel(_controle)
 )

@@ -1,11 +1,11 @@
 # Wijzigingsrapport — codereview belastingtooljoindk
 
-**Datum:** 17 augustus 2026, bijgewerkt 18 augustus 2026
+**Datum:** 17 augustus 2026, bijgewerkt 18 augustus 2026 en 7 september 2026
 **Repository:** `belastingtooljoindk` (tot 18-08-2026 `betalingskenmerk-tool`)
 **Betreft:** volledige codereview + oplossen van alle gevonden bugs, gevolgd door een
 verificatieronde waarin het rekenwerk van álle vier de rekenpagina's is getoetst aan de bron
 **Branch:** `master` (gepusht)
-**Tests:** van 0 naar 366 (alle groen)
+**Tests:** van 0 naar 382 (alle groen)
 
 > **Scope.** Dit rapport gaat uitsluitend over de repository `belastingtooljoindk`, die
 > tot 18-08-2026 `betalingskenmerk-tool` heette. Die bevat inmiddels zes pagina's —
@@ -697,10 +697,13 @@ Niets. Zowel in de code als in de omgeving is alles afgerond.
 
 ### Ter kennisgeving voor Bram
 
-- [ ] 12. De tarievencontrole waarschuwt vanaf nu automatisch als belastingdienst.nl
-      afwijkt van de tabellen in de code — zowel bij een nieuwe periode als bij een met
-      terugwerkende kracht herzien percentage. Er hoeft dus niet meer handmatig te worden
-      nagelopen, maar de melding moet wél worden opgevolgd.
+- [ ] 12. De tarievencontrole waarschuwt automatisch als belastingdienst.nl afwijkt van
+      de tabellen in de code — zowel bij een nieuwe periode als bij een met terugwerkende
+      kracht herzien percentage. **Die controle dekt niet alles**: zij vergelijkt de
+      tabellen op die pagina en leest niet de voetnoten eronder, en juist daar staan de
+      uitzonderingen. Dat is op 7 september 2026 misgegaan; zie paragraaf 9. Handmatig
+      nalopen blijft dus nodig voor wat buiten de tabel staat, en de melding moet worden
+      opgevolgd.
 
 - [ ] 13. **De Specificatie Betalingskenmerk_bepaling v1.5 is op vier punten onvolledig of
       inconsistent.** Relevant, omdat jullie team ervan implementeert.
@@ -744,3 +747,148 @@ Niets. Zowel in de code als in de omgeving is alles afgerond.
 
 Elke commitmelding beschrijft wat er misging, wat het gevolg was en hoe is gecontroleerd
 dat er niets anders is gewijzigd.
+
+---
+
+## 9. Vrijgave 7 september 2026 — de IB-rente van juni 2020, en een controle die het niet kon zien
+
+**Datum:** 7 september 2026
+**Aanleiding:** bij het bouwen van het onderwerp revisierente in de repository
+`Berekeningen` is dezelfde percentagereeks vanuit de bron opgebouwd en van vindplaatsen
+voorzien. Daar kwam één ingangsdatum anders uit dan hier.
+**Tests:** van 366 naar 382, alle groen.
+
+### 9.1 De fiscale waarde
+
+In `pages/Belastingrente_IB.py` stond de coronaverlaging van de belastingrente naar
+0,01 procent op **1 juni 2020**. Voor de inkomstenbelasting begint die verlaging pas op
+**1 juli 2020**. Juni 2020 hoort voor de IB nog op 4,00 procent te staan.
+
+| | |
+|---|---|
+| Geraakte waarde | ingangsdatum van het percentage 0,01 in de IB-tarieventabel |
+| Was | `(date(2020, 6, 1), 0.01)` |
+| Wordt | `(date(2020, 7, 1), 0.01)` |
+| Vindplaats | Verzamelspoedwet COVID-19, Stb. 2020, 200 — <https://zoek.officielebekendmakingen.nl/stb-2020-200.html> |
+| Bevestiging bij de Belastingdienst | voetnoot \*\*\* onder de tabel "Percentages alle belastingen": "Voor de inkomstenbelasting ging de tijdelijke verlaging in vanaf 1-7-2020" |
+| Tweede paar ogen | `BELASTINGRENTE_IB_PERIODES` in `Berekeningen/berekeningen.html`, onderbouwd in `Berekeningen/BRONNEN.md` |
+
+De regeling zet het percentage voor de meeste belastingen per 1 juni 2020 op 0,01 procent
+en voor de inkomstenbelasting per 1 juli 2020. Voor beide gold de verlaging tot
+1 oktober 2020.
+
+### 9.2 Wat het uitmaakte, en voor wie
+
+De renteperiode voor een IB-aanslag begint op 1 juli van het jaar na het belastingjaar
+(`STARTMAAND_RENTE = 7` in `_rente.py`). Voor **belastingjaar 2019 en later** valt juni
+2020 buiten het tijdvak en verandert er niets. Voor **belastingjaar 2018 en eerder**, met
+een dagtekening na juni 2020, loopt het tijdvak wel over die maand.
+
+De richting van het verschil: **de tool rekende te weinig rente**. Voorbeeld, vastgelegd
+als test in `tests/test_rente.py` — belastingjaar 2018, dagtekening 1 december 2020,
+€ 10.000:
+
+| Deelperiode | Percentage | Dagen | Rente |
+|---|---|---|---|
+| 01-07-2019 t/m 30-06-2020 | 4,00% | 360 | € 400 |
+| 01-07-2020 t/m 30-09-2020 | 0,01% | 90 | € 0 |
+| 01-10-2020 t/m 12-01-2021 | 4,00% | 102 | € 113 |
+| **Totaal** | | **552** | **€ 513** |
+
+Met de verkeerde datum werd de eerste deelperiode 330 dagen in plaats van 360 en kwam het
+totaal op € 479: **€ 34 te weinig** op € 10.000.
+
+### 9.3 Het verschil met de VpB-tabel is bedoeld
+
+`pages/Belastingrente_VpB.py` houdt op precies dezelfde plek **wél 1 juni 2020** aan. Dat
+is daar juist: in de VpB-tabel op de bronpagina staat bij die rij geen voetnoot, en de
+verlaging ging voor de VpB werkelijk op 1 juni 2020 in. De hele VpB-tabel is op
+7 september 2026 rij voor rij tegen de bron gelegd; alle zestien rijen kloppen en er is
+niets gewijzigd.
+
+Het verschil tussen de twee tabellen ziet eruit als een fout en is het niet. Het is nu op
+drie plaatsen vastgelegd, zodat het niet wordt "rechtgetrokken": in het commentaar boven
+beide tabellen, in `AFWIJKINGEN_IB` in `tests/test_tarieven_check.py` en in de tests
+`test_ib_en_vpb_verschillen_in_juni_2020` en
+`test_vpb_verlaging_begint_wel_op_1_juni_2020`.
+
+### 9.4 Waarom de fout een jaar kon blijven staan
+
+Boven de IB-tabel stond "Laatste controle: 17 augustus 2026 (tabel 1-op-1 nagelopen tegen
+de bron)", en de pagina liet een automatische controle draaien tegen de kop
+`"Percentages alle belastingen"`. Beide gingen langs de fout heen, en niet doordat er
+slordig is gewerkt:
+
+- **De automatische controle was verkeerd gedefinieerd.** Zij parseert de *tabel* onder
+  die kop. De IB-uitzondering staat op de bronpagina in lopende tekst — voetnoot \*\*\* —
+  *ónder* die tabel. De afwijking was daarmee structureel onvindbaar, en de controle
+  keurde haar bij elke paginaweergave opnieuw goed.
+- **"1-op-1 nagelopen" is niet navolgbaar.** Er stond niet welke bron, welke rijen en
+  welke uitzonderingen waren nagelopen, dus een volgende controleur kon niet zien dat de
+  voetnoot buiten beeld was gebleven.
+
+Wat er is gedaan:
+
+1. De kop `KOP_ALGEMEEN` blijft voor de IB-pagina staan. Zij is de juiste: de algemene
+   tabel is de enige plek op de bron waar de IB-percentages staan. Wat niet kan, is de
+   voetnoot meenemen — dat zou een tweede parser vragen voor één afgesloten historische
+   uitzondering uit 2020 die niet meer verandert, en die parser zou zelf een stille
+   faalmodus toevoegen. Gekozen is daarom voor het alternatief: **de controle meldt nu
+   zelf welk deel zij niet dekt.** De IB-pagina geeft dat als `NIET_GEDEKT` mee, en het
+   staat onder de berekening in beeld. De VpB-pagina leunt niet op een voetnoot en geeft
+   niets mee.
+2. De bronvermelding boven beide tabellen noemt nu de werkelijke grondslag, de
+   IB-uitzondering met vindplaats en per onderdeel wat wel en niet is gecontroleerd —
+   inclusief wat er buiten is gebleven (de toeslagenpercentages uit de voetnoten \* en
+   \*\*, die deze pagina's niet gebruiken). Controledatum: 7 september 2026.
+3. De netwerktest die de tabellen rij voor rij met de bron vergelijkt, kent de bewuste
+   afwijking nu als gegeven (`AFWIJKINGEN_IB`), zodat elke *andere* rij nog 1-op-1 wordt
+   getoetst. Een extra test controleert of die afwijking nog op de bronpagina bestaat: als
+   de Belastingdienst de rij van 1-6-2020 ooit wijzigt, dekt de uitzondering stil niets
+   meer af en moet zij opnieuw worden beoordeeld. Een derde test kijkt of de voetnoot zelf
+   nog op de pagina staat.
+
+### 9.5 "Geen waarschuwing" betekende twee dingen
+
+`controleer_nieuwe_tarieven()` gaf `None` terug zowel wanneer de reeks klopte als wanneer
+de bronpagina niet bereikbaar was. De gebruiker kon die twee niet onderscheiden, en de
+afwezigheid van een waarschuwing las als "gecontroleerd en in orde". Hetzelfde gold bij
+een gewijzigde opmaak van de bron: dan werd de tabel niet herkend en gebeurde er evenmin
+iets.
+
+De functie geeft nu een `Controle` terug met vier statussen: `gelijk`, `afwijking`,
+`onbereikbaar` en `onleesbaar`. Een afwijking blijft een `st.warning`; de twee toestanden
+waarin niets is vergeleken worden een `st.info` boven de invoer, en de voettekst zegt bij
+elke paginaweergave wát er is gecontroleerd. Dat de tool niet stukloopt op een netwerkfout
+blijft zo.
+
+**Bewust ongemoeid gelaten:** het gooien van een uitzondering in `_haal_pagina_op()`. Die
+functie draagt `@st.cache_data` en gooit met opzet in plaats van `None` terug te geven,
+zodat Streamlit het mislukte antwoord niet cachet en de volgende paginaweergave het
+opnieuw probeert. De uitzondering verlaat de gecachete functie vóórdat
+`controleer_nieuwe_tarieven()` haar vangt; daar was dus niets ongedaan gemaakt, er
+ontbrak alleen een onderscheid in de aanroeper. Wie hier aan `_haal_pagina_op` gaat
+sleutelen, breekt de retry zonder iets op te lossen. Dat staat nu ook in de docstring.
+
+De reparatie is beperkt gebleven tot de twee aanroepers. Met een grep is vastgesteld dat
+`controleer_nieuwe_tarieven` nergens anders wordt gebruikt en `_haal_pagina_op` niet
+buiten de module.
+
+### 9.6 Gewijzigde bestanden
+
+| Bestand | Wat |
+|---|---|
+| `pages/Belastingrente_IB.py` | ingangsdatum 1 juli 2020; bronvermelding met vindplaats en uitzondering; `NIET_GEDEKT`; melding bij niet-gecontroleerd |
+| `pages/Belastingrente_VpB.py` | rij 1 juni 2020 expliciet als bedoeld verschil vastgelegd; bronvermelding en controledatum; zelfde melding. **Geen waardewijziging** |
+| `_tarieven_check.py` | `Controle` met vier statussen; `controleregel()` voor de voettekst; docstrings die zeggen wat de controle wél en niet ziet |
+| `tests/_tarieventabellen.py` | nieuw: leest de TARIEVEN uit de pagina's, zodat tests de werkelijk gebruikte reeks toetsen |
+| `tests/test_rente.py` | juni 2020 voor IB en VpB; een berekening over een tijdvak dat juni 2020 omvat |
+| `tests/test_tarieven_check.py` | bewuste afwijking als gegeven; tests voor de vier statussen en voor de voetnoot op de bron |
+
+### 9.7 Wat hierbuiten is gebleven
+
+De reeks staat sinds 7 september 2026 op twee plekken: hier en in `Berekeningen`. Welke
+van de twee de bron wordt en hoe de andere hem overneemt in plaats van overtypt, is een
+openstaand besluit — zie `PostbusClaude/VRAGEN-07-09-2026.md`, punt 1. Er is hier niets
+verhuisd en geen koppeling tussen de repository's gebouwd; de drie punten hierboven zijn
+fout welk besluit er ook valt.

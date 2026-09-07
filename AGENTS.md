@@ -57,7 +57,7 @@ een testomgeving voor collega's (productie komt in een beveiligde omgeving). Gee
 sync naar `bouwman-tools`. Repo is publiek: geen klantgegevens in tests,
 voorbeelden of commits — gebruik de voorbeelden uit de officiële specificatie.
 
-Gereed: `python -m pytest -q` groen (nu 366 tests), gewijzigde logica gedekt door
+Gereed: `python -m pytest -q` groen (nu 382 tests), gewijzigde logica gedekt door
 een test, README of WIJZIGINGSRAPPORT bijgewerkt waar dat geldt.
 
 Open punt: samenvoegen met de WWFT multi-page app (`pages/` plus losse modules

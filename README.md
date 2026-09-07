@@ -87,6 +87,22 @@ Belastingdienst tot op de euro:
   hun eigen voorbeeld geeft 93 + 9 = 102, terwijl 93,75 + 9,93 naar 103 zou afronden
 - Splitst automatisch bij elke tariefwijziging binnen de periode
 
+**Percentages** — de twee pagina's houden elk hun eigen tarievenreeks aan, en die
+verschillen op één punt bewust van elkaar. De coronaverlaging naar 0,01% ging voor de
+**inkomstenbelasting in op 1 juli 2020** en voor de **VpB en de overige belastingen op
+1 juni 2020**; voor beide liep zij tot 1 oktober 2020. Juni 2020 valt voor de IB dus nog
+onder 4,00%. Grondslag: Verzamelspoedwet COVID-19, Stb. 2020, 200; de Belastingdienst
+vermeldt het in een voetnoot onder de tabel "Percentages alle belastingen". Dat verschil
+tussen de twee tabellen is geen fout en mag niet worden gelijkgetrokken.
+
+Elke paginaweergave vergelijkt de reeks in de code met de tabel op belastingdienst.nl en
+meldt een nieuwe periode of een met terugwerkende kracht herzien percentage. **Die
+controle leest de tabellen en niet de voetnoten eronder**, en juist daar staan de
+uitzonderingen. De pagina zegt daarom onder de berekening wát er is gecontroleerd, en de
+IB-pagina noemt daarbij expliciet welk deel buiten die vergelijking valt. Is de bron niet
+bereikbaar of is de tabel niet te herkennen, dan staat dat in beeld: de tool rekent door
+met de tabel in de code, maar zwijgt er niet over.
+
 **Situaties die worden herkend** — de pagina toont welke regel is toegepast:
 
 | Situatie | Einddatum rente |

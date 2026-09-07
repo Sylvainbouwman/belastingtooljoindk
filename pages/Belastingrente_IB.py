@@ -3,19 +3,28 @@ from datetime import date
 
 from _rente import bereken, nl_date, nl_euro, nl_euro_heel, nl_pct, renteperiode
 from _ui import paginakop, paginastijl
-from _tarieven_check import KOP_ALGEMEEN, controleer_nieuwe_tarieven
+from _tarieven_check import KOP_ALGEMEEN, controleer_nieuwe_tarieven, controleregel
 
 # ── Tarieven ────────────────────────────────────────────────────────────────
 # Enkelvoudige belastingrente IB/PH per jaar. Gesorteerd nieuw → oud.
-# Bron: belastingdienst.nl — "Percentages alle belastingen (m.u.v. toeslagen en VpB)"
-# Laatste controle: 17 augustus 2026 (tabel 1-op-1 nagelopen tegen de bron).
+#
+# LET OP — deze reeks wijkt op één rij bewust af van de tabel op de bronpagina.
+# De coronaverlaging naar 0,01% ging voor de inkomstenbelasting pas in op
+# 1 juli 2020, en niet op 1 juni 2020 zoals voor de overige belastingen. Juni
+# 2020 valt voor de IB dus nog onder 4,00%. Voor beide liep de verlaging tot
+# 1 oktober 2020.
+#
+# De VpB-tabel in pages/Belastingrente_VpB.py houdt op precies deze plek wél
+# 1 juni 2020 aan, en dat is daar juist: de VpB-tabel op de bronpagina heeft bij
+# die rij geen voetnoot. Het verschil tussen de twee tabellen is dus bedoeld en
+# mag niet worden "rechtgetrokken".
 TARIEVEN = [
     (date(2026, 1, 1),  5.00),
     (date(2025, 1, 1),  6.50),
     (date(2024, 1, 1),  7.50),
     (date(2023, 7, 1),  6.00),
     (date(2020, 10, 1), 4.00),
-    (date(2020, 6, 1),  0.01),
+    (date(2020, 7, 1),  0.01),   # IB: 1 juli, niet 1 juni — zie de kop hierboven
     (date(2014, 4, 1),  4.00),
     (date(2013, 1, 1),  3.00),
     (date(2012, 10, 1), 2.25),
@@ -24,7 +33,43 @@ TARIEVEN = [
     (date(2012, 1, 1),  2.85),
 ]
 
-_tarief_waarschuwing = controleer_nieuwe_tarieven(TARIEVEN, KOP_ALGEMEEN)
+# ── Grondslag en controle ───────────────────────────────────────────────────
+# Grondslag van de reeks: belastingdienst.nl, "Overzicht percentages
+# belastingrente", tabel "Percentages alle belastingen (m.u.v. toeslagen en
+# vennootschapsbelasting)".
+#   https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/standaard_functies
+#   /prive/contact/rechten_en_plichten_bij_de_belastingdienst/belastingrente
+#   /overzicht_percentages_belastingrente
+#
+# Grondslag van de IB-uitzondering per 1 juli 2020: Verzamelspoedwet COVID-19,
+# Stb. 2020, 200 — https://zoek.officielebekendmakingen.nl/stb-2020-200.html.
+# Die regeling stelt het percentage voor de meeste belastingen per 1 juni 2020
+# op 0,01% vast en voor de inkomstenbelasting per 1 juli 2020; voor beide gold
+# de verlaging tot 1 oktober 2020. De Belastingdienst vermeldt het zelf in
+# voetnoot *** onder de samenvattende tabel: "Voor de inkomstenbelasting ging de
+# tijdelijke verlaging in vanaf 1-7-2020."
+#
+# Controle op 7 september 2026. Toen zijn nagelopen:
+#   (a) alle twaalf rijen van de algemene tabel, tegen de tekst van die pagina
+#       zoals die op 7 september 2026 online stond;
+#   (b) de ingangsdatum van 1 juli 2020 voor de IB, tegen Stb. 2020, 200 en
+#       tegen voetnoot *** op die pagina.
+# Buiten de controle gebleven: de afwijkende toeslagenpercentages uit voetnoot *
+# en ** op die pagina, die deze rekenpagina niet gebruikt.
+
+# Wat de automatische controle bij elke paginaweergave niet kan zien. De
+# vergelijking loopt over de tabel; de IB-uitzondering staat in een voetnoot
+# ónder die tabel. Zonder deze regel zou de controle de afwijking elk jaar
+# opnieuw stilzwijgend goedkeuren.
+NIET_GEDEKT = (
+    "De automatische controle vergelijkt deze reeks met de tabel "
+    "\"Percentages alle belastingen\" op belastingdienst.nl. De IB-uitzondering "
+    "per 1 juli 2020 staat daar in een voetnoot ónder die tabel en valt dus "
+    "buiten die vergelijking; die ingangsdatum is met de hand gecontroleerd "
+    "tegen Stb. 2020, 200 op 7 september 2026."
+)
+
+_controle = controleer_nieuwe_tarieven(TARIEVEN, KOP_ALGEMEEN, NIET_GEDEKT)
 
 # ── Opmaak ──────────────────────────────────────────────────────────────────
 paginastijl()
@@ -37,8 +82,12 @@ paginakop(
 )
 
 # ── Invoer ───────────────────────────────────────────────────────────────────
-if _tarief_waarschuwing:
-    st.warning(_tarief_waarschuwing)
+if _controle.status == "afwijking":
+    st.warning(_controle.melding)
+elif _controle.melding:
+    # "onbereikbaar" of "onleesbaar": er is niets vergeleken. Dat moet zichtbaar
+    # zijn, want zonder melding leest de stilte als goedkeuring.
+    st.info(_controle.melding)
 
 huidig_jaar = date.today().year
 
@@ -223,6 +272,6 @@ with st.expander("Uitgangspunten van deze berekening", expanded=False):
 
 st.caption(
     "Rekenmethode volgens belastingdienst.nl: 30 dagen per maand, 360 dagen per jaar, "
-    "per tariefperiode naar beneden afgerond op hele euro's. Tarieventabel nagelopen op "
-    "17 augustus 2026; deze pagina controleert automatisch of de bron inmiddels afwijkt."
+    "per tariefperiode naar beneden afgerond op hele euro's. Tarieventabel met de hand "
+    "nagelopen op 7 september 2026. " + controleregel(_controle)
 )

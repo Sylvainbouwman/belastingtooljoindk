@@ -20,7 +20,11 @@ from _rente import (
     tarief_op,
 )
 
-# Tarieven zoals ze op belastingdienst.nl staan (algemene tabel).
+from _tarieventabellen import TARIEVEN_IB, TARIEVEN_VPB
+
+# Tarieven zoals ze op belastingdienst.nl staan (algemene tabel). Deze reeks is
+# ingekort en dient alleen om de rekenmethode te toetsen; voor de percentages
+# zelf gelden TARIEVEN_IB en TARIEVEN_VPB, die uit de pagina's worden gelezen.
 TARIEVEN = [
     (date(2026, 1, 1),  5.00),
     (date(2025, 1, 1),  6.50),
@@ -385,3 +389,79 @@ def test_navordering_startdatum_volgt_het_boekjaar(boekjaar_eind, verwachte_star
     assert eerste_dag_van_maand_na(boekjaar_eind, STARTMAAND_RENTE) == verwachte_start
     eind, reden, _ = renteperiode(date(2026, 1, 20), aanslag_type="navordering")
     assert reden == "navordering" and eind == date(2026, 2, 20)
+
+
+# ── De coronaverlaging: voor de IB een maand later dan voor de rest ─────────
+# De verlaging naar 0,01% ging voor de inkomstenbelasting in op 1 juli 2020 en
+# voor de overige belastingen, waaronder de VpB, op 1 juni 2020. Voor beide liep
+# zij tot 1 oktober 2020. Grondslag: Verzamelspoedwet COVID-19, Stb. 2020, 200;
+# de Belastingdienst vermeldt het in voetnoot *** onder de algemene tabel.
+#
+# Deze tests lezen de reeksen uit de pagina's zelf, zodat zij de werkelijk
+# gebruikte tabellen toetsen. Zij leggen ook het verschil tussen de twee
+# tabellen vast, want dat verschil ziet eruit als een fout en is het niet.
+
+def test_ib_juni_2020_is_nog_vier_procent():
+    """De fout die hier zat: juni 2020 stond voor de IB op 0,01%."""
+    assert tarief_op(date(2020, 5, 31), TARIEVEN_IB) == 4.00
+    assert tarief_op(date(2020, 6, 1), TARIEVEN_IB) == 4.00
+    assert tarief_op(date(2020, 6, 30), TARIEVEN_IB) == 4.00
+
+
+def test_ib_verlaging_loopt_van_1_juli_tot_1_oktober_2020():
+    assert tarief_op(date(2020, 7, 1), TARIEVEN_IB) == 0.01
+    assert tarief_op(date(2020, 9, 30), TARIEVEN_IB) == 0.01
+    assert tarief_op(date(2020, 10, 1), TARIEVEN_IB) == 4.00
+
+
+def test_vpb_verlaging_begint_wel_op_1_juni_2020():
+    """Het verschil met de IB-tabel is bedoeld en mag niet worden rechtgetrokken."""
+    assert tarief_op(date(2020, 5, 31), TARIEVEN_VPB) == 8.00
+    assert tarief_op(date(2020, 6, 1), TARIEVEN_VPB) == 0.01
+    assert tarief_op(date(2020, 6, 30), TARIEVEN_VPB) == 0.01
+    assert tarief_op(date(2020, 10, 1), TARIEVEN_VPB) == 4.00
+
+
+def test_ib_en_vpb_verschillen_in_juni_2020():
+    assert tarief_op(date(2020, 6, 15), TARIEVEN_IB) == 4.00
+    assert tarief_op(date(2020, 6, 15), TARIEVEN_VPB) == 0.01
+
+
+def test_ib_berekening_over_een_tijdvak_dat_juni_2020_omvat():
+    """De fout in de uitkomst, niet alleen in de tabel.
+
+    Belastingjaar 2018: de renteperiode start op 1 juli 2019. Bij een
+    dagtekening van 1 december 2020 loopt zij tot en met 12 januari 2021 en
+    daarmee over juni 2020 heen. Op € 10.000:
+
+      01-07-2019 t/m 30-06-2020 · 4,00% · 360 dagen · € 400
+      01-07-2020 t/m 30-09-2020 · 0,01% ·  90 dagen · €   0
+      01-10-2020 t/m 12-01-2021 · 4,00% · 102 dagen · € 113
+
+    Met de verkeerde ingangsdatum van 1 juni 2020 werd de eerste deelperiode
+    330 dagen in plaats van 360 en kwam het totaal op € 479: € 34 te weinig.
+    De richting van de fout was dus te weinig rente.
+    """
+    r_start = date(2019, 7, 1)
+    r_eind, _, _ = renteperiode(dagtekening=date(2020, 12, 1))
+    assert r_eind == date(2021, 1, 12)
+
+    totaal, perioden = bereken(10_000, r_start, r_eind, TARIEVEN_IB)
+
+    assert [(d["start"], d["dagen"], d["pct"], d["rente"]) for d in perioden] == [
+        (date(2019, 7, 1),  360, 4.00, 400),
+        (date(2020, 7, 1),   90, 0.01,   0),
+        (date(2020, 10, 1), 102, 4.00, 113),
+    ]
+    assert totaal == 513
+
+
+def test_vpb_berekening_over_hetzelfde_tijdvak_knipt_op_1_juni():
+    """Dezelfde periode, de andere tabel: daar valt de knip wél in juni."""
+    totaal, perioden = bereken(10_000, date(2019, 7, 1), date(2021, 1, 12), TARIEVEN_VPB)
+
+    assert [d["start"] for d in perioden] == [
+        date(2019, 7, 1), date(2020, 6, 1), date(2020, 10, 1),
+    ]
+    # 330 dagen à 8% = 733, 120 dagen à 0,01% = 0, 102 dagen à 4% = 113.
+    assert totaal == 733 + 0 + 113
