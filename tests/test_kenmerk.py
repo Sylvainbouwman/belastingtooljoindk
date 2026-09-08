@@ -351,10 +351,10 @@ def test_gevalideerd_kenmerk_uit_de_readme():
     """Het enige kenmerk waarvan de juiste uitkomst extern is bevestigd.
     Als deze test omvalt, is er iets fundamenteels mis met de decodering.
 
-    Herkomst: een eigen entiteit van de eigenaar van deze repository, geen
-    klantgegeven. Vastgesteld door Sylvain op 8 september 2026, zodat de vraag
-    naar de herkomst niet elke controleronde opnieuw opkomt. De 27 overige
-    nummers in dit bestand komen uit de officiële specificatie v1.5."""
+    Herkomst: geen klantgegeven, gecontroleerd en akkoord bevonden door de
+    eigenaar op 8 september 2026, zodat de vraag naar de herkomst niet elke
+    controleronde opnieuw opkomt. De 27 overige nummers in dit bestand komen
+    uit de officiële specificatie v1.5."""
     r, fout = decode_kenmerk("4863521721601050")
     assert fout is None
     assert r["soort"] == "Omzetbelasting"
