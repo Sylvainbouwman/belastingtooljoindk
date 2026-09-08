@@ -349,7 +349,13 @@ def test_omschrijving_bevat_nooit_placeholder_of_dubbel_jaartal():
 
 def test_gevalideerd_kenmerk_uit_de_readme():
     """Het enige kenmerk waarvan de juiste uitkomst extern is bevestigd.
-    Als deze test omvalt, is er iets fundamenteels mis met de decodering."""
+    Als deze test omvalt, is er iets fundamenteels mis met de decodering.
+
+    Herkomst: geen klantgegeven. De eigenaar heeft de herkomst op 8 september 2026
+    gecontroleerd en akkoord bevonden; het kenmerk mag hier staan. Deze regel staat
+    er zodat die vraag bij een volgende controle niet opnieuw hoeft te worden gesteld.
+    De overige kenmerken in dit bestand komen uit de 27 voorbeelden van de
+    specificatie."""
     r, fout = decode_kenmerk("4863521721601050")
     assert fout is None
     assert r["soort"] == "Omzetbelasting"
