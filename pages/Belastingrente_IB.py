@@ -125,6 +125,7 @@ aanslag_type = st.radio(
 aangifte_ontvangen = None
 aangifte_gevolgd = True
 verzoek_datum = None
+op_verzoek = False
 
 if aanslag_type == "regulier":
     col_c, col_d = st.columns(2)
@@ -176,6 +177,19 @@ bedrag = st.number_input(
 )
 
 # ── Berekening ───────────────────────────────────────────────────────────────
+# Blokkeer onvolledige invoer voordat de kern een andere route kan kiezen.
+if op_verzoek and verzoek_datum is None:
+    st.error("Vul de datum van ontvangst van uw verzoek in, of zet "
+             "'Navordering op eigen verzoek' uit als dit niet van toepassing is.")
+    st.stop()
+
+# De reeks heeft geen tarieven vóór haar eerste ingangsdatum. Geen terugval
+# op het oudste percentage voor een niet door deze tool gedekte periode.
+if r_start < min(ingang for ingang, _ in TARIEVEN):
+    st.error("De renteperiode begint vóór de tariefreeks van deze tool. "
+             "Voor deze periode kan hier geen betrouwbare uitkomst worden gegeven.")
+    st.stop()
+
 r_eind, reden, toelichting = renteperiode(
     dagtekening=dagtekening,
     aangifte_ontvangen=aangifte_ontvangen,
@@ -200,6 +214,17 @@ if r_eind < r_start:
         f"eindigt al op {nl_date(r_eind)}."
     )
     st.stop()
+
+# Een toekomstige periode is een raming: een ingangsdatum in de reeks is
+# geen garantie dat dat percentage een heel kalenderjaar ongewijzigd blijft.
+if r_eind > date.today():
+    laatste_ingang, laatste_percentage = max(TARIEVEN, key=lambda rij: rij[0])
+    st.warning(
+        "Deze berekening loopt door tot een toekomstige datum en is een raming. "
+        f"Vanaf {nl_date(laatste_ingang)} gebruikt de tool het laatst opgenomen "
+        f"percentage van {nl_pct(laatste_percentage)}. Latere rentewijzigingen "
+        "zijn niet voorspeld; controleer de percentages opnieuw bij de definitieve aanslag."
+    )
 
 totaal_rente, deelperioden = bereken(bedrag, r_start, r_eind, TARIEVEN)
 totaal_dagen = sum(d["dagen"] for d in deelperioden)

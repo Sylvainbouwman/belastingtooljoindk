@@ -892,3 +892,12 @@ van de twee de bron wordt en hoe de andere hem overneemt in plaats van overtypt,
 openstaand besluit — zie `PostbusClaude/VRAGEN-07-09-2026.md`, punt 1. Er is hier niets
 verhuisd en geen koppeling tussen de repository's gebouwd; de drie punten hierboven zijn
 fout welk besluit er ook valt.
+
+
+## L09 — invoergrenzen rentepagina's, 8 september 2026
+
+De pagina's blokkeren navordering op eigen verzoek zolang de verzoekdatum ontbreekt. Voorheen viel die invoer stil terug op gewone navordering. Een renteperiode die begint vóór de oudste tariefingang wordt geblokkeerd, zodat geen tarief van2012 op oudere perioden wordt toegepast. Dit begrenst de dekking van deze tool; er is geen nieuwe historische fiscale regel of tarief toegevoegd.
+
+Zodra het berekende rente-einde na vandaag ligt, wordt de uitkomst expliciet een raming met het laatst opgenomen percentage genoemd. De ingangsdatum van dat percentage garandeert geen geldigheid gedurende een heel kalenderjaar. Het voorlopige-aanslagvinkje op de VpB-pagina vermeldt dat de vrijstellingsuitkomst op een gebruikersverklaring berust.
+
+De pure rekenmodule en tariefreeksen zijn ongewijzigd. Elf nieuwe tests voeren de echte berekeningssecties van beide pagina's uit met synthetische invoer en een vaste klok. Geen Streamlit-app gestart en geen live bron of klantbestand nodig voor deze controles. Volledige testset:393geslaagd. Technische review en publicatie via de bestaande route blijven afzonderlijk; geen nieuwe fiscale accordering of modelvergelijking.
