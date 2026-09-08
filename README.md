@@ -31,7 +31,8 @@ Decodeert 16-cijferige Belastingdienst betalingskenmerken.
 - **Auto-decode bij plakken** — geen klik nodig
 
 Gevalideerd kenmerk: `4863521721601050` = Aangifte OB, mei 2026, RSIN 863521721
-(vastgelegd als regressietest)
+(vastgelegd als regressietest). Herkomst: een eigen entiteit van de eigenaar van
+deze repository, geen klantgegeven; vastgesteld door Sylvain op 8 september 2026.
 
 Alle **27 voorbeelden** uit de officiële Specificatie Betalingskenmerk_bepaling v1.5 staan
 als regressietest in `tests/test_kenmerk.py`, met het BSN/RSIN uit het bijbehorende
