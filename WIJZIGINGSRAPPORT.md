@@ -832,3 +832,211 @@ De pagina's blokkeren navordering op eigen verzoek zolang de verzoekdatum ontbre
 Zodra het berekende rente-einde na vandaag ligt, wordt de uitkomst expliciet een raming met het laatst opgenomen percentage genoemd. De ingangsdatum van dat percentage garandeert geen geldigheid gedurende een heel kalenderjaar. Het voorlopige-aanslagvinkje op de VpB-pagina vermeldt dat de vrijstellingsuitkomst op een gebruikersverklaring berust.
 
 De pure rekenmodule en tariefreeksen zijn ongewijzigd. Elf nieuwe tests voeren de echte berekeningssecties van beide pagina's uit met synthetische invoer en een vaste klok. Geen Streamlit-app gestart en geen live bron of klantbestand nodig voor deze controles. Volledige testset:393geslaagd. Technische review en publicatie via de bestaande route blijven afzonderlijk; geen nieuwe fiscale accordering of modelvergelijking.
+
+
+---
+
+## L10 — invorderingsrente: een nieuwe module, en een dagentelling die anders bleek, 18-09-2026 11:53 CEST
+
+**Aanleiding:** de onderzoeksnotitie
+`PostbusClaude/belastingtool-joindk/AAN-CODEX-20260910-invorderingsrente-functionele-eisen.md`
+van 10 september 2026. Die notitie noemde vier punten die vóór de eerste regel code moesten
+worden nagezocht en liet twee keuzes aan Sylvain.
+**Keuzes van Sylvain, verwerkt in deze module:** bouw art. 28, 28a en 28b; art. 28c alleen
+als signalering. En: reken de opschorting tijdens uitstel niet door maar vraag haar uit, met
+een blokkade op de uitkomst zolang zij niet is ingevuld.
+**Tests:** van 393 naar 465, alle groen.
+
+### L10.1 Het onderzoek sprak de verwachting tegen
+
+Dit is de belangrijkste uitkomst van deze ronde, en zij raakt de rekenkern.
+
+De notitie schreef dat hoofdstuk V IW 1990 op het eerste gezicht een telling in werkelijke
+dagen lijkt voor te schrijven, en waarschuwde dat `dagen_30_360()` uit `_rente.py` daarom niet
+mocht worden hergebruikt. Die waarschuwing was terecht, maar om een andere reden dan gedacht.
+**Artikel 31 van de Uitvoeringsregeling Invorderingswet 1990 schrijft geen telling in
+werkelijke dagen voor, en ook geen zuivere 30/360-telling, maar een mengvorm:**
+
+> "Bij de bepaling van het aantal dagen waarover invorderingsrente wordt berekend, wordt:
+> a. de maand waarin de enige of laatste betalingstermijn van de aanslag vervalt, tot het
+> werkelijke aantal dagen in aanmerking genomen met dien verstande dat de maand februari
+> altijd op 28 dagen wordt gesteld; b. een volle maand gesteld op 30 dagen en een jaar op
+> 360 dagen."
+
+Er kwamen in dezelfde regeling nog drie afwijkingen bij die de notitie niet had voorzien:
+
+| Regel | Wat er staat | Waar het van afwijkt |
+|---|---|---|
+| art. 32 URIW | in rekening te brengen rente naar beneden afgerond op hele euro's, te vergoeden rente **naar boven** | belastingrente rondt in beide gevallen naar beneden af |
+| art. 30 lid 1 URIW | `(A x P + A x P enz.) x betaling / 36000` — de deelperioden worden eerst opgeteld | belastingrente rondt **per tariefperiode** af |
+| art. 33 URIW | bij de enige of laatste betaling blijft € 49 of minder buiten invordering (€ 23 tot en met 2025) | belastingrente kent geen drempelbedrag |
+
+En één die de grondslag raakt: art. 29 URIW rekent de in rekening te brengen rente **over
+iedere betaling afzonderlijk**, en art. 30 lid 1 rekent haar over het betaalde bedrag en niet
+over het openstaande saldo. Art. 30 lid 2 geeft de formule om een ontvangen betaling te
+splitsen in hoofdsom en rente. Beide formules staan in de regeling als afbeelding en niet als
+tekst; zij zijn overgenomen uit illustratie `123954.png` en `123955.png` bij art. 30 in de
+KOOP-versie 2026-01-01_0.
+
+Gevolg voor de bouw: er staat een eigen `dagen_invorderingsrente()` in
+`_invorderingsrente.py` en `dagen_30_360()` is niet hergebruikt. Er staat een test
+(`test_dagentelling_is_niet_die_van_de_belastingrente`) die vastlegt dat de twee tellingen
+aantoonbaar uiteenlopen, zodat het verschil niet later wordt "rechtgetrokken".
+
+### L10.2 De tariefreeks: het zijn er twee, niet één
+
+De notitie schreef dat het besluit geen onderscheid maakt tussen rente die in rekening wordt
+gebracht en rente die wordt vergoed. **Dat klopt pas vanaf 1 januari 2024.** Tot en met
+31 december 2023 kende artikel 2 van het Besluit belasting- en invorderingsrente twee leden:
+lid 1 gaf een vast percentage voor de in rekening te brengen rente, lid 2 koppelde de te
+vergoeden rente aan de wettelijke rente van art. 6:119 BW, "met dien verstande dat het
+eerstgenoemde percentage ten minste 4 bedraagt".
+
+| Periode | In rekening | Te vergoeden | Grondslag van de vergoeding |
+|---|---|---|---|
+| 01-06-2020 t/m 30-06-2022 | 0,01% | 4% | wettelijke rente 2%, bodem 4 |
+| 01-07-2022 t/m 31-12-2022 | 1% | 4% | wettelijke rente 2%, bodem 4 |
+| 01-01-2023 t/m 30-06-2023 | 2% | 4% | wettelijke rente 4%, bodem 4 |
+| 01-07-2023 t/m 31-12-2023 | 3% | **6%** | wettelijke rente 6% |
+| 01-01-2024 t/m 31-12-2025 | 4% | 4% | één percentage (art. 2, Stb. 2023, 511) |
+| vanaf 01-01-2026 | 4,3% | 4,3% | één percentage (art. 2, Stb. 2025, 383) |
+
+In de tweede helft van 2023 is het verschil dus een factor twee. Wie daar één reeks gebruikt,
+rekent een vergoeding op de helft uit. De twee reeksen staan als `TARIEVEN_IN_REKENING` en
+`TARIEVEN_TE_VERGOEDEN` in de module, met een test die vastlegt dat zij in die periode
+uiteenlopen en vanaf 2024 weer samenvallen.
+
+Nog een verschil met de notitie: die telde dertien expressies met een eigen ingangsdatum. Het
+zijn er veertien; **23 juni 2020** ontbrak in dat rijtje. Op de percentages maakt dat niets
+uit, want die versie wijzigde art. 2 niet.
+
+Een onbekende datum geeft geen stille terugval. `tarief_op()` in deze module geeft `None`
+terug vóór 1 juni 2020, waar `_rente.tarief_op()` juist terugvalt op het oudste percentage.
+De pagina blokkeert dan met een melding.
+
+### L10.3 De aanwijzing van art. 28 lid 5, en het tijdvak van art. 28 lid 4
+
+Beide staan in hoofdstuk II van het Uitvoeringsbesluit Invorderingswet 1990, dat blijkens
+art. 1 lid 1 uitvoering geeft aan onder meer art. 28 van de wet.
+
+**Art. 28 lid 5 — geen rente wegens uitzonderlijke omstandigheden.** Er zijn twee aangewezen
+gevallen: art. 6bis (het aanhoudaanbod van de ontvanger bij een in 2022 gedagtekende
+voorlopige aanslag IB 2022 met box 3) en art. 6ter (de hersteloperatie toeslagen, zolang de
+invordering is gepauzeerd). Beide staan als aanvinkbare regel op de pagina; aanvinken
+blokkeert de uitkomst, omdat de tool niet bepaalt over welke dagen de uitzondering precies
+loopt.
+
+Daarnaast is de Leidraad Invordering 2008 nagelezen. Die bevat één beleidsmatige regel die
+hetzelfde effect heeft maar een andere status: art. 28.3a vermindert de rente tot nihil over
+de periode van uitstel op grond van art. 25.4.6 van de Leidraad. Die staat als derde regel in
+de lijst, uitdrukkelijk gemerkt als beleid en niet als AMvB. De Leidraad bevat géén nadere
+regel over de dagentelling; art. 31 URIW is daarvoor de enige bron.
+
+**Art. 28 lid 4 — herleving na beëindigd uitstel.** Art. 6 van het Uitvoeringsbesluit wijst
+twee tijdvakken aan: voor uitstel op grond van art. 25 lid 5 of 8 loopt de rente vanaf de dag
+waarop zes weken zijn verstreken na de eerste dag van het jaar volgend op het jaar van de
+gebeurtenis, en voor de overige gronden vanaf de dag volgend op de dag waarop de omstandigheid
+zich voordoet. De tool rekent dat niet uit maar toont het wel, zodat zichtbaar is wat er
+geldt. Let op: **art. 25 lid 3 staat wel in art. 28 lid 3 maar niet in lid 4 en niet in
+art. 6 van het Uitvoeringsbesluit.** Voor die grond is geen herlevingstijdvak aangewezen en
+doet de tool daarover geen uitspraak.
+
+### L10.4 Samenloop met de belastingrentemodule
+
+De opdracht vroeg dit in de wettekst zelf na te lezen en niet op gezag van de notitie aan te
+nemen. Dat is gedaan, en het levert een scherper beeld op dan "art. 28a en 28c":
+
+| Grondslag | Uitsluiting van dagen waarover al belastingrente is vergoed? |
+|---|---|
+| art. 28 lid 2 | nee |
+| art. 28a lid 2, tweede volzin | **ja** |
+| art. 28b lid 2 | nee |
+| art. 28c lid 2, tweede volzin | ja, maar deze grondslag wordt niet gerekend |
+
+Van de drie gebouwde grondslagen kent dus **alleen art. 28a** die uitsluiting. Zij is als
+gedeelde invoer gebouwd en niet als gedeelde rekenkern: de pagina vraagt bij art. 28a de
+periode waarover al belastingrente is vergoed, en die dagen tellen niet mee. Zonder beide
+datums geeft de pagina geen uitkomst. De vastlegging staat als `UITSLUITING_BELASTINGRENTE`
+in de module, met een test per grondslag.
+
+Art. 28 lid 1 kent wel een eigen, andere beperking: geen rente voor zover met de aanslag een
+aanslag wordt verrekend die op dezelfde belasting en hetzelfde tijdvak ziet. Dat is geen
+dagenuitsluiting maar een beperking van de grondslag. De pagina waarschuwt daarvoor en bepaalt
+dat deel niet.
+
+### L10.5 De bronnen, met hash
+
+Alle teksten komen uit de KOOP-repository en niet uit een samenvatting. Van elke versie is de
+SHA-512 van het opgehaalde bestand vergeleken met de `hashcode` in het bijbehorende manifest.
+
+| Bron | BWB | Versie | SHA-256 (eerste 16) | Manifesthash |
+|---|---|---|---|---|
+| Invorderingswet 1990 | BWBR0004770 | 2026-07-01_0 | `4ea1c83fdf3c3c49` | komt overeen |
+| Uitvoeringsregeling IW 1990 | BWBR0004766 | 2026-01-01_0 | `69b596a6fc43dd5a` | komt overeen |
+| Uitvoeringsbesluit IW 1990 | BWBR0004772 | 2025-12-12_0 | `2209bcf0a5237fc4` | komt overeen |
+| Besluit belasting- en invorderingsrente | BWBR0043680 | 2026-02-13_0 | `1d7ccd565188dbc0` | komt overeen |
+| Leidraad Invordering 2008 | BWBR0024096 | 2026-07-01_0 | `dad80912c9c7d310` | komt overeen |
+| Besluit vaststelling wettelijke rente | BWBR0047640 | per ingangsdatum | zie module | komt overeen |
+| Besluit wettelijke rente | BWBR0002744 | 2015-01-01_0 | `694dc8019c5409b5` | **wijkt af** |
+
+De twee eerste hashes bevestigen de meting uit de onderzoeksnotitie van 10 september.
+
+Die laatste regel is het enige losse eind in de bronketen. Voor de expressie van het Besluit
+wettelijke rente die 2 procent vaststelt, kwam de zelf berekende SHA-512 niet overeen met de
+hashcode in het manifest; de meting is herhaald na opnieuw downloaden en gaf dezelfde
+uitkomst. **Het raakt de uitkomst niet:** dat percentage telt alleen mee via de bodem van
+4 procent in art. 2 lid 2 van het Besluit belasting- en invorderingsrente, en elk percentage
+onder de 4 geeft na toepassing van die bodem dezelfde 4.
+
+### L10.6 Wat er is gebouwd
+
+| Bestand | Wat |
+|---|---|
+| `_invorderingsrente.py` | nieuw. Tarieven, drempels, dagentelling art. 31, afronding art. 32, de formules van art. 30, de drie tijdvakken, de uitstelgronden, de uitzonderingen en de signalering van art. 28c |
+| `pages/Invorderingsrente.py` | nieuw. Uitvraag per grondslag, alle blokkades, uitvoer met de deelperioden en een uitklapblok met de uitgangspunten |
+| `app.py` | de pagina toegevoegd aan de router |
+| `tests/test_invorderingsrente.py` | nieuw, 51 tests. Elke test die een fiscale regel vastlegt noemt het artikel in zijn docstring |
+| `tests/test_invorderingsrentepagina.py` | nieuw, 21 tests. Draait de pagina met een nagebouwde Streamlit en bewaakt de blokkades |
+| `README.md` | de zevende pagina beschreven, structuurtabel en testaantal bijgewerkt |
+
+**Er is geen toetssteen zoals bij belastingrente.** De Belastingdienst publiceert voor
+invorderingsrente geen rekenvoorbeeld waarmee de methode tot op de euro kan worden
+gereproduceerd; de pagina met rentepercentages bevat ook geen invorderingsrentetabel. De
+tests leggen daarom de wettelijke regels vast met de vindplaats erbij, en niet een
+gepubliceerde uitkomst. Dat is een zwakkere vorm van bewijs dan bij `_rente.py`, en dat hoort
+bij de beoordeling te worden meegewogen.
+
+### L10.7 Openstaande fiscale punten
+
+Deze punten zijn bewust niet zelfstandig beslist. Zij staan hier omdat een verkeerde keuze
+tot een verkeerd bedrag leidt.
+
+1. **Geldt art. 31 onderdeel a ook bij art. 28a?** Onderdeel a hangt aan "de maand waarin de
+   enige of laatste betalingstermijn van de aanslag vervalt". Bij art. 28 en art. 28b bestaat
+   die maand, want beide tijdvakken haken aan bij de invorderbaarheid van art. 9. Bij art. 28a
+   vangt het tijdvak aan na de dagtekening van een uitbetaling en vervalt er niets. De module
+   past daar alleen onderdeel b toe, dus 30 dagen per maand. Dat scheelt: over dezelfde
+   periode 26-02-2026 tot en met 09-04-2026 geeft dat 44 dagen in plaats van 42.
+2. **Hoe telt een gedeeltelijke maand die niet de vervalmaand is?** Art. 31 noemt de
+   vervalmaand en de volle maand, maar niet met zoveel woorden de laatste, onvolledige maand
+   van een tijdvak. De module telt die naar rato binnen een maandlengte van 30, dezelfde
+   systematiek die `dagen_30_360()` gebruikt. Dat volgt uit onderdeel b maar staat er niet
+   letterlijk.
+3. **Welke formule geldt voor een vergoeding?** Art. 30 URIW is naar zijn tekst geschreven
+   voor de in rekening te brengen rente over een betaling. Voor art. 28a en 28b kent de
+   regeling geen eigen formule. De module gebruikt dezelfde enkelvoudige formule met het uit
+   te betalen respectievelijk het terug te geven bedrag als grondslag; de wet noemt die
+   grondslag zelf in art. 28b lid 2, slot.
+4. **Deelbetalingen worden niet toegerekend.** Art. 29 URIW rekent per betaling afzonderlijk.
+   De pagina rekent één betaling per keer door. Bij meerdere betalingen moet de gebruiker elke
+   betaling apart invoeren; de tool verdeelt een openstaand saldo niet zelf en past de
+   splitsingsformule van art. 30 lid 2 niet automatisch toe. `splits_betaling()` staat wel in
+   de module en is getest, maar wordt door de pagina nog niet aangeboden.
+5. **Uitstel wordt niet doorgerekend.** Dat is de keuze van Sylvain en geen tekort van het
+   onderzoek, maar het blijft een beperking: voor een aanslag waarvoor uitstel is verleend
+   geeft de tool geen bedrag.
+6. **Art. 28c wordt niet gerekend.** Ook een keuze van Sylvain. De pagina signaleert de grond
+   en de verzoektermijn van zes weken.
+7. **De vier tijdvakken zijn niet aan uitvoeringsbeleid of rechtspraak getoetst.** Zij zijn
+   uit de wettekst overgenomen, net als in de onderzoeksnotitie. De Leidraad Invordering 2008
+   is wel nagelezen op afwijkingen en gaf er op dit punt geen.

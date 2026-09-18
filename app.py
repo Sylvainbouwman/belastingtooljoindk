@@ -22,6 +22,7 @@ pg = st.navigation([
     st.Page("pages/KvK_SBI_Opzoeken.py",    title="KvK / SBI opzoeken",  icon="🔍"),
     st.Page("pages/Belastingrente_IB.py",   title="Belastingrente IB",   icon="📊"),
     st.Page("pages/Belastingrente_VpB.py",  title="Belastingrente VpB",  icon="📊"),
+    st.Page("pages/Invorderingsrente.py",   title="Invorderingsrente",   icon="⏱️"),
     st.Page("pages/Auto_BTW_Prive.py",      title="Auto BTW privé",      icon="🚗"),
 ])
 pg.run()

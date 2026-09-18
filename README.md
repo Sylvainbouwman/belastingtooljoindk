@@ -1,7 +1,7 @@
 # Belastingtool JoinDK
 
 Een Streamlit-app met belastingtools voor dagelijks gebruik bij Join Administraties en
-DK Accountants. Begonnen als losse betalingskenmerk-tool en daarna uitgebouwd tot zes
+DK Accountants. Begonnen als losse betalingskenmerk-tool en daarna uitgebouwd tot zeven
 pagina's.
 
 **Live:** [belastingtooljoindk.streamlit.app](https://belastingtooljoindk.streamlit.app)
@@ -127,6 +127,35 @@ met de tabel in de code, maar zwijgt er niet over.
   een percentage dat met terugwerkende kracht is herzien
 - Navordering bij een gebroken boekjaar is nu ook als combinatie getoetst: de startdatum volgt het boekjaar, de einddatum het aanslagtype
 
+### ⏱️ Invorderingsrente
+Berekent de invorderingsrente van hoofdstuk V van de Invorderingswet 1990. Dat is een
+andere rente dan de belastingrente hierboven, met eigen termijnen, eigen tarieven en een
+eigen rekenmethode.
+
+- **Drie grondslagen.** Art. 28 (rente bij te late betaling, in rekening gebracht),
+  art. 28a (vergoeding als de ontvanger niet binnen zes weken uitbetaalt) en art. 28b
+  (vergoeding bij vermindering na een afgewezen uitstelverzoek). Art. 28c, de heffing in
+  strijd met het Unierecht, wordt alleen gesignaleerd en niet berekend
+- **Eigen dagentelling.** Art. 31 van de Uitvoeringsregeling IW 1990 telt de maand waarin
+  de enige of laatste betalingstermijn vervalt op haar werkelijke aantal dagen, met
+  februari altijd op 28, en verder 30 dagen per maand en 360 per jaar. Dat is dus niet de
+  30/360-telling van de belastingrentepagina's en ook geen telling in werkelijke dagen
+- **Eigen afronding.** Rente die in rekening wordt gebracht gaat naar beneden op hele
+  euro's, een vergoeding naar boven (art. 32). Er wordt één keer over het geheel afgerond
+  en niet per tariefperiode, want de formule van art. 30 lid 1 telt de deelperioden eerst op
+- **Drempelbedrag.** Bij de enige of laatste betaling blijft een bedrag van € 49 of minder
+  buiten invordering (art. 33; tot en met 2025 was dat € 23)
+- **Twee tariefreeksen.** Tot en met 2023 kende het Besluit belasting- en invorderingsrente
+  een apart percentage voor vergoedingen, gekoppeld aan de wettelijke rente met een bodem
+  van 4 procent. In de tweede helft van 2023 verschilt dat meer dan een beetje: 3 procent
+  in rekening tegenover 6 procent vergoed
+- **Uitstel wordt uitgevraagd, niet gerekend.** De opschorting van art. 28 lid 3 zit niet
+  in deze versie. De pagina vraagt of er uitstel is verleend en op welke grond, en geeft
+  geen uitkomst zolang dat niet is ingevuld
+- **Uitzonderingen.** De twee gevallen die op grond van art. 28 lid 5 zijn aangewezen in
+  het Uitvoeringsbesluit IW 1990 staan als aanvinkbare lijst op de pagina, samen met de
+  beleidsmatige vermindering uit de Leidraad Invordering 2008
+
 ### 🚗 Auto BTW privé
 Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke auto (forfaitmethode).
 
@@ -170,6 +199,7 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 | `pages/KvK_SBI_Opzoeken.py` | KvK / SBI opzoeken op naam, KvK-nr of RSIN |
 | `pages/Belastingrente_IB.py` | Belastingrente IB calculator |
 | `pages/Belastingrente_VpB.py` | Belastingrente VpB calculator |
+| `pages/Invorderingsrente.py` | Invorderingsrente art. 28, 28a en 28b (signalering art. 28c) |
 | `pages/Auto_BTW_Prive.py` | Auto BTW privé calculator (RDW-koppeling) |
 | `_auto_paste.py` | Streamlit custom component declaratie (paste-detectie) |
 | `_components/auto_paste/` | HTML/JS voor de paste-component |
@@ -178,10 +208,11 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 | `_vies.py` | BTW-nummerlogica en duiding van VIES-antwoorden (zonder Streamlit) |
 | `_kvk.py` | Uitlezen van het KvK-basisprofiel (zonder Streamlit) |
 | `_rente.py` | Belastingrenteberekening: 30/360, renteperiode, afronding (zonder Streamlit) |
+| `_invorderingsrente.py` | Invorderingsrente: dagentelling art. 31 URIW, tarieven, tijdvakken (zonder Streamlit) |
 | `_tarieven_check.py` | Maandelijkse check op nieuwe tarieven (belastingdienst.nl) |
 | `_format.py` | Nederlandse notatie voor bedragen, datums en percentages (zonder Streamlit) |
 | `_ui.py` | Gedeeld stijlblok, koptekst, HTML-escaping en het KvK-sleutelblok |
-| `tests/` | Pytest-suite (366 tests) |
+| `tests/` | Pytest-suite (465 tests) |
 | `WIJZIGINGSRAPPORT.md` | Volledig verslag van de codereview en de drie verificatierondes |
 | `update-bram.md` | Overzicht voor Bram: wat er in deze repo zit en wat er van DK/Join nodig is |
 | `requirements.txt` | Python dependencies |
@@ -222,7 +253,14 @@ python -m pytest tests/ -q
 ```
 
 De rekenlogica staat bewust los van Streamlit in `_kenmerk.py`, `_auto_calc.py`,
-`_vies.py`, `_rente.py`, `_kvk.py` en `_format.py`, zodat die zonder draaiende app te testen is.
+`_vies.py`, `_rente.py`, `_invorderingsrente.py`, `_kvk.py` en `_format.py`, zodat die
+zonder draaiende app te testen is.
+
+Voor invorderingsrente bestaat geen gepubliceerd rekenvoorbeeld van de Belastingdienst
+dat als toetssteen kan dienen. `tests/test_invorderingsrente.py` legt daarom de regels
+vast met het wetsartikel in de docstring van elke test, en
+`tests/test_invorderingsrentepagina.py` draait de pagina zelf met een nagebouwde
+Streamlit om te bewaken dat de blokkades blijven werken.
 
 Twee testbestanden zijn tegen een officiële bron gelegd. `tests/test_kenmerk.py` bevat alle
 27 voorbeelden uit de Specificatie Betalingskenmerk_bepaling v1.5; `tests/test_auto_calc.py`

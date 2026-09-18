@@ -1,8 +1,8 @@
 # Belastingtool JoinDK
 
-Streamlit-app met zes belastingtools voor Join Administraties en DK Accountants:
-betalingskenmerk, VIES BTW-controle, KvK/SBI, belastingrente IB en VpB, auto BTW
-privé. Begonnen als betalingskenmerk-tool; heet sinds 18-08-2026
+Streamlit-app met zeven belastingtools voor Join Administraties en DK Accountants:
+betalingskenmerk, VIES BTW-controle, KvK/SBI, belastingrente IB en VpB,
+invorderingsrente, auto BTW privé. Begonnen als betalingskenmerk-tool; heet sinds 18-08-2026
 `belastingtooljoindk`. Hoort **niet** bij de portal op bouwman.tools en heet dus
 nooit "Bouwman Tools".
 
@@ -21,9 +21,9 @@ python -m pytest -q
 
 ## Structuur
 
-- `app.py` — entrypoint met `st.navigation()`-router; `pages/` bevat de zes pagina's.
+- `app.py` — entrypoint met `st.navigation()`-router; `pages/` bevat de zeven pagina's.
 - Pure reken- en parsermodules, bewust zonder Streamlit-import zodat ze los
-  testbaar blijven: `_kenmerk.py`, `_rente.py`, `_auto_calc.py`, `_vies.py`,
+  testbaar blijven: `_kenmerk.py`, `_rente.py`, `_invorderingsrente.py`, `_auto_calc.py`, `_vies.py`,
   `_tarieven_check.py` (signaleert nieuwe tarieven bij de bron). Houd die grens:
   geen `st.`-aanroepen daarin, geen rekenlogica in `pages/`.
 - `_format.py` notatie · `_ui.py` stijl, koptekst, `veilig()`, KvK-sleutelblok ·
@@ -48,6 +48,14 @@ Vindplaats in commentaar bij de waarde zelf; `_auto_calc.py` en `_kenmerk.py`
 tonen de opzet. Bij twijfel: waarschuwing tonen en het punt op de actielijst in
 `WIJZIGINGSRAPPORT.md` zetten, geen gokwaarde.
 
+Belastingrente en invorderingsrente rekenen **niet** hetzelfde. `_rente.py` telt
+30 dagen per maand en 360 per jaar en rondt per tariefperiode naar beneden af;
+`_invorderingsrente.py` volgt art. 31 en 32 van de Uitvoeringsregeling IW 1990,
+waar de maand van de laatste betalingstermijn haar werkelijke lengte telt, een
+vergoeding naar boven wordt afgerond en er één keer over het geheel wordt
+afgerond. Hergebruik `dagen_30_360()` daar dus niet; zie sectie L10 van het
+wijzigingsrapport.
+
 ## Publicatie en gereed
 
 Publieke repo `Sylvainbouwman/belastingtooljoindk`, branch `master`; Streamlit
@@ -57,7 +65,7 @@ een testomgeving voor collega's (productie komt in een beveiligde omgeving). Gee
 sync naar `bouwman-tools`. Repo is publiek: geen klantgegevens in tests,
 voorbeelden of commits — gebruik de voorbeelden uit de officiële specificatie.
 
-Gereed: `python -m pytest -q` groen (nu 382 tests), gewijzigde logica gedekt door
+Gereed: `python -m pytest -q` groen (nu 465 tests), gewijzigde logica gedekt door
 een test, README of WIJZIGINGSRAPPORT bijgewerkt waar dat geldt.
 
 Open punt: samenvoegen met de WWFT multi-page app (`pages/` plus losse modules
