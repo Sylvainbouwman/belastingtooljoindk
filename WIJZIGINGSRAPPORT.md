@@ -836,7 +836,7 @@ De pure rekenmodule en tariefreeksen zijn ongewijzigd. Elf nieuwe tests voeren d
 
 ---
 
-## L10 — invorderingsrente: een nieuwe module, en een dagentelling die anders bleek, 18-09-2026 11:53 CEST
+## L10 — invorderingsrente: een nieuwe module en een dagentelling die anders bleek, 18-09-2026 11:53 CEST
 
 **Aanleiding:** de onderzoeksnotitie
 `PostbusClaude/belastingtool-joindk/AAN-CODEX-20260910-invorderingsrente-functionele-eisen.md`
