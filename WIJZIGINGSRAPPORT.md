@@ -820,9 +820,10 @@ buiten de module.
 
 De reeks staat sinds 7 september 2026 op twee plekken: hier en in `Berekeningen`. Welke
 van de twee de bron wordt en hoe de andere hem overneemt in plaats van overtypt, is een
-openstaand besluit — zie `PostbusClaude/VRAGEN-07-09-2026.md`, punt 1. Er is hier niets
-verhuisd en geen koppeling tussen de repository's gebouwd; de drie punten hierboven zijn
-fout welk besluit er ook valt.
+openstaand besluit — zie `OPENSTAAND.md`, punt 1 (verplaatst op 19-09-2026 uit de
+inmiddels gearchiveerde `PostbusClaude/VRAGEN-07-09-2026.md`). Er is hier niets verhuisd en
+geen koppeling tussen de repository's gebouwd; de drie punten hierboven zijn fout welk
+besluit er ook valt.
 
 
 ## L09 — invoergrenzen rentepagina's, 8 september 2026
