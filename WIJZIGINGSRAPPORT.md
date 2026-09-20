@@ -819,11 +819,25 @@ buiten de module.
 ### 9.7 Wat hierbuiten is gebleven
 
 De reeks staat sinds 7 september 2026 op twee plekken: hier en in `Berekeningen`. Welke
-van de twee de bron wordt en hoe de andere hem overneemt in plaats van overtypt, is een
+van de twee de bron wordt en hoe de andere hem overneemt in plaats van overtypt, was een
 openstaand besluit — zie `OPENSTAAND.md`, punt 1 (verplaatst op 19-09-2026 uit de
-inmiddels gearchiveerde `PostbusClaude/VRAGEN-07-09-2026.md`). Er is hier niets verhuisd en
-geen koppeling tussen de repository's gebouwd; de drie punten hierboven zijn fout welk
-besluit er ook valt.
+inmiddels gearchiveerde `PostbusClaude/VRAGEN-07-09-2026.md`). Er is bij die drie punten
+niets verhuisd en geen koppeling gebouwd; zij zijn fout welk besluit er ook valt.
+
+**Nagekomen op 20 september 2026: dat besluit is gevallen en er wordt niets verhuisd.**
+De vraag berustte op de aanname dat beide tools hetzelfde doen. Dat is niet zo: hier wordt
+een aanslag gerekend met dagtelling, dagtekening en aanslagtermijnen, terwijl `Berekeningen`
+de reeks alleen gebruikt voor de tegenbewijsregeling van art. 30i lid 3 AWR en daarbij in
+hele maanden met een gemiddeld percentage telt. Het is dus geen dubbele implementatie maar
+een gedeeld gegeven met twee gebruikers.
+
+Wat er wel is gebouwd is de bewaking dat de reeksen gelijk blijven. De twaalf percentages
+zijn op 20-09-2026 naast elkaar gelegd en zijn identiek over alle 180 maanden van 2012-01
+tot en met 2026-12. `belastingrente-ib-reeks.txt` staat sindsdien woordelijk gelijk in beide
+repository's, `tests/test_rentereeks_gedeeld.py` legt `TARIEVEN` van de IB-pagina ertegen, en
+`PostbusClaude/controle_rentereeks.py` vergelijkt de twee bestanden. Dat laatste kan geen
+test doen, want de repository's zien elkaar niet. De volledige onderbouwing staat bij het
+gesloten punt in `OPENSTAAND.md`.
 
 
 ## L09 — invoergrenzen rentepagina's, 8 september 2026
