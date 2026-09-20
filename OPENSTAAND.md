@@ -4,7 +4,7 @@ Laatst bijgewerkt: 20-09-2026 15:45 CEST. Eerste versie van dit bestand; eerder 
 openstaande punten alleen in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging) en, voor
 dit ene punt, in de nu gearchiveerde berichtenmap `PostbusClaude`.
 
-**Stand:** van de 9 punten staan er 5 open en zijn er 4 gesloten. De zeven fiscale
+**Stand:** van de 10 punten staan er 6 open en zijn er 4 gesloten. De zeven fiscale
 punten van de pagina Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md`
 hierheen gehaald; twee daarvan zijn diezelfde dag beslist.
 
@@ -60,6 +60,24 @@ weken, maar rekent het bedrag niet uit.
 Zij zijn uit de wettekst overgenomen, net als in de onderzoeksnotitie. De Leidraad
 Invordering 2008 is wel nagelezen op afwijkingen en gaf er op dit punt geen. Wat ontbreekt
 is een toets aan rechtspraak en aan gepubliceerd uitvoeringsbeleid daarbuiten.
+
+### 10. Hoort deze tool in het portaal van bouwman.tools, of niet?
+
+**Status:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 20-09-2026.
+
+`AGENTS.md` van deze repository opent met: "Hoort **niet** bij de portal op bouwman.tools
+en heet dus nooit Bouwman Tools." Het toolregister zegt het omgekeerde: `in_portal` staat
+op `true`, met een `url` naar `belastingtooljoindk.streamlit.app`. Het portaal bouwt zijn
+kaarten uit dat register op, dus de tool wordt daar getoond met een link naar de
+Streamlit-app.
+
+Dat is geen fout in het register: er staan drie tools zo in, naast deze ook `auditfile-app`
+en `dba-risicoscan`. Maar een van de twee teksten klopt niet, en dat maakt uit voor wie de
+tool ziet en welke status-tag daarbij hoort.
+
+**Wat er moet gebeuren:** vaststellen welke van de twee de bedoeling is. Hoort hij in het
+portaal, dan moet die zin uit `AGENTS.md`. Hoort hij er niet in, dan moet `in_portal` naar
+`false` en verdwijnt de kaart. Niet zelf gekozen, want het raakt wie de tool te zien krijgt.
 
 ## Gesloten
 
