@@ -1,16 +1,116 @@
 # Openstaande punten
 
-Laatst bijgewerkt: 20-09-2026 11:40 CEST. Eerste versie van dit bestand; eerder stonden
+Laatst bijgewerkt: 20-09-2026 15:45 CEST. Eerste versie van dit bestand; eerder stonden
 openstaande punten alleen in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging) en, voor
 dit ene punt, in de nu gearchiveerde berichtenmap `PostbusClaude`.
 
-**Stand:** van het ene punt staat er 0 open en is er 1 gesloten.
+**Stand:** van de 9 punten staan er 5 open en zijn er 4 gesloten. De zeven fiscale
+punten van de pagina Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md`
+hierheen gehaald; twee daarvan zijn diezelfde dag beslist.
 
 ## Open
 
-_Geen openstaande punten._
+Deze punten stonden tot 20-09-2026 alleen in `WIJZIGINGSRAPPORT.md`, paragraaf L10.7. Zij
+raken alle de pagina Invorderingsrente. Ze zijn hierheen gehaald omdat de index over de
+repository's heen naar dit bestand kijkt en ze daar dus niet zag; het wijzigingsrapport
+verwijst nu hierheen.
+
+### 2. Hoe telt een gedeeltelijke maand die niet de vervalmaand is?
+
+**Status:** open. **Eigenaar:** Sylvain Bouwman. **Vindplaats:** `_invorderingsrente.py`,
+`WIJZIGINGSRAPPORT.md` L10.7 punt 2.
+
+Art. 31 URIW noemt de vervalmaand en de volle maand, maar niet met zoveel woorden de
+laatste, onvolledige maand van een tijdvak. De module telt die naar rato binnen een
+maandlengte van 30, dezelfde systematiek die `dagen_30_360()` gebruikt. Dat volgt uit
+onderdeel b maar staat er niet letterlijk.
+
+### 3. Welke formule geldt voor een vergoeding?
+
+**Status:** open. **Eigenaar:** Sylvain Bouwman. **Vindplaats:** `_invorderingsrente.py`,
+`WIJZIGINGSRAPPORT.md` L10.7 punt 3.
+
+Art. 30 URIW is naar zijn tekst geschreven voor de in rekening te brengen rente over een
+betaling. Voor art. 28a en 28b kent de regeling geen eigen formule. De module gebruikt
+dezelfde enkelvoudige formule met het uit te betalen respectievelijk het terug te geven
+bedrag als grondslag; de wet noemt die grondslag zelf in art. 28b lid 2, slot.
+
+### 4. Uitstel wordt niet doorgerekend
+
+**Status:** open, als bekende beperking. **Eigenaar:** Sylvain Bouwman.
+**Vindplaats:** `WIJZIGINGSRAPPORT.md` L10.7 punt 5.
+
+Dat is een keuze van Sylvain en geen tekort van het onderzoek, maar het blijft een grens:
+voor een aanslag waarvoor uitstel is verleend geeft de tool geen bedrag. Staat hier zodat
+zichtbaar blijft wat de tool niet doet.
+
+### 5. Art. 28c wordt niet gerekend
+
+**Status:** open, als bekende beperking. **Eigenaar:** Sylvain Bouwman.
+**Vindplaats:** `WIJZIGINGSRAPPORT.md` L10.7 punt 6.
+
+Ook een keuze van Sylvain. De pagina signaleert wel de grond en de verzoektermijn van zes
+weken, maar rekent het bedrag niet uit.
+
+### 6. De vier tijdvakken zijn niet aan uitvoeringsbeleid of rechtspraak getoetst
+
+**Status:** open. **Eigenaar:** Sylvain Bouwman. **Vindplaats:**
+`WIJZIGINGSRAPPORT.md` L10.7 punt 7.
+
+Zij zijn uit de wettekst overgenomen, net als in de onderzoeksnotitie. De Leidraad
+Invordering 2008 is wel nagelezen op afwijkingen en gaf er op dit punt geen. Wat ontbreekt
+is een toets aan rechtspraak en aan gepubliceerd uitvoeringsbeleid daarbuiten.
 
 ## Gesloten
+
+### 7. Geldt art. 31 onderdeel a ook bij art. 28a?
+
+**Status:** gesloten op 20-09-2026. **Eigenaar:** Sylvain Bouwman. **Herkomst:**
+`WIJZIGINGSRAPPORT.md` L10.7 punt 1.
+
+Onderdeel a hangt aan "de maand waarin de enige of laatste betalingstermijn van de aanslag
+vervalt". Bij art. 28 en art. 28b bestaat die maand, want beide tijdvakken haken aan bij de
+invorderbaarheid van art. 9. Bij art. 28a vangt het tijdvak aan na de dagtekening van een
+uitbetaling en vervalt er niets. De module past daar alleen onderdeel b toe, dus 30 dagen
+per maand. Over 26-02-2026 tot en met 09-04-2026 geeft dat 44 dagen in plaats van 42.
+
+**Besluit van Sylvain op 20-09-2026: dat blijft zo.** De grond is de tekst zelf: onderdeel a
+knoopt aan bij een vervallende betalingstermijn van een aanslag, en bij art. 28a is er geen
+aanslag en vervalt er geen termijn. Dat aanknopingspunt ontbreekt dus, en dan geldt
+onderdeel b voor alle maanden van het tijdvak.
+
+**Wat onzeker blijft:** de wet zegt niet met zoveel woorden dat onderdeel a bij art. 28a
+buiten toepassing blijft; dat volgt uit het ontbreken van het aanknopingspunt. Er is geen
+rechtspraak of gepubliceerd beleid over gevonden. De melding bij de uitkomst blijft daarom
+staan. Heroverwegen zodra beleid of een uitspraak hierover verschijnt.
+
+### 8. Deelbetalingen worden niet toegerekend
+
+**Status:** gesloten op 20-09-2026. **Eigenaar:** Sylvain Bouwman. **Herkomst:**
+`WIJZIGINGSRAPPORT.md` L10.7 punt 4.
+
+Art. 29 URIW rekent per betaling afzonderlijk. De pagina rekent één betaling per keer door;
+bij meerdere betalingen voert de gebruiker ze los in. De tool verdeelt een openstaand saldo
+niet zelf en past de splitsingsformule van art. 30 lid 2 niet automatisch toe.
+`splits_betaling()` staat wel in de module en is getest, maar wordt door de pagina niet
+aangeboden.
+
+**Besluit van Sylvain op 20-09-2026: dat blijft zo, en de functie blijft staan.** Eén
+betaling per keer is te overzien, en meerdere betalingen in één scherm maakt de invoer fors
+ingewikkelder voor een geval dat zich weinig voordoet. De melding die zegt dat de gebruiker
+ze los moet invoeren blijft. Overwogen en niet gekozen: de functie weghalen, omdat het werk
+dan opnieuw moet als de testgroep haar toch mist. Komt die vraag uit het testen, dan is dit
+het punt om te heropenen.
+
+### 9. De verwijzing naar "openstaand punt A" wees nergens heen
+
+**Status:** gesloten op 20-09-2026, opgeruimd.
+
+`WIJZIGINGSRAPPORT.md` verwees bij de Auto BTW privé-pagina naar "openstaand punt A
+hieronder". Dat punt is nooit uitgewerkt: in de allereerste versie van het rapport
+(commit `869ceff`) stond de verwijzing er al zonder doel. Er is dus niets verdwenen bij een
+opruiming, maar de tekst beloofde wel een punt dat er niet was. De verwijzing is vervangen
+door wat er feitelijk over de nulemissietabel te zeggen valt.
 
 ### 1. Waar hoort de belastingrente te worden gerekend: `belastingtooljoindk` of `Berekeningen`
 

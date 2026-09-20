@@ -212,16 +212,19 @@ def test_korting_geldt_ook_in_2026():
 
 
 def test_nulemissiepercentages_lopen_op_zoals_de_wet_voorschrijft():
-    """De reeks 4/4/4/8/12/16/16/16/17/18, op 18-08-2026 nagelopen op de
-    jaarpagina's van belastingdienst.nl. Bewaakt tegen per ongeluk terugdraaien."""
+    """De reeks 4/4/4/8/12/16/16/16/17/18/20, t/m 2026 op 18-08-2026 nagelopen op de
+    jaarpagina's van belastingdienst.nl en 2027 op 20-09-2026 in art. 3.20 lid 2 Wet IB
+    2001 zelf. Bewaakt tegen per ongeluk terugdraaien."""
     verwacht = {2017: 4.0, 2018: 4.0, 2019: 4.0, 2020: 8.0, 2021: 12.0,
-                2022: 16.0, 2023: 16.0, 2024: 16.0, 2025: 17.0, 2026: 18.0}
+                2022: 16.0, 2023: 16.0, 2024: 16.0, 2025: 17.0, 2026: 18.0,
+                2027: 20.0}
     assert {j: p for j, (p, _) in KORTING_NULEMISSIE.items()} == verwacht
 
 
 def test_plafonds_dalen_zoals_de_wet_voorschrijft():
     verwacht = {2017: None, 2018: None, 2019: 50_000, 2020: 45_000, 2021: 40_000,
-                2022: 35_000, 2023: 30_000, 2024: 30_000, 2025: 30_000, 2026: 30_000}
+                2022: 35_000, 2023: 30_000, 2024: 30_000, 2025: 30_000, 2026: 30_000,
+                2027: 30_000}
     assert {j: c for j, (_, c) in KORTING_NULEMISSIE.items()} == verwacht
 
 
@@ -349,6 +352,40 @@ def test_geen_waarschuwing_voor_een_auto_met_uitstoot():
     assert waarschuwing_regimejaar(False, 2030) is None
 
 
+# ── Nulemissie 2027, toegevoegd op 20-09-2026 ───────────────────────────────
+
+def test_regimejaar_2027_krijgt_de_korting_en_geen_waarschuwing_meer():
+    """Tot 20-09-2026 liep de tabel tot en met 2026 en rekende de tool voor 2027
+    met het standaardpercentage van 22%, met een waarschuwing erbij. Het cijfer
+    stond toen al in de wet: art. 3.20 lid 2 Wet IB 2001, toestand 2027-01-01,
+    verlaging met 2% van de waarde en ten hoogste EUR 600. Dat is 20% over de
+    eerste EUR 30.000, en dat scheelde EUR 600 bijtelling per jaar."""
+    pct, plafond = KORTING_NULEMISSIE[2027]
+    assert (pct, plafond) == (20.0, 30_000)
+    assert waarschuwing_regimejaar(True, 2027) is None
+    # De waarschuwing hoort nu bij 2028 te beginnen: de korting vervalt dan
+    # volgens de geldende tekst, maar die vervaldatum is al een keer met latere
+    # wetgeving opgeschoven, dus de melding blijft staan tot iemand haar opnieuw
+    # bij de bron heeft gezien.
+    assert waarschuwing_regimejaar(True, 2028) is not None
+
+
+def test_de_korting_van_2027_scheelt_zeshonderd_euro_op_een_dure_auto():
+    """Boven het plafond geldt het standaardpercentage, dus het voordeel is
+    begrensd op het maximum uit de wet: 2% van EUR 30.000."""
+    grondslag, _ = bijtelling_regime(80_000, nulemissie=True, jaar=2027)
+    zonder = 80_000 * standaardpercentage(2027) / 100
+    assert zonder - grondslag == pytest.approx(600.0)
+
+
+def test_waterstof_in_2027_ontloopt_het_plafond_nog_steeds():
+    """De begrenzing geldt niet voor een motor die op waterstof kan worden
+    gevoed; die uitzondering staat in dezelfde volzin als het maximum."""
+    grondslag, _ = bijtelling_regime(80_000, nulemissie=True, jaar=2027,
+                                     plafondvrij=True)
+    assert grondslag == pytest.approx(80_000 * 0.20)
+
+
 def test_standaardpercentage_kent_geen_stille_terugval():
     """Voorheen gaf een jaar buiten de tabel altijd 22%, ook voor 2010."""
     assert standaardpercentage(2010) == 25.0
@@ -389,10 +426,11 @@ def test_korting_kan_nooit_boven_het_wettelijk_maximum_uitkomen():
 
 def test_nulemissiepercentages_volgen_uit_de_wettelijke_procentpunten():
     """De wet noemt een verlaging in procentpunten op het standaardpercentage.
-    18 procentpunt in 2017-2019, 14 in 2020, 10 in 2021, 6 in 2022-2024, 5 in 2025
-    en 4 in 2026."""
+    18 procentpunt in 2017-2019, 14 in 2020, 10 in 2021, 6 in 2022-2024, 5 in 2025,
+    4 in 2026 en 2 in 2027. Die laatste staat woordelijk in art. 3.20 lid 2 met
+    toestand 2027-01-01: verlaging met 2% van de waarde, ten hoogste EUR 600."""
     verwacht = {2017: 18, 2018: 18, 2019: 18, 2020: 14, 2021: 10,
-                2022: 6, 2023: 6, 2024: 6, 2025: 5, 2026: 4}
+                2022: 6, 2023: 6, 2024: 6, 2025: 5, 2026: 4, 2027: 2}
     voor_elk_jaar = {j: standaardpercentage(j) - p for j, (p, _) in KORTING_NULEMISSIE.items()}
     assert voor_elk_jaar == verwacht
 
