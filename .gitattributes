@@ -1,0 +1,5 @@
+# Het gedeelde reeksbestand moet in beide repository's byte voor byte gelijk kunnen zijn.
+# Zonder deze regel checkt Git het op Windows met CRLF uit, terwijl een script dat het
+# herschrijft LF laat staan: dan meldt `git status` een wijziging waar `git diff` niets
+# toont, en dat kost een volgende sessie tijd. Gemeten op 20-09-2026.
+belastingrente-ib-reeks.txt text eol=lf
