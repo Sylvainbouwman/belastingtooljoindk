@@ -1,16 +1,20 @@
 # Openstaande punten
 
-Laatst bijgewerkt: 19-09-2026 15:00 CEST. Eerste versie van dit bestand; eerder stonden
+Laatst bijgewerkt: 20-09-2026 11:40 CEST. Eerste versie van dit bestand; eerder stonden
 openstaande punten alleen in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging) en, voor
 dit ene punt, in de nu gearchiveerde berichtenmap `PostbusClaude`.
 
-**Stand:** van het ene punt staat er 1 open.
+**Stand:** van het ene punt staat er 0 open en is er 1 gesloten.
 
 ## Open
 
+_Geen openstaande punten._
+
+## Gesloten
+
 ### 1. Waar hoort de belastingrente te worden gerekend: `belastingtooljoindk` of `Berekeningen`
 
-**Status:** open. **Eigenaar:** Sylvain Bouwman.
+**Status:** gesloten op 20-09-2026. **Eigenaar:** Sylvain Bouwman.
 
 **Herkomst:** `PostbusClaude/archief/2026-09/VRAGEN-07-09-2026.md`, vraag 1 ("Waar hoort de
 belastingrente te worden gerekend? (klus 3c, en daarmee ook 3b)"), met de aanvulling van de
@@ -84,4 +88,51 @@ een schakelaar (het bronmodel 02-04 kent `hrArrestToepassen`) is gebouwd; de too
 uitkomst op basis van de gecorrigeerde reeks. Dat lost de onderliggende datafout en het
 arrest-punt van vraag 4 in het brondocument op, maar beantwoordt niet welke repository de
 bron wordt voor de percentagereeks zelf en hoe de andere repository haar voortaan overneemt
-in plaats van overtypt. Dat besluit staat nog open.
+in plaats van overtypt. Dat besluit is op 20-09-2026 genomen; zie hieronder.
+
+---
+
+**Gesloten op 20-09-2026.** Besluit van Sylvain Bouwman.
+
+**De vraag zelf berustte op een aanname die niet klopt.** De brondocumenten van
+07-09-2026 gingen ervan uit dat twee tools hetzelfde doen en dat een van beide de bron
+moet worden. Nagemeten op 20-09-2026: dat is niet zo. `Berekeningen` gebruikt de
+percentagereeks uitsluitend voor de tegenbewijsregeling van art. 30i lid 3 AWR en telt
+daarbij in hele maanden met een gemiddeld percentage; er zit geen dagtelling,
+dagtekening of aanslagtermijn in. `belastingtooljoindk` rekent een aanslag met precies
+die onderdelen. Er is dus geen dubbele implementatie om te consolideren, maar een
+gedeeld gegeven met twee gebruikers die er iets anders mee doen. Consolideren van de
+berekening zou een van beide tools iets opleggen wat zij niet nodig heeft.
+
+**Wat er wel te bewaken viel is gebouwd.** De twaalf percentages zijn op 20-09-2026
+naast elkaar gelegd: zij zijn identiek over alle 180 maanden van januari 2012 tot en met
+december 2026. De fout waar het punt op wees, 1 juni tegenover 1 juli 2020 voor de
+inkomstenbelasting, is hersteld. Om te voorkomen dat zij opnieuw uiteenlopen is de
+bewaking in drie schakels gelegd:
+
+1. `belastingrente-ib-reeks.txt` staat woordelijk gelijk in beide repository's: de
+   reeks als leesbare tekst, met de bron en de reden van de juli-uitzondering erbij.
+2. Elke repository heeft een test die haar eigen constante tegen dat bestand legt en
+   faalt zodra de code en het bestand uiteenlopen. In `Berekeningen` is dat
+   `tests/rentereeks-gedeeld.test.mjs`, hier `tests/test_rentereeks_gedeeld.py`. Beide
+   zijn op 20-09-2026 getoetst door de reeks te verstoren; zij worden dan rood, en de
+   Python-kant vangt de historische juni-fout met drie afzonderlijke toetsen.
+3. `PostbusClaude/controle_rentereeks.py` vergelijkt de twee bestanden. Dat kan geen
+   test doen, want de repository's zien elkaar niet; dit script draait op een machine
+   waar beide staan.
+
+**Waarom de bewaking zo is verdeeld en niet anders.** Twee repository's die elkaar niet
+zien kunnen in hun eigen CI niet bewijzen dat zij gelijk zijn. Wat elke kant wel kan is
+zich binden aan een leesbaar bestand. Het vorige controlescript,
+`PostbusClaude/controle_rentetabellen.py`, probeerde de code van beide tools
+rechtstreeks te lezen met een bewust smal contract. Gemeten op 20-09-2026 weigerde het
+met "Aanvullend of onbekend gebruik van Python-TARIEVEN": de IB-pagina had er twee
+leesplekken bij gekregen. Het heeft dus maanden niets gemeten terwijl het bestond, en
+juist in die periode liepen de reeksen uiteen. Het is vervangen en blijft in de
+Git-historie van die map terugvindbaar.
+
+**Wat hiermee niet is beslist.** Of de percentages zelf nog kloppen met de bron is een
+andere vraag; die bewaakt de netwerkcontrole `_tarieven_check.py` in deze repository.
+En de reeks eindigt bewust bij december 2026. Het percentage wordt jaarlijks per
+1 januari vastgesteld, dus bij de eerstvolgende jaarwisseling moeten beide bestanden en
+beide tools worden verlengd nadat het nieuwe percentage is teruggevonden.
