@@ -9,8 +9,16 @@ nooit "Bouwman Tools".
 ## Documentatie
 
 `README.md` (werking per tool + sectie Privacy over BSN versus RSIN),
-`UC_belastingtooljoindk.md` (doel en scope), `WIJZIGINGSRAPPORT.md` (actielijst;
-open fiscale punten horen hier).
+`UC_belastingtooljoindk.md` (doel en scope), `WIJZIGINGSRAPPORT.md` (wat er per
+ronde is gewijzigd, met de onderbouwing per bevinding).
+
+**Openstaande punten horen in `OPENSTAAND.md`, niet in het wijzigingsrapport.**
+Tot 20-09-2026 stond hier het omgekeerde, en daardoor stonden zeven fiscale
+punten van de pagina Invorderingsrente alleen in paragraaf L10.7 terwijl
+`OPENSTAAND.md` "nul open" meldde. De index over alle repository's heen herkent
+actiedocumenten op bestandsnaam en zag ze dus niet. Het wijzigingsrapport blijft
+de plek voor de onderbouwing van een bevinding; de stand van een punt staat in
+`OPENSTAAND.md`, met status, eigenaar en vindplaats.
 
 ## Commando's
 
@@ -45,8 +53,16 @@ python -m pytest -q
 ## Fiscale afspraken
 
 Vindplaats in commentaar bij de waarde zelf; `_auto_calc.py` en `_kenmerk.py`
-tonen de opzet. Bij twijfel: waarschuwing tonen en het punt op de actielijst in
-`WIJZIGINGSRAPPORT.md` zetten, geen gokwaarde.
+tonen de opzet. Bij twijfel: waarschuwing tonen en het punt in `OPENSTAAND.md`
+zetten, geen gokwaarde.
+
+**Een waarschuwing is geen antwoord zodra het antwoord bekend is.** De
+nulemissietabel in `_auto_calc.py` liep tot en met 2026 en waarschuwde netjes
+voor een later jaar, maar het cijfer voor 2027 stond toen al in art. 3.20 lid 2
+Wet IB 2001 en in de zustertool `auto-fiscaal-2027`. De tool rekende daardoor
+22% waar 20% geldt, dus EUR 600 bijtelling per jaar te hoog. Aangevuld op
+20-09-2026. Loop bij een jaarwisseling dus na of een gewaarschuwd jaar inmiddels
+een bron heeft, in plaats van op de melding te vertrouwen.
 
 Belastingrente en invorderingsrente rekenen **niet** hetzelfde. `_rente.py` telt
 30 dagen per maand en 360 per jaar en rondt per tariefperiode naar beneden af;
@@ -65,7 +81,7 @@ een testomgeving voor collega's (productie komt in een beveiligde omgeving). Gee
 sync naar `bouwman-tools`. Repo is publiek: geen klantgegevens in tests,
 voorbeelden of commits — gebruik de voorbeelden uit de officiële specificatie.
 
-Gereed: `python -m pytest -q` groen (nu 470 tests), gewijzigde logica gedekt door
+Gereed: `python -m pytest -q` groen (nu 473 tests), gewijzigde logica gedekt door
 een test, README of WIJZIGINGSRAPPORT bijgewerkt waar dat geldt.
 
 Open punt: samenvoegen met de WWFT multi-page app (`pages/` plus losse modules

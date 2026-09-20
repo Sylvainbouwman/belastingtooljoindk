@@ -44,6 +44,15 @@ STANDAARD_BIJTELLING_VANAF_2017 = 22.0
 #                            LET OP: de Klimaatakkoordwet liet de korting per 2026
 #                            vervallen; dat is dus met latere wetgeving aangepast.
 #                            Voor dit jaar is de jaarpagina daarom de bron.
+#   2027  20% EUR 30.000     art. 3.20 lid 2 Wet IB 2001, geldende tekst met
+#                            toestand 2027-01-01, teruggelezen op 20-09-2026:
+#                            "verlaagd met 2% van de waarde van de auto indien uit
+#                            het kentekenregister blijkt dat de CO2-uitstoot 0 gram
+#                            per kilometer is, met dien verstande dat het bedrag
+#                            van de verlaging ten hoogste EUR 600 bedraagt".
+#                            22 - 2 = 20; EUR 600 / 2% = EUR 30.000.
+#                            Dit is de laatste jaarschijf: per 01-01-2028 vervalt
+#                            de korting en geldt het standaardpercentage.
 KORTING_NULEMISSIE = {
     2017: (4.0, None),
     2018: (4.0, None),
@@ -55,6 +64,7 @@ KORTING_NULEMISSIE = {
     2024: (16.0, 30_000),
     2025: (17.0, 30_000),
     2026: (18.0, 30_000),
+    2027: (20.0, 30_000),
 }
 
 # Laatste jaar waarvoor de korting bij de bron is nagelopen. Voor een later
@@ -62,7 +72,13 @@ KORTING_NULEMISSIE = {
 # uitpakken zodra er nieuwe wetgeving is. Zie waarschuwing_regimejaar().
 # Dat 2026 zelf al een aanpassing bleek van wat in 2019 was vastgelegd, laat zien
 # dat die waarschuwing er niet voor niets staat.
-KORTING_GEVERIFIEERD_TOT_EN_MET = 2026
+#
+# Voor 2028 is het standaardpercentage wél het juiste antwoord en niet alleen
+# "wat er bekend is": de korting vervalt dan volgens de geldende tekst. Dat is
+# hier bewust niet als geverifieerd jaar opgenomen, want de waarschuwing hoort
+# te blijven staan tot iemand die vervaldatum opnieuw bij de bron heeft gezien;
+# de reeks is al een keer met latere wetgeving verlengd toen zij zou vervallen.
+KORTING_GEVERIFIEERD_TOT_EN_MET = 2027
 
 NULEMISSIE_BRANDSTOFFEN = ("elektriciteit", "waterstof")
 

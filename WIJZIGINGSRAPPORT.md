@@ -438,7 +438,14 @@ Nu wordt die datum volledig gebruikt. Loopt de 60-maandstermijn midden in het ja
 wordt de periode gesplitst en krijgt elk deel zijn eigen regime. In de app is nu zichtbaar
 tot wanneer het regime vastligt.
 
-Ook is de nulemissietabel gecorrigeerd — zie **openstaand punt A** hieronder.
+Ook is de nulemissietabel gecorrigeerd. Die verwees hier tot 20-09-2026 naar een
+"openstaand punt A hieronder" dat nooit is uitgewerkt; in de eerste versie van dit
+rapport (`869ceff`) stond die verwijzing er al zonder doel. De tabel zelf is bij de
+bron nagelopen en staat met vindplaats per jaarschijf in `_auto_calc.py`. Op
+20-09-2026 is zij aangevuld met 2027: art. 3.20 lid 2 Wet IB 2001 met toestand
+2027-01-01 verlaagt met 2% van de waarde, ten hoogste EUR 600, dus 20% over de eerste
+EUR 30.000. Tot dan rekende de tool voor dat jaar met het standaardpercentage van 22%
+en waarschuwde zij daarbij; dat scheelde EUR 600 bijtelling per jaar.
 
 **Bug 6 — het lage BTW-forfait van 1,5% ontbrak volledig** · zelfde commit
 
@@ -1025,6 +1032,12 @@ bij de beoordeling te worden meegewogen.
 
 Deze punten zijn bewust niet zelfstandig beslist. Zij staan hier omdat een verkeerde keuze
 tot een verkeerd bedrag leidt.
+
+> **Sinds 20-09-2026 staan zij in `OPENSTAAND.md`, en dat bestand is leidend.** Zij stonden
+> alleen hier, terwijl de index over alle repository's heen naar `OPENSTAAND.md` kijkt en ze
+> daar dus niet zag. Punt 1 en punt 4 hieronder zijn op 20-09-2026 door Sylvain beslist en
+> staan daar onder Gesloten; de overige vijf staan er onder Open. De tekst hieronder blijft
+> staan als vindplaats van de oorspronkelijke formulering.
 
 1. **Geldt art. 31 onderdeel a ook bij art. 28a?** Onderdeel a hangt aan "de maand waarin de
    enige of laatste betalingstermijn van de aanslag vervalt". Bij art. 28 en art. 28b bestaat
