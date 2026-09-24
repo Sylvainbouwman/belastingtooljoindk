@@ -1,5 +1,7 @@
 # Vrijgavenotitie belastingtooljoindk — 7 september 2026
 
+Status: afgerond (18-09-2026)
+
 Eerste vrijgavenotitie van deze repository; eerdere wijzigingen zijn vastgelegd in
 `WIJZIGINGSRAPPORT.md`. De uitgebreide onderbouwing van deze vrijgave staat daar in
 paragraaf 9. Deze notitie is de korte versie plus de verantwoording van de poort.
