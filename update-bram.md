@@ -1,5 +1,7 @@
 # Belastingtool JoinDK — wat er in de rekenregels is veranderd
 
+Status: afgerond (18-09-2026)
+
 **Datum:** 18 augustus 2026
 **Repository:** [`Sylvainbouwman/belastingtooljoindk`](https://github.com/Sylvainbouwman/belastingtooljoindk) — heette tot 18-08-2026 `betalingskenmerk-tool`
 **Volledig verslag:** [`WIJZIGINGSRAPPORT.md`](WIJZIGINGSRAPPORT.md)
