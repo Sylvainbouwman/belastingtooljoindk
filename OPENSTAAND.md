@@ -1,12 +1,13 @@
 # Openstaande punten
 
-Laatst bijgewerkt: 20-09-2026 15:45 CEST. Eerste versie van dit bestand; eerder stonden
+Laatst bijgewerkt: 27-09-2026 11:51 CEST. Eerste versie van dit bestand; eerder stonden
 openstaande punten alleen in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging) en, voor
 dit ene punt, in de nu gearchiveerde berichtenmap `PostbusClaude`.
 
-**Stand:** van de 10 punten staan er 6 open en zijn er 4 gesloten. De zeven fiscale
+**Stand:** van de 11 punten staan er 7 open en zijn er 4 gesloten. De zeven fiscale
 punten van de pagina Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md`
-hierheen gehaald; twee daarvan zijn diezelfde dag beslist.
+hierheen gehaald; twee daarvan zijn diezelfde dag beslist. Punt 11 is op 27-09-2026
+toegevoegd bij de portefeuillebrede inventarisatie van de uitgangen.
 
 ## Open
 
@@ -78,6 +79,25 @@ tool ziet en welke status-tag daarbij hoort.
 **Wat er moet gebeuren:** vaststellen welke van de twee de bedoeling is. Hoort hij in het
 portaal, dan moet die zin uit `AGENTS.md`. Hoort hij er niet in, dan moet `in_portal` naar
 `false` en verdwijnt de kaart. Niet zelf gekozen, want het raakt wie de tool te zien krijgt.
+
+### 11. Krijgt deze tool (of zijn zes onderdelen) een dossierstuk, Excel-export of dossierbestand?
+
+**Status:** open, bewust niet nu opgepakt. **Eigenaar:** Sylvain Bouwman. **Gevonden op**
+27-09-2026, bij de portefeuillebrede inventarisatie van de uitgangen.
+
+`tools.json` in `bouwman-tools` heeft voor `belastingtool-joindk` alle drie de
+uitgangen op `false` staan. Besloten op 27-09-2026: nu geen bouwsessie hiervoor. Twee
+redenen. Ten eerste raakt dit een Streamlit-app en niet de single-file HTML-opzet
+waarvoor de skill `tool-uitgangen` is geschreven; de standaardaanpak (een `@media
+print`-blok, een bevroren werkblad, een JSON-dossierbestand) veronderstelt een
+losstaand HTML-bestand en moet voor Streamlit eerst worden vertaald. Ten tweede is er
+overlap met `Berekeningen` (zie punt 1 hierboven, en de open vraag in punt 10 of deze
+tool zelfs in het portaal hoort): eerst bouwen op een plek die mogelijk verdwijnt of
+van eigenaar wisselt, is voorbarig werk.
+
+**Wat er moet gebeuren, ná punt 10:** zodra vaststaat of deze tool blijft en waar de
+belastingrente/revisierente-onderdelen definitief wonen, opnieuw beoordelen of een
+uitgang per onderdeel zinvol is, en zo ja, hoe dat in Streamlit vorm krijgt.
 
 ## Gesloten
 
