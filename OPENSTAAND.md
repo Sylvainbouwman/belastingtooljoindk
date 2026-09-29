@@ -161,7 +161,9 @@ hele repository vond geen andere vermelding.
 
 **Wat blijft:** de naam staat nog in de Git-historie, in de commit die OPENSTAAND.md op
 20-09-2026 aanmaakte. Die historie herschrijven vraagt een force-push op de publieke
-hoofdbranch; daarover beslist Sylvain apart.
+hoofdbranch. **Besluit van Sylvain op 29-09-2026: de historie blijft zoals zij is.** Het gaat
+om één woord en geen rekenmateriaal, en een herschreven publieke historie wist het niet
+gegarandeerd uit kopieën en caches.
 
 ### 14. Vanaf welk boekjaar geldt belastingrente in plaats van heffingsrente?
 
