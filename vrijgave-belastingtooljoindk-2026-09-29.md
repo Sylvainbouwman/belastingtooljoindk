@@ -28,8 +28,15 @@ model is in Excel zelf doorgerekend; de tool is niet tegen een nabouw van het mo
    1994.** Eindigt de rente op de 31e, dan telt die maand 31 dagen: één dag meer rente dan
    tot nu toe. En een VpB-berekening over de tariefwissel van 1 maart 2015 telt februari nu
    als volle maand van 30 dagen: twee dagen meer dan tot nu toe.
-3. **Een VpB-boekjaar dat vóór 2012 eindigt geeft een melding in plaats van een bedrag**,
-   omdat daar de oude heffingsrente gold.
+3. **Een VpB-boekjaar dat vóór 1 januari 2012 is begonnen geeft een melding in plaats van
+   een bedrag**, omdat daar de oude heffingsrente gold (art. XXXIV lid 1 onderdeel b
+   Belastingplan 2012). Bij een boekjaar dat vóór 2014 eindigt vraagt de pagina daarvoor ook
+   de begindatum.
+4. **Een termijn van een maand bij een dagtekening op de laatste dag van een maand** vervalt
+   op de laatste dag van de volgende maand (onderdeel 9.5 Leidraad Invordering 2008): 28
+   februari 2025 geeft 31 maart, niet 28 maart. Dat raakt de navorderingsaanslag, bij de
+   belastingrente (die loopt tot die dag) en bij de invorderingsrente (die begint de dag
+   erna). Gevonden door de bron-controleur.
 
 Wat níet verandert: de tariefreeksen, de afronding per tariefperiode van de belastingrente
 (besluit 29-09-2026, OPENSTAAND.md punt 12) en de rekenvoorbeelden van de Belastingdienst,
@@ -45,15 +52,30 @@ die de tests nog steeds tot op de euro reproduceren.
 | Art. 28b vanaf de dag na de invorderbaarheid | art. 28b lid 2 IW 1990 | `_invorderingsrente.periode_art28b` |
 | Volle maand 30 dagen, laatste maand van het tijdvak werkelijk | art. 31 lid 1 Uitvoeringsregeling AWR 1994 (BWBR0006736, versie 01-01-2026) | `_rente.dagen_belastingrente` |
 | Afronding belastingrente naar beneden | art. 31 lid 2 Uitvoeringsregeling AWR 1994; belastingdienst.nl, voorbeeld 93 + 9 = 102 | `_rente.bereken` |
-| Belastingrente vanaf belastingjaar 2012 | Kamerstukken II 2012/13, 33403, nr. 3, par. 14 (overgangsbepaling zelf nog niet nagelezen, punt 14) | `pages/Belastingrente_VpB.py` |
+| Heffingsrente blijft voor een VpB-tijdvak aangevangen vóór 1-1-2012 | art. XXXIV lid 1 onderdeel b Belastingplan 2012 (Stb. 2011, 639; BWBR0030999) | `pages/Belastingrente_VpB.py` |
+| Termijn van een maand: laatste dag van de maand → laatste dag van de volgende maand | onderdeel 9.5 Leidraad Invordering 2008 | `_rente._tel_maanden_op`, `_invorderingsrente._tel_maanden_op` |
 
 ## Getest
 
-`python -m pytest -q`: 488 geslaagd, 0 mislukt (was 473). Nieuw: het rekenvoorbeeld
+`python -m pytest -q`: 492 geslaagd, 0 mislukt (was 473). Nieuw: het rekenvoorbeeld
 invorderingsrente van de Belastingdienst, de telling van art. 31 lid 1 URAWR aan het einde
 van het tijdvak en bij een tariefwissel, de vervalmaand van 31 dagen, de schrikkeldag, het
-tijdvak van één dag en de weigering van een boekjaar vóór 2012. Elke nieuwe test is rood
-gezien tegen de oude code.
+tijdvak van één dag, de maandtermijn volgens Leidraad 9.5 en de weigering van een boekjaar
+dat vóór 2012 begon. De tests voor de eerste rentedag en de dagentelling zijn rood gezien
+tegen de oude code.
+
+## Tweede paar ogen
+
+- **Bron-controleur**, 29-09-2026: acht regels getoetst. Klopt: art. 30fc lid 2 AWR, de
+  zeswekentermijn van Leidraad 9.5, de eerste dag van de invorderingsrente (als door de
+  Belastingdienst en de Leidraad gedragen lezing), art. 28b lid 2, art. 31 lid 1 URAWR en de
+  afronding per tariefperiode (als verdedigbare uitvoering). Klopt niet, en daarna hersteld:
+  de grens vóór 2012 (het begin van het boekjaar beslist, niet het eind) en de maandtermijn
+  bij een dagtekening op de laatste dag van de maand. Onzeker: de schrikkeldag, besluit blijft
+  staan (OPENSTAAND.md punt 12).
+- **Publicatiepoort**, 29-09-2026: go op alle vier de eisen, op de stand vóór de twee
+  herstelpunten hierboven; na dat herstel is de poort opnieuw gedraaid (zie hieronder).
+- **Model opnieuw gedraaid na het herstel**: uitkomsten identiek aan de vorige run.
 
 ## Wat de toets niet dekt
 
@@ -66,4 +88,4 @@ gezien tegen de oude code.
 ## Open na deze vrijgave
 
 - Punt 13: drie fouten in model 02-04, terug te melden aan Wolters Kluwer.
-- Punt 14: de precieze overgangsgrens tussen heffingsrente en belastingrente.
+- Punt 15: een rekenvoorbeeld van de Belastingdienst dat een dag verder rekent dan de wet.

@@ -85,12 +85,24 @@ def eerste_dag_van_maand_na(boekjaar_eind: date, maanden: int) -> date:
 
 
 def _tel_maanden_op(d: date, maanden: int) -> date:
-    """Zelfde dag, zoveel maanden later; korter wordende maanden worden gekapt."""
+    """Zelfde dag, zoveel maanden later, volgens onderdeel 9.5 Leidraad Invordering 2008.
+
+    Valt 'd' op de laatste dag van een maand, dan is de uitkomst de laatste dag
+    van de doelmaand: dagtekening 28 februari geeft een termijn van een maand die
+    op 31 maart vervalt (28 maart in een schrikkeljaar, want dan is 28 februari
+    niet de laatste dag), en 31 oktober geeft 30 november. Anders dezelfde
+    dag, gekapt op de lengte van de doelmaand. Tot 29-09-2026 werd alleen
+    gekapt, waardoor 28-02-2025 op 28-03-2025 uitkwam; gevonden door de
+    bron-controleur bij de gelijkwaardigheidstoets tegen model 02-04.
+    """
     import calendar
     maand = d.month + maanden
     jaar = d.year + (maand - 1) // 12
     maand = (maand - 1) % 12 + 1
-    return date(jaar, maand, min(d.day, calendar.monthrange(jaar, maand)[1]))
+    lengte = calendar.monthrange(jaar, maand)[1]
+    if d.day == calendar.monthrange(d.year, d.month)[1]:
+        return date(jaar, maand, lengte)
+    return date(jaar, maand, min(d.day, lengte))
 
 
 def dagen_30_360(vanaf: date, tot_en_met: date) -> int:
@@ -134,6 +146,9 @@ def dagen_belastingrente(vanaf: date, tot_en_met: date, einde_tijdvak: bool) -> 
     dagen die erin vallen; dat volgt uit de dagnummers.
     """
     import calendar
+    if einde_tijdvak and (vanaf.year, vanaf.month) == (tot_en_met.year, tot_en_met.month):
+        # Begin en einde in de laatste maand: die telt haar werkelijke dagen.
+        return tot_en_met.day - vanaf.day + 1
     dag_vanaf = min(vanaf.day, 30)
     lengte = calendar.monthrange(tot_en_met.year, tot_en_met.month)[1]
     if tot_en_met.day == lengte:

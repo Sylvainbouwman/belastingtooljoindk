@@ -146,6 +146,26 @@ def test_bereken_telt_de_31e_als_het_tijdvak_daar_eindigt():
     assert totaal == 377
 
 
+def test_tijdvak_van_een_dag_op_de_31e_is_een_dag():
+    assert dagen_belastingrente(date(2025, 3, 31), date(2025, 3, 31), einde_tijdvak=True) == 1
+    assert dagen_belastingrente(date(2025, 3, 15), date(2025, 3, 31), einde_tijdvak=True) == 17
+
+
+def test_navordering_termijn_van_een_maand_volgt_leidraad_9_5():
+    """Onderdeel 9.5 Leidraad Invordering 2008: dagtekening op de laatste dag van
+    een maand geeft de laatste dag van de volgende maand (28 februari → 31 maart,
+    31 oktober → 30 november); in een schrikkeljaar is 28 februari niet de laatste
+    dag en geeft 28 maart. De belastingrente loopt bij navordering tot en met die
+    dag."""
+    eind, reden, _ = renteperiode(date(2025, 2, 28), aanslag_type="navordering")
+    assert (eind, reden) == (date(2025, 3, 31), "navordering")
+    assert renteperiode(date(2024, 2, 28), aanslag_type="navordering")[0] == date(2024, 3, 28)
+    assert renteperiode(date(2024, 2, 29), aanslag_type="navordering")[0] == date(2024, 3, 31)
+    assert renteperiode(date(2025, 10, 31), aanslag_type="navordering")[0] == date(2025, 11, 30)
+    assert renteperiode(date(2025, 4, 30), aanslag_type="navordering")[0] == date(2025, 5, 31)
+    assert renteperiode(date(2025, 1, 15), aanslag_type="navordering")[0] == date(2025, 2, 15)
+
+
 def test_tijdvak_van_een_dag_geeft_rente():
     """Art. 30fc lid 2 AWR kent geen minimumduur. Model 02-04 geeft nul als
     einddatum en begindatum samenvallen; de tool rekent die ene dag."""
@@ -301,9 +321,9 @@ def test_rente_start_in_de_zevende_maand_na_het_boekjaar(boekjaar_eind, verwacht
 def test_boekjaar_dat_eindigt_op_een_korte_maand():
     """De oude opzet (einddatum + 6 maanden + 1 dag) kwam hier een dag te vroeg
     uit: 30 juni werd afgebeeld op 30 december, dus 31-12 in plaats van 01-01."""
-    from _rente import _tel_maanden_op
     from datetime import timedelta
-    oud = _tel_maanden_op(date(2025, 6, 30), 6) + timedelta(days=1)
+    # De oude opzet, uitgeschreven: zelfde dagnummer zes maanden later, plus een dag.
+    oud = date(2025, 12, 30) + timedelta(days=1)
     nieuw = eerste_dag_van_maand_na(date(2025, 6, 30), 7)
     assert oud == date(2025, 12, 31)      # fout
     assert nieuw == date(2026, 1, 1)      # goed

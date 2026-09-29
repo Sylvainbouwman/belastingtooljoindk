@@ -1,12 +1,12 @@
 # Openstaande punten
 
-Laatst bijgewerkt: 29-09-2026 22:25 CEST. Eerste versie van dit bestand; eerder stonden
+Laatst bijgewerkt: 29-09-2026 22:44 CEST. Eerste versie van dit bestand; eerder stonden
 openstaande punten alleen in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging) en, voor
 dit ene punt, in de nu gearchiveerde berichtenmap `PostbusClaude`.
 
-**Stand:** van de 14 punten staan er 9 open en zijn er 5 gesloten. Punt 12 tot en met 14
-zijn op 29-09-2026 toegevoegd bij de gelijkwaardigheidstoets tegen model 02-04; punt 12 is
-diezelfde dag beslist. De zeven fiscale
+**Stand:** van de 15 punten staan er 9 open en zijn er 6 gesloten. Punt 12 tot en met 15
+zijn op 29-09-2026 toegevoegd bij de gelijkwaardigheidstoets tegen model 02-04; punt 12 en
+14 zijn diezelfde dag gesloten. De zeven fiscale
 punten van de pagina Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md`
 hierheen gehaald; twee daarvan zijn diezelfde dag beslist. Punt 11 is op 27-09-2026
 toegevoegd bij de portefeuillebrede inventarisatie van de uitgangen.
@@ -106,7 +106,7 @@ uitgang per onderdeel zinvol is, en zo ja, hoe dat in Streamlit vorm krijgt.
 **Status:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 29-09-2026, bij de
 gelijkwaardigheidstoets. **Vindplaats:** `vrijgave-belastingtooljoindk-2026-09-29.md`,
 `WIJZIGINGSRAPPORT.md` L11, en lokaal (genegeerd) het overzicht
-`.local-testdata/gelijkwaardigheid-02-04/run3-tool-na-herstel/vergelijking-02-04.xlsx` met
+`.local-testdata/gelijkwaardigheid-02-04/run4-na-broncontrole/vergelijking-02-04.xlsx` met
 de scripts in `scripts/` ernaast.
 
 Model 02-04, versie v20260117, machinaal doorgerekend met synthetische gevallen. Drie fouten
@@ -133,22 +133,42 @@ dag van de invorderingsrente en een consequente afronding naar beneden.
 **Wat er moet gebeuren:** beslissen of en hoe dit aan Wolters Kluwer wordt teruggemeld.
 Niet zelf gedaan: dat is een bericht naar buiten.
 
-### 14. Vanaf welk boekjaar geldt belastingrente in plaats van heffingsrente?
+### 15. Twee rekenvoorbeelden van de Belastingdienst spreken elkaar tegen
 
 **Status:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 29-09-2026.
-**Vindplaats:** `pages/Belastingrente_VpB.py`, blok boven de tariefreekscontrole.
+**Vindplaats:** belastingdienst.nl, "Belastingrente betalen bij inkomstenbelasting",
+geraadpleegd 29-09-2026.
 
-Het model laat de rente voor boekjaren tot en met 2011 bij het einde van het boekjaar
-beginnen (het stelsel van heffingsrente) en vanaf 2012 zes maanden later. De tool rekende
-een boekjaar van vóór 2012 stil met het nieuwe stelsel door. Zij weigert nu een boekjaar
-dat vóór 1 januari 2012 eindigt. De grens is ontleend aan Kamerstukken II 2012/13, 33403,
-nr. 3, par. 14 en secundaire bronnen; de overgangsbepaling zelf is niet nagelezen.
+Bij een aanslag van 11 december 2024 loopt de belastingrente tot en met 22 januari 2025,
+dagtekening plus 42 dagen; zo rekenen de wet (art. 30fc lid 2 AWR met art. 9 IW 1990 en
+onderdeel 9.5 Leidraad) en de tool. Bij een aanslag van 27 juni 2024 loopt zij volgens de
+pagina tot en met 9 augustus 2024, dagtekening plus 43 dagen; de tool komt op 8 augustus en
+7 euro in plaats van 8. De tool volgt de wet en het eerste voorbeeld.
 
-**Wat er moet gebeuren:** de overgangsbepaling terugvinden en vaststellen wat geldt voor een
-gebroken boekjaar dat in 2011 begon en in 2012 eindigt. De tool rekent dat nu met het
-nieuwe stelsel, net als het model.
+**Wat er moet gebeuren:** niets in de tool. Heroverwegen als de Belastingdienst het voorbeeld
+aanpast of uitlegt; eventueel melden bij de Belastingdienst.
 
 ## Gesloten
+
+### 14. Vanaf welk boekjaar geldt belastingrente in plaats van heffingsrente?
+
+**Status:** gesloten op 29-09-2026. **Eigenaar:** Sylvain Bouwman. **Vindplaats:**
+`pages/Belastingrente_VpB.py`.
+
+Het model laat de rente voor boekjaren tot en met 2011 bij het einde van het boekjaar
+beginnen (heffingsrente) en vanaf 2012 zes maanden later. De tool rekende een ouder boekjaar
+stil met het nieuwe stelsel door. De eerste herstelversie weigerde een boekjaar dat vóór
+2012 eindigde; de bron-controleur wees erop dat dat de verkeerde grens is.
+
+**De bron:** art. XXXIV lid 1 onderdeel b Belastingplan 2012 (Stb. 2011, 639; BWBR0030999,
+geraadpleegd 29-09-2026) laat hoofdstuk VA AWR zoals het luidde op 31 december 2012 van
+toepassing op "belastingaanslagen vennootschapsbelasting die betrekking hebben op
+tijdvakken die zijn aangevangen vóór 1 januari 2012". Voor de IB (onderdeel a) telt een
+tijdvak dat vóór 1 januari 2012 is geëindigd; de IB-pagina biedt die jaren niet aan.
+
+**Wat er is gedaan:** bij een boekjaar dat vóór 2014 eindigt vraagt de VpB-pagina ook de
+begindatum, en een boekjaar dat vóór 1 januari 2012 is begonnen geeft een melding in plaats
+van een bedrag. Getest met een gebroken boekjaar 01-07-2011 t/m 30-06-2012.
 
 ### 12. Vier rekenkeuzes uit de gelijkwaardigheidstoets tegen model 02-04
 
@@ -171,15 +191,13 @@ een keuze liet. Voorgelegd met advies; alle vier volgens advies beslist.
    Uitvoeringsregeling AWR. Hersteld; model en tool telden 30.
 4. **Schrikkeldag in de vervalmaand telt als één dag** als de invorderingsrente op 29
    februari begint. "Februari altijd op 28 dagen" begrenst de volle maand. Zo gebleven; het
-   model slaat 29 februari over.
+   model slaat 29 februari over. De bron-controleur noemt dit onzeker: art. 31 onderdeel a
+   URIW legt de lengte van de maand vast, niet hoe een dag na de 28e meetelt, en een telling
+   van nul is ook te lezen. Het besluit blijft staan; heroverwegen als er beleid of
+   rechtspraak over verschijnt.
 
-**Wat onzeker blijft:** de Belastingdienst geeft op de pagina "Belastingrente betalen bij
-inkomstenbelasting" (geraadpleegd 29-09-2026) twee voorbeelden die elkaar tegenspreken. Bij
-een aanslag van 11 december 2024 loopt de rente tot en met 22 januari 2025, dagtekening
-plus 42 dagen, en zo rekent de tool. Bij een aanslag van 27 juni 2024 loopt zij tot en met
-9 augustus 2024, dagtekening plus 43 dagen; de tool komt daar op 8 augustus en 7 euro in
-plaats van 8. De tool volgt de wet en het eerste voorbeeld. Heroverwegen als de
-Belastingdienst zijn voorbeeld aanpast of uitlegt.
+**Wat verder openstaat:** het tegenstrijdige rekenvoorbeeld van de Belastingdienst staat
+als punt 15.
 
 ### 7. Geldt art. 31 onderdeel a ook bij art. 28a?
 

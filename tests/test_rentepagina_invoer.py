@@ -44,7 +44,7 @@ def pagina(naam, **invoer):
               aangifte_ontvangen=None, aangifte_gevolgd=True,
               voorlopige_aanslag_conform=False, uiterste_aangiftedatum=date(2026, 5, 1),
               dagtekening=date(2026, 7, 1), r_start=date(2026, 1, 1), bedrag=10000,
-              boekjaar_eind=date(2025, 12, 31))
+              boekjaar_eind=date(2025, 12, 31), boekjaar_begin=None)
     ns.update(invoer)
     sectie = tekst.split('# ── Berekening', 1)[1].split('\n', 1)[1]
     sectie = sectie.split('totaal_dagen =', 1)[0]
@@ -76,13 +76,29 @@ def test_vpb_voor_tariefreeks_rekent_niet_met_oudste_tarief():
 
 
 def test_vpb_boekjaar_voor_2012_rekent_niet():
-    """Gelijkwaardigheidstoets 29-09-2026: voor een boekjaar dat vóór 2012 eindigt
+    """Gelijkwaardigheidstoets 29-09-2026: voor een boekjaar dat vóór 2012 begint
     gold heffingsrente. Model 02-04 laat die rente bij het einde van het boekjaar
     beginnen; de tool rekende stil zes maanden later. Nu geen uitkomst."""
     m, b, _ = pagina('Belastingrente_VpB.py', boekjaar_eind=date(2011, 12, 31),
                      r_start=date(2012, 7, 1))
     assert not b
     assert any(s == 'error' and 'heffingsrente' in t for s, t in m)
+
+
+def test_vpb_gebroken_boekjaar_begonnen_in_2011_rekent_niet():
+    """Art. XXXIV lid 1 onderdeel b Belastingplan 2012: bij de VpB beslist het
+    begin van het tijdvak. Een boekjaar 01-07-2011 t/m 30-06-2012 valt nog onder
+    de heffingsrente, ook al eindigt het in 2012."""
+    m, b, _ = pagina('Belastingrente_VpB.py', boekjaar_eind=date(2012, 6, 30),
+                     boekjaar_begin=date(2011, 7, 1), r_start=date(2013, 1, 1))
+    assert not b
+    assert any(s == 'error' and 'heffingsrente' in t for s, t in m)
+
+
+def test_vpb_boekjaar_begonnen_op_1_januari_2012_rekent_wel():
+    _, b, _ = pagina('Belastingrente_VpB.py', boekjaar_eind=date(2012, 12, 31),
+                     boekjaar_begin=date(2012, 1, 1), r_start=date(2013, 7, 1))
+    assert b
 
 
 def test_vpb_boekjaar_2012_rekent_wel():

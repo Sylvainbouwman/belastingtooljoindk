@@ -347,6 +347,11 @@ def test_navordering_een_maand_en_naheffing_veertien_dagen():
     assert vervaldag_op(date(2026, 1, 15), "navordering") == date(2026, 2, 15)
     assert vervaldag_op(date(2026, 1, 31), "navordering") == date(2026, 2, 28)
     assert vervaldag_op(date(2026, 10, 31), "navordering") == date(2026, 11, 30)
+    # Laatste dag van de maand → laatste dag van de volgende maand (Leidraad 9.5).
+    assert vervaldag_op(date(2025, 2, 28), "navordering") == date(2025, 3, 31)
+    assert vervaldag_op(date(2024, 2, 28), "navordering") == date(2024, 3, 28)
+    assert vervaldag_op(date(2024, 2, 29), "navordering") == date(2024, 3, 31)
+    assert vervaldag_op(date(2025, 4, 30), "navordering") == date(2025, 5, 31)
     assert vervaldag_op(date(2026, 1, 15), "naheffing") == date(2026, 1, 29)
     assert invorderbaar_op(date(2026, 1, 15), "navordering") == date(2026, 2, 16)
 

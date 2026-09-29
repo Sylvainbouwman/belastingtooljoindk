@@ -1138,9 +1138,19 @@ De verklaarde verschillen, met richting:
    goed telt), en een tijdvak dat op de 31e eindigt telde die maand als 30 (nu 31, zoals de
    regeling voorschrijft; het model telt hier ook 30).
 3. **Boekjaar vóór 2012** (`pages/Belastingrente_VpB.py`). Rekende stil met het huidige
-   stelsel; geeft nu een melding. De precieze grens staat open (OPENSTAAND.md punt 14).
+   stelsel; geeft nu een melding. De grens is het begin van het boekjaar: art. XXXIV lid 1
+   onderdeel b Belastingplan 2012 houdt de heffingsrente van toepassing op VpB-tijdvakken
+   die vóór 1 januari 2012 zijn aangevangen. De eerste versie van dit herstel keek naar het
+   einde; de bron-controleur wees de juiste grens aan.
+4. **Termijn van een maand** (`_rente._tel_maanden_op`, `_invorderingsrente._tel_maanden_op`).
+   Onderdeel 9.5 Leidraad Invordering 2008 laat een termijn van een maand bij een
+   dagtekening op de laatste dag van de maand vervallen op de laatste dag van de volgende
+   maand (28 februari → 31 maart). De code kapte alleen af (28 februari → 28 maart). Raakt
+   het einde van de belastingrente en het begin van de invorderingsrente bij een
+   navorderingsaanslag. Gevonden door de bron-controleur, buiten de modelvergelijking om.
 
-De rekenvoorbeelden van de Belastingdienst die al in de tests stonden, blijven gelijk. Nieuw
+Na punt 3 en 4 is het model opnieuw gedraaid; de uitkomsten waren identiek. De
+rekenvoorbeelden van de Belastingdienst die al in de tests stonden, blijven gelijk. Nieuw
 getest: het rekenvoorbeeld invorderingsrente van de Belastingdienst (240 dagen, 143 euro)
 en de randen hierboven. Elke nieuwe test is gecontroleerd door de oude code tijdelijk terug
 te zetten; zij werden dan rood.

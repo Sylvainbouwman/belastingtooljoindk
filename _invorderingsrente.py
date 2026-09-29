@@ -475,10 +475,18 @@ def splits_betaling(betaling: float, vanaf: date, tot_en_met: date, tarieven: li
 # ── Invorderbaarheid en de drie tijdvakken ──────────────────────────────────
 
 def _tel_maanden_op(d: date, maanden: int) -> date:
+    """Onderdeel 9.5 Leidraad Invordering 2008: valt de dagtekening op de laatste
+    dag van een maand, dan vervalt een termijn van een maand op de laatste dag
+    van de volgende maand (28 februari → 31 maart); anders op de dag met
+    hetzelfde nummer, gekapt op de lengte van die maand. Zelfde regel als in
+    `_rente._tel_maanden_op`; tot 29-09-2026 werd alleen gekapt."""
     maand = d.month + maanden
     jaar = d.year + (maand - 1) // 12
     maand = (maand - 1) % 12 + 1
-    return date(jaar, maand, min(d.day, calendar.monthrange(jaar, maand)[1]))
+    lengte = calendar.monthrange(jaar, maand)[1]
+    if d.day == calendar.monthrange(d.year, d.month)[1]:
+        return date(jaar, maand, lengte)
+    return date(jaar, maand, min(d.day, lengte))
 
 
 def vervaldag_op(dagtekening: date, aanslag_type: str = "regulier") -> date:

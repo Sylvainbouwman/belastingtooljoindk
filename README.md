@@ -94,8 +94,9 @@ Belastingdienst tot op de euro:
   Model 02-04 rondt één keer af; het verschil is hooguit 1 euro per extra tariefperiode
   en bewust aangehouden (besluit 29-09-2026)
 - Splitst automatisch bij elke tariefwijziging binnen de periode
-- Een VpB-boekjaar dat vóór 2012 eindigt valt onder de oude heffingsrente en wordt
-  geweigerd
+- Een VpB-boekjaar dat vóór 1 januari 2012 is begonnen valt onder de oude heffingsrente
+  en wordt geweigerd (art. XXXIV Belastingplan 2012); bij een boekjaar dat vóór 2014
+  eindigt vraagt de pagina daarom ook de begindatum
 
 Op 29-09-2026 is de berekening machinaal naast model 02-04 (Wolters Kluwer) gelegd, met
 synthetische gevallen: nul onverklaarde verschillen. Zie `vrijgave-belastingtooljoindk-2026-09-29.md`.
