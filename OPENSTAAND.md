@@ -1,12 +1,12 @@
 # Openstaande punten
 
-Laatst bijgewerkt: 29-09-2026 22:44 CEST. Eerste versie van dit bestand; eerder stonden
+Laatst bijgewerkt: 29-09-2026 22:56 CEST. Eerste versie van dit bestand; eerder stonden
 openstaande punten alleen in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging) en, voor
 dit ene punt, in de nu gearchiveerde berichtenmap `PostbusClaude`.
 
-**Stand:** van de 16 punten staan er 10 open en zijn er 6 gesloten. Punt 12 tot en met 16
-zijn op 29-09-2026 toegevoegd bij de gelijkwaardigheidstoets tegen model 02-04; punt 12 en
-14 zijn diezelfde dag gesloten. De zeven fiscale
+**Stand:** van de 16 punten staan er 9 open en zijn er 7 gesloten. Punt 12 tot en met 16
+zijn op 29-09-2026 toegevoegd bij de gelijkwaardigheidstoets tegen model 02-04; punt 12, 14
+en 16 zijn diezelfde dag gesloten. De zeven fiscale
 punten van de pagina Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md`
 hierheen gehaald; twee daarvan zijn diezelfde dag beslist. Punt 11 is op 27-09-2026
 toegevoegd bij de portefeuillebrede inventarisatie van de uitgangen.
@@ -147,21 +147,21 @@ pagina tot en met 9 augustus 2024, dagtekening plus 43 dagen; de tool komt op 8 
 
 **Wat er moet gebeuren:** niets in de tool. Heroverwegen als de Belastingdienst het voorbeeld
 aanpast of uitlegt; eventueel melden bij de Belastingdienst.
-### 16. Een naam uit model 02-04 staat in punt 1 van dit bestand
-
-**Status:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 29-09-2026 door de
-publicatiepoort. **Vindplaats:** punt 1 hieronder, alinea over de VpB-tarieventabel.
-
-Punt 1 noemt sinds 20-09-2026 letterlijk de naam van een schakelaar uit het model. De
-afspraak is dat teksten, formules en celadressen van het model niet in Git komen, en deze
-repository is publiek. Het is één woord en geen rekenmateriaal, maar het is wel modeltekst.
-
-**Wat er moet gebeuren:** beslissen of de naam wordt vervangen door een omschrijving ("de
-schakelaar voor het HR-arrest"). Het staat ook in de Git-historie; die herschrijven is een
-aparte en zwaardere beslissing. Niet in deze klus gedaan, omdat het een gesloten punt van
-een eerdere sessie raakt.
-
 ## Gesloten
+
+### 16. Een naam uit model 02-04 stond in punt 1 van dit bestand
+
+**Status:** gesloten op 29-09-2026, op verzoek van Sylvain Bouwman. **Gevonden** diezelfde dag
+door de publicatiepoort.
+
+Punt 1 noemde sinds 20-09-2026 letterlijk de naam van de schakelaar voor het HR-arrest uit het
+model. De afspraak is dat teksten, formules en celadressen van het model niet in Git komen, en
+deze repository is publiek. De naam is vervangen door een omschrijving; een zoektocht over de
+hele repository vond geen andere vermelding.
+
+**Wat blijft:** de naam staat nog in de Git-historie, in de commit die OPENSTAAND.md op
+20-09-2026 aanmaakte. Die historie herschrijven vraagt een force-push op de publieke
+hoofdbranch; daarover beslist Sylvain apart.
 
 ### 14. Vanaf welk boekjaar geldt belastingrente in plaats van heffingsrente?
 
@@ -339,7 +339,7 @@ IB-datumfout (1 juni tegenover 1 juli 2020) waar de aanvulling naar verwijst, is
 verschil in het commentaar erboven. Ook de VpB-tarieventabel in
 `pages/Belastingrente_VpB.py` is inmiddels bijgewerkt met de na het arrest van de Hoge Raad
 van 16 januari 2026 gecorrigeerde percentages voor 2022 tot en met 2026, zonder dat daarvoor
-een schakelaar (het bronmodel 02-04 kent `hrArrestToepassen`) is gebouwd; de tool toont één
+een schakelaar (het bronmodel 02-04 kent er een voor het HR-arrest) is gebouwd; de tool toont één
 uitkomst op basis van de gecorrigeerde reeks. Dat lost de onderliggende datafout en het
 arrest-punt van vraag 4 in het brondocument op, maar beantwoordt niet welke repository de
 bron wordt voor de percentagereeks zelf en hoe de andere repository haar voortaan overneemt
