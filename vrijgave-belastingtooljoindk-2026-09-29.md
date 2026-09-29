@@ -73,8 +73,12 @@ tegen de oude code.
   de grens vóór 2012 (het begin van het boekjaar beslist, niet het eind) en de maandtermijn
   bij een dagtekening op de laatste dag van de maand. Onzeker: de schrikkeldag, besluit blijft
   staan (OPENSTAAND.md punt 12).
-- **Publicatiepoort**, 29-09-2026: go op alle vier de eisen, op de stand vóór de twee
-  herstelpunten hierboven; na dat herstel is de poort opnieuw gedraaid (zie hieronder).
+- **Publicatiepoort**, 29-09-2026: go op alle vier de eisen, eerst op de stand vóór de twee
+  herstelpunten hierboven en daarna opnieuw go op de stand met het herstel (492 tests,
+  0 onverklaard in de run na het herstel).
+- **Herkeuring bron-controleur** van de twee herstelde punten: beide kloppen. Kanttekening
+  bij de overgangsgrens: de tool neemt aan dat een boekjaar niet langer dan 24 maanden duurt;
+  vastgelegd in OPENSTAAND.md punt 14.
 - **Model opnieuw gedraaid na het herstel**: uitkomsten identiek aan de vorige run.
 
 ## Wat de toets niet dekt

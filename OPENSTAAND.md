@@ -4,7 +4,7 @@ Laatst bijgewerkt: 29-09-2026 22:44 CEST. Eerste versie van dit bestand; eerder 
 openstaande punten alleen in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging) en, voor
 dit ene punt, in de nu gearchiveerde berichtenmap `PostbusClaude`.
 
-**Stand:** van de 15 punten staan er 9 open en zijn er 6 gesloten. Punt 12 tot en met 15
+**Stand:** van de 16 punten staan er 10 open en zijn er 6 gesloten. Punt 12 tot en met 16
 zijn op 29-09-2026 toegevoegd bij de gelijkwaardigheidstoets tegen model 02-04; punt 12 en
 14 zijn diezelfde dag gesloten. De zeven fiscale
 punten van de pagina Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md`
@@ -147,6 +147,19 @@ pagina tot en met 9 augustus 2024, dagtekening plus 43 dagen; de tool komt op 8 
 
 **Wat er moet gebeuren:** niets in de tool. Heroverwegen als de Belastingdienst het voorbeeld
 aanpast of uitlegt; eventueel melden bij de Belastingdienst.
+### 16. Een naam uit model 02-04 staat in punt 1 van dit bestand
+
+**Status:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 29-09-2026 door de
+publicatiepoort. **Vindplaats:** punt 1 hieronder, alinea over de VpB-tarieventabel.
+
+Punt 1 noemt sinds 20-09-2026 letterlijk de naam van een schakelaar uit het model. De
+afspraak is dat teksten, formules en celadressen van het model niet in Git komen, en deze
+repository is publiek. Het is één woord en geen rekenmateriaal, maar het is wel modeltekst.
+
+**Wat er moet gebeuren:** beslissen of de naam wordt vervangen door een omschrijving ("de
+schakelaar voor het HR-arrest"). Het staat ook in de Git-historie; die herschrijven is een
+aparte en zwaardere beslissing. Niet in deze klus gedaan, omdat het een gesloten punt van
+een eerdere sessie raakt.
 
 ## Gesloten
 
