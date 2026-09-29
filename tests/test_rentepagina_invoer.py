@@ -43,7 +43,8 @@ def pagina(naam, **invoer):
               op_verzoek=False, verzoek_datum=None, aanslag_type='navordering',
               aangifte_ontvangen=None, aangifte_gevolgd=True,
               voorlopige_aanslag_conform=False, uiterste_aangiftedatum=date(2026, 5, 1),
-              dagtekening=date(2026, 7, 1), r_start=date(2026, 1, 1), bedrag=10000)
+              dagtekening=date(2026, 7, 1), r_start=date(2026, 1, 1), bedrag=10000,
+              boekjaar_eind=date(2025, 12, 31))
     ns.update(invoer)
     sectie = tekst.split('# ── Berekening', 1)[1].split('\n', 1)[1]
     sectie = sectie.split('totaal_dagen =', 1)[0]
@@ -72,6 +73,22 @@ def test_vpb_voor_tariefreeks_rekent_niet_met_oudste_tarief():
     m, b, _ = pagina('Belastingrente_VpB.py', r_start=date(2001, 7, 1))
     assert not b
     assert any(s == 'error' and 'tariefreeks' in t for s, t in m)
+
+
+def test_vpb_boekjaar_voor_2012_rekent_niet():
+    """Gelijkwaardigheidstoets 29-09-2026: voor een boekjaar dat vóór 2012 eindigt
+    gold heffingsrente. Model 02-04 laat die rente bij het einde van het boekjaar
+    beginnen; de tool rekende stil zes maanden later. Nu geen uitkomst."""
+    m, b, _ = pagina('Belastingrente_VpB.py', boekjaar_eind=date(2011, 12, 31),
+                     r_start=date(2012, 7, 1))
+    assert not b
+    assert any(s == 'error' and 'heffingsrente' in t for s, t in m)
+
+
+def test_vpb_boekjaar_2012_rekent_wel():
+    _, b, _ = pagina('Belastingrente_VpB.py', boekjaar_eind=date(2012, 12, 31),
+                     r_start=date(2013, 7, 1))
+    assert b
 
 
 def test_eerste_gedekte_dag_mag_wel():

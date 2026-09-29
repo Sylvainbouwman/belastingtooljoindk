@@ -3,6 +3,10 @@
 __pycache__/
 *.pyc
 
+# Lokale test- en modeldata (modeluitkomsten, nooit in Git)
+.local-testdata/
+.local-model/
+
 # Accountancy databestanden
 *.xaf
 *.XAF

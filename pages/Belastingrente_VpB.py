@@ -192,6 +192,18 @@ if op_verzoek and verzoek_datum is None:
              "'Navordering op eigen verzoek' uit als dit niet van toepassing is.")
     st.stop()
 
+# Voor een boekjaar dat vóór 2012 eindigt gold heffingsrente, met een ander
+# begin van het tijdvak (model 02-04 laat die rente bij het einde van het
+# boekjaar beginnen, deze tool zes maanden later). Belastingrente in de huidige
+# vorm geldt per 1 januari 2013 voor belastingjaren vanaf 2012 (Kamerstukken II
+# 2012/13, 33403, nr. 3, par. 14; nog niet in de overgangsbepaling zelf
+# nagelezen, zie OPENSTAAND.md punt 14). Dus geen uitkomst in plaats van een
+# stil verkeerde. Gevonden bij de gelijkwaardigheidstoets van 29-09-2026.
+if boekjaar_eind < date(2012, 1, 1):
+    st.error("Voor een boekjaar dat vóór 2012 eindigt geldt nog de heffingsrente, "
+             "met een ander rentetijdvak. Die rekent deze tool niet.")
+    st.stop()
+
 # De reeks heeft geen tarieven vóór haar eerste ingangsdatum. Geen terugval
 # op het oudste percentage voor een niet door deze tool gedekte periode.
 if r_start < min(ingang for ingang, _ in TARIEVEN):

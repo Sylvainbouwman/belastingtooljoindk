@@ -15,6 +15,26 @@ De drie regels die de uitkomst bepalen:
      het totaal — zichtbaar in hun eigen voorbeeld: 93 + 9 = 102, terwijl
      93,75 + 9,93 = 103,68 zou afronden naar 103.
   3. De renteperiode loopt tot EN MET de einddatum.
+
+Wettelijke grondslag, nagelezen op 29-09-2026 bij de gelijkwaardigheidstoets
+tegen model 02-04 (zie OPENSTAAND.md punt 12 en de vrijgavenotitie van die dag):
+
+  * Tijdvak: art. 30fc lid 2 AWR (BWBR0002320, versie 01-01-2026) laat het
+    aanvangen 6 maanden na het einde van het tijdvak waarover de belasting wordt
+    geheven en eindigen "op de dag voorafgaand aan de dag waarop de aanslag ...
+    invorderbaar is ingevolge artikel 9 van de Invorderingswet 1990". De aanslag
+    is invorderbaar de dag na de vervaldag (zie `_invorderingsrente.invorderbaar_op`),
+    dus de rente loopt tot en met de vervaldag: dagtekening + 6 weken, of + 1 maand
+    bij navordering. Lid 3 en lid 5 geven de maxima van 19 en 12 weken.
+  * Dagentelling: art. 31 lid 1 Uitvoeringsregeling AWR 1994 (BWBR0006736). Een
+    volle maand telt 30 dagen, behalve de maand op de laatste dag waarvan het
+    tijdvak eindigt; zie `dagen_belastingrente()`.
+  * Afronding: art. 31 lid 2 van die regeling rondt "het bedrag van de in rekening
+    te brengen belastingrente" naar beneden af. Model 02-04 doet dat één keer over
+    het totaal. Deze module rondt per tariefperiode af, zoals het gepubliceerde
+    voorbeeld van de Belastingdienst (regel 2 hierboven). Besluit van Sylvain op
+    29-09-2026: dat blijft zo. Het verschil is hooguit 1 euro per extra
+    tariefperiode, en de tool komt dan lager uit.
 """
 
 import math
@@ -87,6 +107,44 @@ def dagen_30_360(vanaf: date, tot_en_met: date) -> int:
             + (dag_tot - dag_vanaf + 1))
 
 
+def dagen_belastingrente(vanaf: date, tot_en_met: date, einde_tijdvak: bool) -> int:
+    """Aantal dagen volgens art. 31 lid 1 Uitvoeringsregeling AWR 1994.
+
+    "Bij de bepaling van het aantal dagen waarover ingevolge hoofdstuk VA van de
+    wet belastingrente wordt berekend, wordt een volle kalendermaand gesteld op
+    30 dagen, met uitzondering van de maand op de laatste dag waarvan het
+    tijdvak waarover de rente wordt berekend eindigt, in welk geval het
+    werkelijke aantal dagen in aanmerking wordt genomen." (BWBR0006736, versie
+    01-01-2026, geraadpleegd 29-09-2026.)
+
+    Dat wijkt op twee plekken af van `dagen_30_360()`, die deze module tot
+    29-09-2026 gebruikte en die model 02-04 ook zo telt:
+
+      * Een deelperiode die bij een tariefwissel stopt, is niet het einde van het
+        tijdvak. Eindigt zij op de laatste dag van een maand, dan is dat een
+        volle maand van 30 dagen, ook in februari. `dagen_30_360()` telde
+        februari daar als 28; bij de VpB-wissel van 1 maart 2015 kostte dat
+        twee dagen.
+      * Eindigt het tijdvak zelf op de laatste dag van een maand, dan telt die
+        maand haar werkelijke aantal dagen: 31 in januari, 28 of 29 in februari.
+        `dagen_30_360()` kapte dag 31 op 30.
+
+    'einde_tijdvak' zegt of 'tot_en_met' het einde van het hele rentetijdvak is,
+    en niet alleen van een deelperiode. Een onvolledige laatste maand telt de
+    dagen die erin vallen; dat volgt uit de dagnummers.
+    """
+    import calendar
+    dag_vanaf = min(vanaf.day, 30)
+    lengte = calendar.monthrange(tot_en_met.year, tot_en_met.month)[1]
+    if tot_en_met.day == lengte:
+        dag_tot = lengte if einde_tijdvak else 30
+    else:
+        dag_tot = tot_en_met.day
+    return (360 * (tot_en_met.year - vanaf.year)
+            + 30 * (tot_en_met.month - vanaf.month)
+            + (dag_tot - dag_vanaf + 1))
+
+
 def tarief_op(dag: date, tarieven: list) -> float:
     """Percentage dat op deze dag geldt. 'tarieven' is nieuw → oud gesorteerd."""
     for ingang, percentage in tarieven:
@@ -110,7 +168,7 @@ def bereken(bedrag: float, vanaf: date, tot_en_met: date, tarieven: list):
     for i, start in enumerate(knippunten):
         laatste = (knippunten[i + 1] - timedelta(days=1)
                    if i + 1 < len(knippunten) else tot_en_met)
-        dagen = dagen_30_360(start, laatste)
+        dagen = dagen_belastingrente(start, laatste, einde_tijdvak=(laatste == tot_en_met))
         percentage = tarief_op(start, tarieven)
         rente = math.floor(bedrag * (percentage / 100) * dagen / 360)
         totaal += rente

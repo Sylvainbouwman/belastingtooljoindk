@@ -1068,3 +1068,87 @@ tot een verkeerd bedrag leidt.
 7. **De vier tijdvakken zijn niet aan uitvoeringsbeleid of rechtspraak getoetst.** Zij zijn
    uit de wettekst overgenomen, net als in de onderzoeksnotitie. De Leidraad Invordering 2008
    is wel nagelezen op afwijkingen en gaf er op dit punt geen.
+
+---
+
+## L11 — gelijkwaardigheidstoets tegen model 02-04, 29-09-2026 22:26 CEST
+
+Model 02-04 "belastingrente en invorderingsrente" van Wolters Kluwer, versie v20260117, is
+machinaal naast de tool gelegd. Het model zelf, zijn formules, celadressen en teksten
+staan niet in deze repository (licentie); de vergelijking is lokaal vastgelegd in de
+genegeerde map `.local-testdata/gelijkwaardigheid-02-04/`. Hieronder staat de constructie
+in eigen woorden.
+
+### L11.1 Opzet
+
+- **Gevallen:** synthetisch, met vaste startwaarde. 202 belastingrentegevallen (IB en VpB,
+  HR-arrest aan) waarvan 32 met de hand gekozen rond tariefwissels, maandeinden, februari,
+  schrikkeljaren, één dag, gebroken boekjaren en de drie voorbeelden van de Belastingdienst;
+  daarnaast 105 VpB-gevallen met het HR-arrest uit, die niet zijn vergeleken omdat de tool
+  het arrest altijd toepast. 138 invorderingsrentegevallen (art. 28), waarvan 18 met de hand
+  gekozen, onder meer het rekenvoorbeeld van de Belastingdienst.
+- **Rekenen:** Microsoft Excel 16.0 build 20430 via COM, het model alleen-lezen geopend,
+  invoer in de invoercellen, volledige herberekening per geval, uitkomsten teruggelezen.
+  De tool is rechtstreeks aangeroepen (`_rente.bereken`, `_invorderingsrente.bereken`) met
+  de tariefreeksen zoals de pagina's ze gebruiken.
+- **Per veld vergeleken:** begindatum, percentage per periode, dagen, onafgeronde rente en
+  eindbedrag. Tolerantie vooraf vastgesteld: dagen en eindbedragen exact, onafgeronde rente
+  binnen 0,005 euro.
+- **Niet vergeleken:** de einddatum van de belastingrente (het model vraagt die als invoer
+  en leidt hem niet af uit dagtekening, aangifte of navordering), art. 28a en 28b (rekent
+  het model niet), BTW en naheffing (rekent de tool niet).
+
+**Een fout in de eigen opzet, eerst gevonden.** De eerste run gaf bijna overal een dag
+verschil. Oorzaak: datums gingen als tijdzonegevoelige datetime naar Excel en kwamen daar
+twee uur eerder, dus op de vorige dag, binnen. Na invoer als Excel-dagnummer verdween dat.
+Die run is ongeldig verklaard en niet gebruikt.
+
+### L11.2 Uitkomst na herstel
+
+| | velden gelijk | verklaard | onverklaard |
+|---|---:|---:|---:|
+| Belastingrente, 202 gevallen x 5 velden | 864 | 146 | 0 |
+| Invorderingsrente, 138 gevallen x 4 velden | 395 | 157 | 0 |
+
+De verklaarde verschillen, met richting:
+
+| Verschil | Gevallen | Wie wijkt af van de bron | Richting |
+|---|---:|---|---|
+| Afronding belastingrente per tariefperiode (tool, Belastingdienst) tegen één keer (model, tekst art. 31 lid 2 URAWR) | 43 | andere toegestane uitvoering, besluit 29-09-2026 | tool hooguit 1 euro per extra periode lager |
+| Belastingrentetijdvak eindigt op de 31e: art. 31 lid 1 URAWR telt 31 | 30 | modelfout | model 1 dag te laag |
+| Belastingrente over één dag: model geeft nul | 3 | modelfout | model te laag |
+| Boekjaar vóór 2012: model rekent heffingsrente vanaf einde boekjaar | 2 | buiten afbakening; VpB-pagina weigert nu | n.v.t. |
+| Invorderingsrente, vervalmaand van 31 dagen: art. 31 a URIW telt 31 | 57 | modelfout | model 1 dag te laag |
+| Invorderingsrente begint op 29 februari: tool telt die dag | 1 | andere toegestane uitvoering, besluit 29-09-2026 | tool 1 dag hoger |
+
+### L11.3 Wat er in de tool is hersteld
+
+1. **Eerste dag van de invorderingsrente** (`_invorderingsrente.py`). De tool begon op de
+   uiterste betaaldatum zelf. Model en Belastingdienst beginnen de dag erna, en de
+   belastingrentemodule liet haar rente al tot en met die datum lopen, zodat die ene dag in
+   beide renten viel. De aanslag is nu invorderbaar de dag na de vervaldag
+   (`invorderbaar_op`); de vervaldag zelf komt uit `vervaldag_op` (art. 9 IW 1990 met
+   onderdeel 9.5 Leidraad Invordering 2008). Art. 28b begint "de dag na" de invorderbaarheid
+   en schuift mee. Effect vóór herstel: in 137 van 138 gevallen een dag te veel.
+2. **Dagentelling van de belastingrente** (`_rente.py`, nieuwe `dagen_belastingrente`).
+   Art. 31 lid 1 Uitvoeringsregeling AWR 1994 (BWBR0006736) was niet eerder nagelezen; de
+   tool volgde de verkorte uitleg "30 dagen per maand" van de Belastingdienst. Twee
+   gevolgen: een deelperiode die bij de VpB-wissel van 1 maart 2015 stopt, telde februari als
+   28 in plaats van 30 (2 dagen te weinig, 5 gevallen, gevonden doordat het model hier wel
+   goed telt), en een tijdvak dat op de 31e eindigt telde die maand als 30 (nu 31, zoals de
+   regeling voorschrijft; het model telt hier ook 30).
+3. **Boekjaar vóór 2012** (`pages/Belastingrente_VpB.py`). Rekende stil met het huidige
+   stelsel; geeft nu een melding. De precieze grens staat open (OPENSTAAND.md punt 14).
+
+De rekenvoorbeelden van de Belastingdienst die al in de tests stonden, blijven gelijk. Nieuw
+getest: het rekenvoorbeeld invorderingsrente van de Belastingdienst (240 dagen, 143 euro)
+en de randen hierboven. Elke nieuwe test is gecontroleerd door de oude code tijdelijk terug
+te zetten; zij werden dan rood.
+
+### L11.4 Wat het model goed doet
+
+Beveiligde bladen met herkenbare invoercellen, geen externe koppelingen. De tariefreeksen
+voor IB en voor VpB met het HR-arrest aan zijn over 2012 tot en met 2026 gelijk aan die van
+de tool, inclusief de IB-uitzondering van juni 2020. De begindatum bij gebroken boekjaren
+klopt, de eerste dag van de invorderingsrente klopt, en het model rondt consequent naar
+beneden af. De drie fouten staan in OPENSTAAND.md punt 13, om terug te melden.
