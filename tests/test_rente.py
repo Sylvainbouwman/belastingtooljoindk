@@ -13,6 +13,7 @@ from _rente import (
     STARTMAAND_RENTE,
     bereken,
     dagen_30_360,
+    dagen_belastingrente,
     eerste_dag_van_maand_na,
     nl_euro_heel,
     nl_pct,
@@ -93,6 +94,84 @@ def test_een_enkele_dag():
 
 def test_einddatum_telt_mee():
     assert dagen_30_360(date(2025, 5, 1), date(2025, 5, 2)) == 2
+
+
+# ── Art. 31 lid 1 Uitvoeringsregeling AWR 1994 ─────────────────────────────
+# Een volle kalendermaand is 30 dagen, behalve de maand op de laatste dag
+# waarvan het tijdvak eindigt: die telt haar werkelijke aantal dagen. Gevonden
+# bij de gelijkwaardigheidstoets tegen model 02-04 op 29-09-2026; zie
+# OPENSTAAND.md punt 12 en 13.
+
+def test_tijdvak_dat_op_de_31e_eindigt_telt_die_maand_als_31():
+    assert dagen_belastingrente(date(2024, 7, 1), date(2024, 12, 31), einde_tijdvak=True) == 181
+    assert dagen_belastingrente(date(2025, 1, 1), date(2025, 1, 31), einde_tijdvak=True) == 31
+
+
+def test_deelperiode_die_op_de_31e_stopt_is_een_volle_maand_van_30():
+    """Het voorbeeld van de Belastingdienst (180 dagen in 2024) blijft zo: daar
+    stopt alleen de deelperiode bij de tariefwissel, niet het tijdvak."""
+    assert dagen_belastingrente(date(2024, 7, 1), date(2024, 12, 31), einde_tijdvak=False) == 180
+
+
+def test_februari_als_volle_maand_binnen_het_tijdvak_telt_30():
+    """Bij de VpB-wissel van 1 maart 2015 stopt een deelperiode op 28 februari.
+    Februari is dan een volle maand: 30 dagen, niet 28."""
+    assert dagen_belastingrente(date(2014, 9, 1), date(2015, 2, 28), einde_tijdvak=False) == 180
+
+
+def test_tijdvak_dat_eind_februari_eindigt_telt_28_of_29():
+    assert dagen_belastingrente(date(2025, 1, 1), date(2025, 2, 28), einde_tijdvak=True) == 58
+    assert dagen_belastingrente(date(2024, 1, 1), date(2024, 2, 29), einde_tijdvak=True) == 59
+
+
+def test_onvolledige_laatste_maand_telt_haar_dagen():
+    assert dagen_belastingrente(date(2024, 7, 1), date(2024, 9, 13), einde_tijdvak=True) == 73
+    assert dagen_belastingrente(date(2024, 7, 1), date(2024, 9, 30), einde_tijdvak=True) == 90
+
+
+def test_bereken_vpb_over_de_wissel_van_maart_2015():
+    """Boekjaar 2013, rente vanaf 1-7-2014 tot en met 30-11-2016. Model 02-04 en
+    art. 31 lid 1 tellen 1-9-2014 t/m 28-2-2015 als zes volle maanden (180); de
+    tool telde tot 29-09-2026 178."""
+    _, perioden = bereken(1_234_567, date(2014, 7, 1), date(2016, 11, 30), TARIEVEN_VPB)
+    assert [(p["pct"], p["dagen"]) for p in perioden] == [
+        (8.25, 60), (8.15, 180), (8.05, 540), (8.00, 90)]
+
+
+def test_bereken_telt_de_31e_als_het_tijdvak_daar_eindigt():
+    """10.000 euro IB, rente 1-7-2024 t/m 31-12-2024: 181 dagen x 7,5% = 377,08,
+    naar beneden 377. Met 180 dagen was het 375."""
+    totaal, perioden = bereken(10_000, date(2024, 7, 1), date(2024, 12, 31), TARIEVEN_IB)
+    assert perioden[0]["dagen"] == 181
+    assert totaal == 377
+
+
+def test_tijdvak_van_een_dag_op_de_31e_is_een_dag():
+    assert dagen_belastingrente(date(2025, 3, 31), date(2025, 3, 31), einde_tijdvak=True) == 1
+    assert dagen_belastingrente(date(2025, 3, 15), date(2025, 3, 31), einde_tijdvak=True) == 17
+
+
+def test_navordering_termijn_van_een_maand_volgt_leidraad_9_5():
+    """Onderdeel 9.5 Leidraad Invordering 2008: dagtekening op de laatste dag van
+    een maand geeft de laatste dag van de volgende maand (28 februari → 31 maart,
+    31 oktober → 30 november); in een schrikkeljaar is 28 februari niet de laatste
+    dag en geeft 28 maart. De belastingrente loopt bij navordering tot en met die
+    dag."""
+    eind, reden, _ = renteperiode(date(2025, 2, 28), aanslag_type="navordering")
+    assert (eind, reden) == (date(2025, 3, 31), "navordering")
+    assert renteperiode(date(2024, 2, 28), aanslag_type="navordering")[0] == date(2024, 3, 28)
+    assert renteperiode(date(2024, 2, 29), aanslag_type="navordering")[0] == date(2024, 3, 31)
+    assert renteperiode(date(2025, 10, 31), aanslag_type="navordering")[0] == date(2025, 11, 30)
+    assert renteperiode(date(2025, 4, 30), aanslag_type="navordering")[0] == date(2025, 5, 31)
+    assert renteperiode(date(2025, 1, 15), aanslag_type="navordering")[0] == date(2025, 2, 15)
+
+
+def test_tijdvak_van_een_dag_geeft_rente():
+    """Art. 30fc lid 2 AWR kent geen minimumduur. Model 02-04 geeft nul als
+    einddatum en begindatum samenvallen; de tool rekent die ene dag."""
+    totaal, perioden = bereken(10_000, date(2024, 7, 1), date(2024, 7, 1), TARIEVEN_IB)
+    assert perioden[0]["dagen"] == 1
+    assert totaal == 2
 
 
 # ── Tarieven ────────────────────────────────────────────────────────────────
@@ -242,9 +321,9 @@ def test_rente_start_in_de_zevende_maand_na_het_boekjaar(boekjaar_eind, verwacht
 def test_boekjaar_dat_eindigt_op_een_korte_maand():
     """De oude opzet (einddatum + 6 maanden + 1 dag) kwam hier een dag te vroeg
     uit: 30 juni werd afgebeeld op 30 december, dus 31-12 in plaats van 01-01."""
-    from _rente import _tel_maanden_op
     from datetime import timedelta
-    oud = _tel_maanden_op(date(2025, 6, 30), 6) + timedelta(days=1)
+    # De oude opzet, uitgeschreven: zelfde dagnummer zes maanden later, plus een dag.
+    oud = date(2025, 12, 30) + timedelta(days=1)
     nieuw = eerste_dag_van_maand_na(date(2025, 6, 30), 7)
     assert oud == date(2025, 12, 31)      # fout
     assert nieuw == date(2026, 1, 1)      # goed

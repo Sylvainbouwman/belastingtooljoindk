@@ -11,7 +11,6 @@ from _invorderingsrente import (
     UITZONDERINGEN,
     bereken,
     buiten_bereik,
-    invorderbaar_op,
     nl_date,
     nl_euro,
     nl_euro_heel,
@@ -21,6 +20,7 @@ from _invorderingsrente import (
     periode_art28a,
     periode_art28b,
     uiterste_verzoekdatum_28c,
+    vervaldag_op,
     vervalmaand_van,
 )
 from _ui import paginakop, paginastijl
@@ -112,16 +112,18 @@ if grondslag in ("28", "28b"):
             )
             st.stop()
     else:
-        vervaldag = invorderbaar_op(dagtekening, aanslag_type)
+        vervaldag = vervaldag_op(dagtekening, aanslag_type)
         st.caption(
-            f"De aanslag is invorderbaar op **{nl_date(vervaldag)}** (art. 9 IW 1990). "
-            f"Dat is tevens de vervaldag van de enige of laatste betalingstermijn en "
-            f"bepaalt daarmee welke maand haar werkelijke aantal dagen telt."
+            f"De betalingstermijn vervalt op **{nl_date(vervaldag)}** (art. 9 IW 1990, "
+            f"onderdeel 9.5 Leidraad Invordering 2008): dat is de uiterste betaaldatum. "
+            f"Die maand telt haar werkelijke aantal dagen."
         )
 
     vervalmaand = vervalmaand_van(vervaldag)
+    invorderbaar = vervaldag + timedelta(days=1)
     uitgangspunten.append(("Dagtekening aanslagbiljet", nl_date(dagtekening)))
-    uitgangspunten.append(("Invorderbaar / vervaldag", nl_date(vervaldag)))
+    uitgangspunten.append(("Vervaldag (uiterste betaaldatum)", nl_date(vervaldag)))
+    uitgangspunten.append(("Invorderbaar vanaf", nl_date(invorderbaar)))
 
 if grondslag == "28":
     col_c, col_d = st.columns(2)
@@ -166,7 +168,8 @@ if grondslag == "28":
         st.success(
             f"**Geen invorderingsrente.** Er is betaald op {nl_date(betaaldatum)} en "
             f"de enige of laatste betalingstermijn verviel op {nl_date(vervaldag)}. "
-            f"Art. 28 lid 1 vraagt overschrijding van die termijn."
+            f"De rente loopt vanaf de dag daarna tot en met de dag vóór de betaling "
+            f"(art. 28 lid 2), en dat tijdvak bevat hier geen dag."
         )
         st.stop()
     uitgangspunten.append(("Datum betaling", nl_date(betaaldatum)))

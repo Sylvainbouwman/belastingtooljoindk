@@ -475,17 +475,28 @@ def splits_betaling(betaling: float, vanaf: date, tot_en_met: date, tarieven: li
 # ── Invorderbaarheid en de drie tijdvakken ──────────────────────────────────
 
 def _tel_maanden_op(d: date, maanden: int) -> date:
+    """Onderdeel 9.5 Leidraad Invordering 2008: valt de dagtekening op de laatste
+    dag van een maand, dan vervalt een termijn van een maand op de laatste dag
+    van de volgende maand (28 februari → 31 maart); anders op de dag met
+    hetzelfde nummer, gekapt op de lengte van die maand. Zelfde regel als in
+    `_rente._tel_maanden_op`; tot 29-09-2026 werd alleen gekapt."""
     maand = d.month + maanden
     jaar = d.year + (maand - 1) // 12
     maand = (maand - 1) % 12 + 1
-    return date(jaar, maand, min(d.day, calendar.monthrange(jaar, maand)[1]))
+    lengte = calendar.monthrange(jaar, maand)[1]
+    if d.day == calendar.monthrange(d.year, d.month)[1]:
+        return date(jaar, maand, lengte)
+    return date(jaar, maand, min(d.day, lengte))
 
 
-def invorderbaar_op(dagtekening: date, aanslag_type: str = "regulier") -> date:
-    """De dag waarop de belastingaanslag invorderbaar is, art. 9 IW 1990.
+def vervaldag_op(dagtekening: date, aanslag_type: str = "regulier") -> date:
+    """De vervaldag: de laatste dag van de enige of laatste betalingstermijn.
 
-    Dit is tevens de dag waarop de enige of laatste betalingstermijn vervalt,
-    en dus de dag die de vervalmaand van art. 31 URIW 1990 bepaalt.
+    Art. 9 IW 1990 geeft de termijn (zes weken, een maand of veertien dagen na
+    de dagtekening); de Leidraad Invordering 2008, onderdeel 9.5, zegt op welke
+    dag hij vervalt: bij dagtekening 15 maart vervalt de termijn van zes weken op
+    26 april, dus dagtekening plus 42 dagen. Wie op die dag betaalt, betaalt op
+    tijd. Deze dag bepaalt de vervalmaand van art. 31 URIW 1990.
 
     Art. 28 lid 2 sluit art. 10 uitdrukkelijk uit, dus versnelde invordering
     vervroegt dit tijdstip voor de renteberekening niet.
@@ -505,16 +516,37 @@ def invorderbaar_op(dagtekening: date, aanslag_type: str = "regulier") -> date:
     raise ValueError(f"onbekend aanslagtype: {aanslag_type}")
 
 
+def invorderbaar_op(dagtekening: date, aanslag_type: str = "regulier") -> date:
+    """De dag waarop de belastingaanslag invorderbaar is: de dag na de vervaldag.
+
+    "Invorderbaar zes weken na de dagtekening" (art. 9 lid 1 IW 1990) lezen we
+    als: invorderbaar zodra de betalingstermijn is verstreken. Tot 29-09-2026
+    rekende deze module de vervaldag zelf als eerste rentedag. Dat gaf een dag meer
+    dan model 02-04 en dan de Belastingdienst, die invorderingsrente rekent "vanaf
+    de dag na de uiterste betaaldatum" (belastingdienst.nl, Invorderingsrente,
+    geraadpleegd 29-09-2026, rekenvoorbeeld: uiterste betaaldatum 31 maart, rente
+    vanaf 1 april). Het sluit ook aan op de belastingrente, die volgens art. 30fc
+    lid 2 AWR eindigt "op de dag voorafgaand aan de dag waarop de aanslag
+    invorderbaar is" en in `_rente.py` tot en met de vervaldag loopt; zonder deze
+    lezing telde die ene dag in beide renten mee. Besluit van Sylvain op
+    29-09-2026; zie OPENSTAAND.md punt 12.
+    """
+    return vervaldag_op(dagtekening, aanslag_type) + timedelta(days=1)
+
+
 def periode_art28(vervaldag: date, betaaldatum: date) -> tuple[date, date] | None:
     """Tijdvak van art. 28 lid 2: van de invorderbaarheid tot de dag vóór de betaling.
 
-    Geeft None als er niets te rekenen valt omdat op of vóór de vervaldag is
-    betaald; art. 28 lid 1 vraagt immers overschrijding van de enige of laatste
-    betalingstermijn.
+    De invorderbaarheid is de dag na de vervaldag; zie `invorderbaar_op()`.
+    Geeft None als er niets te rekenen valt: wie op de vervaldag betaalt,
+    overschrijdt de termijn niet (art. 28 lid 1), en wie de dag erna betaalt heeft
+    een tijdvak zonder dagen, want dat eindigt op de dag vóór de betaling.
     """
-    if betaaldatum <= vervaldag:
+    vanaf = vervaldag + timedelta(days=1)
+    tot = betaaldatum - timedelta(days=1)
+    if tot < vanaf:
         return None
-    return vervaldag, betaaldatum - timedelta(days=1)
+    return vanaf, tot
 
 
 def periode_art28a(dagtekening: date, betaaldatum: date) -> tuple[date, date] | None:
@@ -539,9 +571,13 @@ def periode_art28b(vervaldag: date, dagtekening_vermindering: date) -> tuple[dat
     weken na de dagtekening van de vermindering of herziening. Anders dan bij
     art. 28 en 28a loopt het tijdvak dus door tot een datum die uit de
     vermindering volgt en niet tot de dag vóór een betaling.
+
+    'vervaldag' is de laatste dag van de betalingstermijn. De aanslag is de dag
+    daarna invorderbaar (`invorderbaar_op()`), dus het tijdvak vangt twee dagen
+    na de vervaldag aan.
     """
     eind = dagtekening_vermindering + timedelta(weeks=VERMINDERING_WEKEN)
-    start = vervaldag + timedelta(days=1)
+    start = vervaldag + timedelta(days=2)
     if eind < start:
         return None
     return start, eind

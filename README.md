@@ -82,11 +82,24 @@ volgens de rekenmethode van de Belastingdienst.
 **Rekenmethode** — de testsuite reproduceert de gepubliceerde rekenvoorbeelden van de
 Belastingdienst tot op de euro:
 
-- **30 dagen per maand, 360 dagen per jaar** (niet: werkelijke dagen / 365)
-- Renteperiode **inclusief** begin- en einddatum
+- **30 dagen per volle maand, 360 dagen per jaar** (niet: werkelijke dagen / 365), met
+  de uitzondering van art. 31 lid 1 Uitvoeringsregeling AWR 1994: eindigt het tijdvak op
+  de laatste dag van een maand, dan telt die maand haar werkelijke aantal dagen (31, of
+  28/29 in februari). Een deelperiode die bij een tariefwissel stopt is geen einde van het
+  tijdvak; die maand telt gewoon 30, ook in februari
+- Renteperiode **inclusief** begin- en einddatum; zij loopt tot en met de uiterste
+  betaaldatum, de dag vóór de aanslag invorderbaar is (art. 30fc lid 2 AWR)
 - Per tariefperiode **naar beneden afgerond op hele euro's** — niet over het totaal;
-  hun eigen voorbeeld geeft 93 + 9 = 102, terwijl 93,75 + 9,93 naar 103 zou afronden
+  hun eigen voorbeeld geeft 93 + 9 = 102, terwijl 93,75 + 9,93 naar 103 zou afronden.
+  Model 02-04 rondt één keer af; het verschil is hooguit 1 euro per extra tariefperiode
+  en bewust aangehouden (besluit 29-09-2026)
 - Splitst automatisch bij elke tariefwijziging binnen de periode
+- Een VpB-boekjaar dat vóór 1 januari 2012 is begonnen valt onder de oude heffingsrente
+  en wordt geweigerd (art. XXXIV Belastingplan 2012); bij een boekjaar dat vóór 2014
+  eindigt vraagt de pagina daarom ook de begindatum
+
+Op 29-09-2026 is de berekening machinaal naast model 02-04 (Wolters Kluwer) gelegd, met
+synthetische gevallen: nul onverklaarde verschillen. Zie `vrijgave-belastingtooljoindk-2026-09-29.md`.
 
 **Percentages** — de twee pagina's houden elk hun eigen tarievenreeks aan, en die
 verschillen op één punt bewust van elkaar. De coronaverlaging naar 0,01% ging voor de
@@ -132,6 +145,9 @@ Berekent de invorderingsrente van hoofdstuk V van de Invorderingswet 1990. Dat i
 andere rente dan de belastingrente hierboven, met eigen termijnen, eigen tarieven en een
 eigen rekenmethode.
 
+- **Eerste rentedag.** De rente van art. 28 begint op de dag ná de uiterste
+  betaaldatum, want pas dan is de aanslag invorderbaar. Zo rekenen ook de
+  Belastingdienst en model 02-04; tot 29-09-2026 begon de tool een dag eerder
 - **Drie grondslagen.** Art. 28 (rente bij te late betaling, in rekening gebracht),
   art. 28a (vergoeding als de ontvanger niet binnen zes weken uitbetaalt) en art. 28b
   (vergoeding bij vermindering na een afgewezen uitstelverzoek). Art. 28c, de heffing in

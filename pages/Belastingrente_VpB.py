@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 import streamlit as st
 
@@ -105,6 +105,28 @@ with col_b:
              "inschatting te maken.",
     )
 
+# Het overgangsrecht knoopt voor de VpB aan bij het begin van het boekjaar
+# (zie het blok onder "Berekening"). Alleen bij een boekjaar dat vóór 2014
+# eindigt wordt dat begin gevraagd. AANNAME, geen bronwaarde: een boekjaar duurt
+# niet langer dan 24 maanden. Art. 7 lid 4 Wet Vpb 1969 noemt geen maximale duur,
+# dus een verlengd eerste boekjaar van bijvoorbeeld 1-12-2011 t/m 31-3-2014 zou
+# hier ten onrechte met belastingrente worden gerekend (OPENSTAAND.md punt 14).
+boekjaar_begin = None
+if boekjaar_eind < date(2014, 1, 1):
+    # Standaard: een boekjaar van twaalf maanden.
+    _jaar_eerder = (date(boekjaar_eind.year - 1, 2, 28)
+                    if (boekjaar_eind.month, boekjaar_eind.day) == (2, 29)
+                    else boekjaar_eind.replace(year=boekjaar_eind.year - 1))
+    boekjaar_begin = st.date_input(
+        "Begindatum boekjaar",
+        value=_jaar_eerder + timedelta(days=1),
+        min_value=date(1999, 1, 1),
+        max_value=boekjaar_eind,
+        format="DD-MM-YYYY",
+        help="Voor een boekjaar dat vóór 1 januari 2012 is begonnen geldt nog de "
+             "heffingsrente (art. XXXIV lid 1 onderdeel b Belastingplan 2012).",
+    )
+
 # De Belastingdienst formuleert de VpB-termijnen in hele maanden na het boekjaar:
 # de rente start in de 7e maand, de vrijstellingsgrens ("1 juni") ligt in de 6e en
 # de grens voor het verzoek om een voorlopige aanslag ("1 mei") in de 5e.
@@ -190,6 +212,23 @@ bedrag = st.number_input(
 if op_verzoek and verzoek_datum is None:
     st.error("Vul de datum van ontvangst van uw verzoek in, of zet "
              "'Navordering op eigen verzoek' uit als dit niet van toepassing is.")
+    st.stop()
+
+# Overgangsrecht: hoofdstuk VA AWR zoals het luidde op 31 december 2012 (de
+# heffingsrente) blijft van toepassing op "belastingaanslagen
+# vennootschapsbelasting die betrekking hebben op tijdvakken die zijn aangevangen
+# vóór 1 januari 2012" (art. XXXIV lid 1 onderdeel b Belastingplan 2012,
+# Stb. 2011, 639; BWBR0030999, geraadpleegd 29-09-2026). Het begin van het
+# boekjaar beslist, niet het eind. Die heffingsrente heeft een ander tijdvak
+# (model 02-04 laat haar bij het einde van het boekjaar beginnen); deze tool
+# rekent haar niet en geeft dan geen uitkomst in plaats van een stil verkeerde.
+# Gevonden bij de gelijkwaardigheidstoets van 29-09-2026, de grens op aanwijzing
+# van de bron-controleur (OPENSTAAND.md punt 14).
+if boekjaar_eind < date(2012, 1, 1) or (
+        boekjaar_begin is not None and boekjaar_begin < date(2012, 1, 1)):
+    st.error("Voor een boekjaar dat vóór 1 januari 2012 is begonnen geldt nog de "
+             "heffingsrente, met een ander rentetijdvak (art. XXXIV Belastingplan "
+             "2012). Die rekent deze tool niet.")
     st.stop()
 
 # De reeks heeft geen tarieven vóór haar eerste ingangsdatum. Geen terugval

@@ -12,7 +12,7 @@ dagentelling van art. 31 URIW 1990, de asymmetrische afronding van art. 32 en
 het feit dat er één keer over het geheel wordt afgerond.
 """
 
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -40,6 +40,7 @@ from _invorderingsrente import (
     splits_betaling,
     tarief_op,
     uiterste_verzoekdatum_28c,
+    vervaldag_op,
     vervalmaand_van,
 )
 
@@ -80,25 +81,28 @@ def test_een_jaar_is_driehonderdzestig_dagen():
 def test_telling_over_de_vervalmaand_heen():
     """Aanslag met dagtekening 15-01-2026, betaald op 10-04-2026.
 
-    Invorderbaar op 26-02-2026, dus februari 2026 is de vervalmaand en telt
-    28 dagen. Van dag 26 tot en met dag 28 is 3 dagen, maart telt 30 en april
-    telt tot en met dag 9. Samen 42 dagen.
+    De betalingstermijn vervalt op 26-02-2026, dus februari 2026 is de
+    vervalmaand en telt 28 dagen. De aanslag is invorderbaar op 27-02-2026. Van
+    dag 27 tot en met dag 28 is 2 dagen, maart telt 30 en april telt tot en met
+    dag 9. Samen 41 dagen.
     """
-    vervaldag = invorderbaar_op(date(2026, 1, 15))
+    vervaldag = vervaldag_op(date(2026, 1, 15))
     assert vervaldag == date(2026, 2, 26)
     vanaf, tot = periode_art28(vervaldag, date(2026, 4, 10))
-    assert (vanaf, tot) == (date(2026, 2, 26), date(2026, 4, 9))
-    assert dagen_invorderingsrente(vanaf, tot, vervalmaand_van(vervaldag)) == 42
+    assert (vanaf, tot) == (date(2026, 2, 27), date(2026, 4, 9))
+    assert dagen_invorderingsrente(vanaf, tot, vervalmaand_van(vervaldag)) == 41
 
 
 def test_zonder_vervalmaand_telt_februari_voor_dertig():
     """Zonder betalingstermijn valt onderdeel a weg en blijft alleen b over.
 
     Dat speelt bij art. 28a: daar vangt het tijdvak aan na de dagtekening van
-    een uitbetaling en vervalt er geen betalingstermijn. Dezelfde periode als
-    in de vorige test komt dan op 44 dagen uit in plaats van 42.
+    een uitbetaling en vervalt er geen betalingstermijn. De periode 26-02-2026
+    tot en met 09-04-2026 komt dan op 44 dagen uit, en met februari als
+    vervalmaand op 42.
     """
     assert dagen_invorderingsrente(date(2026, 2, 26), date(2026, 4, 9)) == 44
+    assert dagen_invorderingsrente(date(2026, 2, 26), date(2026, 4, 9), (2026, 2)) == 42
 
 
 def test_dag_eenendertig_wordt_op_dertig_gezet():
@@ -318,19 +322,43 @@ def test_reeksen_zijn_nieuw_naar_oud_gesorteerd():
 
 # ── Art. 9 IW 1990: invorderbaarheid ────────────────────────────────────────
 
-def test_invorderbaar_zes_weken_na_de_dagtekening():
-    """Art. 9 lid 1 IW 1990."""
-    assert invorderbaar_op(date(2026, 1, 15)) == date(2026, 2, 26)
+def test_termijn_van_zes_weken_vervalt_op_dagtekening_plus_42_dagen():
+    """Art. 9 lid 1 IW 1990 met onderdeel 9.5 Leidraad Invordering 2008: bij
+    dagtekening 15 maart vervalt de termijn van zes weken op 26 april, bij
+    31 oktober op 12 december, bij 28 februari op 11 april (10 april in een
+    schrikkeljaar)."""
+    assert vervaldag_op(date(2026, 3, 15)) == date(2026, 4, 26)
+    assert vervaldag_op(date(2026, 10, 31)) == date(2026, 12, 12)
+    assert vervaldag_op(date(2026, 2, 28)) == date(2026, 4, 11)
+    assert vervaldag_op(date(2028, 2, 28)) == date(2028, 4, 10)
+    assert vervaldag_op(date(2026, 1, 15)) == date(2026, 2, 26)
+
+
+def test_invorderbaar_de_dag_na_de_vervaldag():
+    """Besluit van 29-09-2026 (OPENSTAAND.md punt 12): de aanslag is
+    invorderbaar zodra de termijn is verstreken, dus de dag na de vervaldag.
+    Zo rekenen ook model 02-04 en de Belastingdienst ("vanaf de dag na de
+    uiterste betaaldatum")."""
+    assert invorderbaar_op(date(2026, 1, 15)) == date(2026, 2, 27)
 
 
 def test_navordering_een_maand_en_naheffing_veertien_dagen():
-    """Art. 9 lid 2 IW 1990."""
-    assert invorderbaar_op(date(2026, 1, 15), "navordering") == date(2026, 2, 15)
-    assert invorderbaar_op(date(2026, 1, 31), "navordering") == date(2026, 2, 28)
-    assert invorderbaar_op(date(2026, 1, 15), "naheffing") == date(2026, 1, 29)
+    """Art. 9 lid 2 IW 1990, met de maand volgens onderdeel 9.5 Leidraad."""
+    assert vervaldag_op(date(2026, 1, 15), "navordering") == date(2026, 2, 15)
+    assert vervaldag_op(date(2026, 1, 31), "navordering") == date(2026, 2, 28)
+    assert vervaldag_op(date(2026, 10, 31), "navordering") == date(2026, 11, 30)
+    # Laatste dag van de maand → laatste dag van de volgende maand (Leidraad 9.5).
+    assert vervaldag_op(date(2025, 2, 28), "navordering") == date(2025, 3, 31)
+    assert vervaldag_op(date(2024, 2, 28), "navordering") == date(2024, 3, 28)
+    assert vervaldag_op(date(2024, 2, 29), "navordering") == date(2024, 3, 31)
+    assert vervaldag_op(date(2025, 4, 30), "navordering") == date(2025, 5, 31)
+    assert vervaldag_op(date(2026, 1, 15), "naheffing") == date(2026, 1, 29)
+    assert invorderbaar_op(date(2026, 1, 15), "navordering") == date(2026, 2, 16)
 
 
 def test_onbekend_aanslagtype_wordt_geweigerd():
+    with pytest.raises(ValueError):
+        vervaldag_op(date(2026, 1, 15), "voorlopig-in-termijnen")
     with pytest.raises(ValueError):
         invorderbaar_op(date(2026, 1, 15), "voorlopig-in-termijnen")
 
@@ -339,9 +367,10 @@ def test_onbekend_aanslagtype_wordt_geweigerd():
 
 def test_artikel_28_loopt_tot_de_dag_voor_de_betaling():
     """Art. 28 lid 2 IW 1990: het tijdvak vangt aan op de dag waarop de aanslag
-    invorderbaar is en eindigt op de dag voorafgaand aan die van de betaling."""
-    assert periode_art28(date(2026, 2, 26), date(2026, 2, 27)) == (
-        date(2026, 2, 26), date(2026, 2, 26))
+    invorderbaar is, de dag na de vervaldag, en eindigt op de dag voorafgaand
+    aan die van de betaling."""
+    assert periode_art28(date(2026, 2, 26), date(2026, 2, 28)) == (
+        date(2026, 2, 27), date(2026, 2, 27))
 
 
 def test_artikel_28_geeft_niets_bij_tijdige_betaling():
@@ -349,6 +378,49 @@ def test_artikel_28_geeft_niets_bij_tijdige_betaling():
     betalingstermijn. Wie op de vervaldag betaalt, overschrijdt niet."""
     assert periode_art28(date(2026, 2, 26), date(2026, 2, 26)) is None
     assert periode_art28(date(2026, 2, 26), date(2026, 1, 5)) is None
+
+
+def test_artikel_28_een_dag_te_laat_geeft_nog_geen_rentedag():
+    """Betaling op de dag na de vervaldag: het tijdvak begint die dag en eindigt
+    de dag ervoor, dus er valt geen dag in."""
+    assert periode_art28(date(2026, 2, 26), date(2026, 2, 27)) is None
+
+
+def test_rekenvoorbeeld_belastingdienst_invorderingsrente():
+    """belastingdienst.nl, Invorderingsrente, geraadpleegd 29-09-2026: aanslag
+    5.000 euro, uiterste betaaldatum 31 maart, geld binnen op 1 december. Van
+    1 april tot en met 30 november telt 240 dagen, (240 x 4,3) x 5.000 / 36.000 =
+    143 euro."""
+    vanaf, tot = periode_art28(date(2026, 3, 31), date(2026, 12, 1))
+    assert (vanaf, tot) == (date(2026, 4, 1), date(2026, 11, 30))
+    uit = bereken(5000, vanaf, tot, TARIEVEN_IN_REKENING, "in_rekening",
+                  vervalmaand=(2026, 3), laatste_betaling=True)
+    assert uit["dagen"] == 240
+    assert uit["bedrag"] == 143
+
+
+def test_vervalmaand_van_31_dagen_telt_ook_dag_31():
+    """Art. 31 onderdeel a URIW 1990. Vervaldag 05-03-2026, betaald 31-12-2026:
+    maart telt van dag 6 tot en met 31, dus 26 dagen; april tot en met november
+    240; december tot en met dag 30 is 30. Samen 296.
+
+    Model 02-04 komt hier op 295: het telt een vervalmaand van 31 dagen als 30,
+    tenzij de rente precies op de 31e begint. Dat is een modelfout en geen reden
+    om de tool aan te passen (OPENSTAAND.md punt 13)."""
+    vanaf, tot = periode_art28(date(2026, 3, 5), date(2026, 12, 31))
+    assert dagen_invorderingsrente(vanaf, tot, (2026, 3)) == 296
+
+
+def test_schrikkeldag_telt_als_een_dag_als_de_rente_dan_begint():
+    """Vervaldag 28-02-2024, betaald 10-04-2024. De rente begint op 29-02-2024.
+    Februari telt als vervalmaand 'altijd op 28 dagen', maar dat begrenst de volle
+    maand; de dag waarop de rente werkelijk loopt telt mee. Besluit van
+    29-09-2026 (OPENSTAAND.md punt 12). 1 + 30 + 9 = 40 dagen.
+
+    Model 02-04 laat de rente dan op 1 maart beginnen en komt op 39."""
+    vanaf, tot = periode_art28(date(2024, 2, 28), date(2024, 4, 10))
+    assert vanaf == date(2024, 2, 29)
+    assert dagen_invorderingsrente(vanaf, tot, (2024, 2)) == 40
 
 
 def test_artikel_28a_pas_na_zes_weken_maar_dan_terug_tot_de_dagtekening():
@@ -368,10 +440,13 @@ def test_artikel_28a_pas_na_zes_weken_maar_dan_terug_tot_de_dagtekening():
 
 def test_artikel_28b_eindigt_zes_weken_na_de_vermindering():
     """Art. 28b lid 2 IW 1990: aanvang de dag ná de invorderbaarheid, einde zes
-    weken na de dagtekening van de vermindering of herziening."""
-    vervaldag = invorderbaar_op(date(2025, 1, 10))
+    weken na de dagtekening van de vermindering of herziening. De
+    invorderbaarheid is de dag na de vervaldag, dus de aanvang ligt twee dagen
+    na de vervaldag."""
+    vervaldag = vervaldag_op(date(2025, 1, 10))
     vanaf, tot = periode_art28b(vervaldag, date(2026, 3, 5))
-    assert vanaf == vervaldag + __import__("datetime").timedelta(days=1)
+    assert vanaf == date(2025, 2, 23)
+    assert vanaf == invorderbaar_op(date(2025, 1, 10)) + timedelta(days=1)
     assert tot == date(2026, 4, 16)
 
 
@@ -482,18 +557,18 @@ def test_uiterste_verzoekdatum_28c():
 def test_volledig_geval_artikel_28():
     """Aanslag van 25.000 euro, dagtekening 15-01-2026, betaald op 10-04-2026.
 
-    Invorderbaar 26-02-2026, dus de vervalmaand is februari 2026 en telt 28
-    dagen. Het tijdvak is 26-02-2026 tot en met 09-04-2026, samen 42 dagen, en
-    het percentage is 4,3. De rente is 42 x 4,3 x 25.000 / 36.000 = 125,42, naar
-    beneden afgerond 125. Dat ligt boven de drempel van 49 euro.
+    De termijn vervalt op 26-02-2026, dus de vervalmaand is februari 2026 en
+    telt 28 dagen. Het tijdvak is 27-02-2026 tot en met 09-04-2026, samen 41
+    dagen, en het percentage is 4,3. De rente is 41 x 4,3 x 25.000 / 36.000 =
+    122,43, naar beneden afgerond 122. Dat ligt boven de drempel van 49 euro.
     """
-    vervaldag = invorderbaar_op(date(2026, 1, 15))
+    vervaldag = vervaldag_op(date(2026, 1, 15))
     vanaf, tot = periode_art28(vervaldag, date(2026, 4, 10))
     uit = bereken(25000, vanaf, tot, TARIEVEN_IN_REKENING, "in_rekening",
                   vervalmaand=vervalmaand_van(vervaldag), laatste_betaling=True)
-    assert uit["dagen"] == 42
-    assert round(uit["onafgerond"], 2) == 125.42
-    assert uit["bedrag"] == 125
+    assert uit["dagen"] == 41
+    assert round(uit["onafgerond"], 2) == 122.43
+    assert uit["bedrag"] == 122
     assert uit["kwijt_door_drempel"] is False
 
 
@@ -518,19 +593,20 @@ def test_volledig_geval_artikel_28b():
     """Aanslag met dagtekening 10-01-2025, uitstelverzoek afgewezen, vermindering
     met dagtekening 05-03-2026 en een terug te geven bedrag van 12.000 euro.
 
-    Invorderbaar 21-02-2025, dus het tijdvak vangt aan op 22-02-2025 en eindigt
-    zes weken na 05-03-2026, dat is 16-04-2026. De vervalmaand is februari 2025
-    en telt 28 dagen.
+    De termijn vervalt op 21-02-2025 en de aanslag is invorderbaar op
+    22-02-2025, dus het tijdvak vangt aan op 23-02-2025 en eindigt zes weken na
+    05-03-2026, dat is 16-04-2026. De vervalmaand is februari 2025 en telt 28
+    dagen.
     """
-    vervaldag = invorderbaar_op(date(2025, 1, 10))
+    vervaldag = vervaldag_op(date(2025, 1, 10))
     assert vervaldag == date(2025, 2, 21)
     vanaf, tot = periode_art28b(vervaldag, date(2026, 3, 5))
-    assert (vanaf, tot) == (date(2025, 2, 22), date(2026, 4, 16))
+    assert (vanaf, tot) == (date(2025, 2, 23), date(2026, 4, 16))
     uit = bereken(12000, vanaf, tot, TARIEVEN_TE_VERGOEDEN, "te_vergoeden",
                   vervalmaand=vervalmaand_van(vervaldag))
-    # 22-02 t/m 28-02 is 7 dagen, maart t/m december 2025 is 300, januari t/m
-    # maart 2026 is 90 en april tot en met dag 16 is 16: samen 413 dagen.
-    assert uit["dagen"] == 413
+    # 23-02 t/m 28-02 is 6 dagen, maart t/m december 2025 is 300, januari t/m
+    # maart 2026 is 90 en april tot en met dag 16 is 16: samen 412 dagen.
+    assert uit["dagen"] == 412
     assert uit["perioden"][0]["pct"] == 4.0
     assert uit["perioden"][1]["pct"] == 4.3
 

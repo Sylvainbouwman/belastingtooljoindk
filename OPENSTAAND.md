@@ -1,10 +1,12 @@
 # Openstaande punten
 
-Laatst bijgewerkt: 27-09-2026 11:51 CEST. Eerste versie van dit bestand; eerder stonden
+Laatst bijgewerkt: 29-09-2026 22:44 CEST. Eerste versie van dit bestand; eerder stonden
 openstaande punten alleen in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging) en, voor
 dit ene punt, in de nu gearchiveerde berichtenmap `PostbusClaude`.
 
-**Stand:** van de 11 punten staan er 7 open en zijn er 4 gesloten. De zeven fiscale
+**Stand:** van de 16 punten staan er 10 open en zijn er 6 gesloten. Punt 12 tot en met 16
+zijn op 29-09-2026 toegevoegd bij de gelijkwaardigheidstoets tegen model 02-04; punt 12 en
+14 zijn diezelfde dag gesloten. De zeven fiscale
 punten van de pagina Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md`
 hierheen gehaald; twee daarvan zijn diezelfde dag beslist. Punt 11 is op 27-09-2026
 toegevoegd bij de portefeuillebrede inventarisatie van de uitgangen.
@@ -99,7 +101,122 @@ van eigenaar wisselt, is voorbarig werk.
 belastingrente/revisierente-onderdelen definitief wonen, opnieuw beoordelen of een
 uitgang per onderdeel zinvol is, en zo ja, hoe dat in Streamlit vorm krijgt.
 
+### 13. Fouten in model 02-04, terug te melden aan Wolters Kluwer
+
+**Status:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 29-09-2026, bij de
+gelijkwaardigheidstoets. **Vindplaats:** `vrijgave-belastingtooljoindk-2026-09-29.md`,
+`WIJZIGINGSRAPPORT.md` L11, en lokaal (genegeerd) het overzicht
+`.local-testdata/gelijkwaardigheid-02-04/run4-na-broncontrole/vergelijking-02-04.xlsx` met
+de scripts in `scripts/` ernaast.
+
+Model 02-04, versie v20260117, machinaal doorgerekend met synthetische gevallen. Drie fouten
+ten opzichte van de bron, in eigen woorden (het model zelf, zijn formules en teksten komen
+niet in Git):
+
+1. **Invorderingsrente, vervalmaand van 31 dagen.** Art. 31 onderdeel a URIW 1990 telt de
+   vervalmaand op haar werkelijke aantal dagen. Het model telt een vervalmaand van 31 dagen
+   als 30, behalve wanneer de rente precies op de 31e begint. Richting: het model rekent
+   één dag te weinig, dus te laag. Speelde in 57 van de 138 gevallen.
+2. **Belastingrente, tijdvak dat op de 31e eindigt.** Art. 31 lid 1 Uitvoeringsregeling AWR
+   1994 telt de maand op de laatste dag waarvan het tijdvak eindigt op het werkelijke aantal
+   dagen. Het model telt ook die maand als 30, terwijl zijn eigen uitleg de regel wel
+   noemt. Richting: één dag te weinig. Speelde in 30 van de 202 gevallen.
+3. **Belastingrente over één dag.** Valt de einddatum op de begindatum, dan geeft het model
+   nul en een melding dat de einddatum groter moet zijn. Art. 30fc lid 2 AWR kent geen
+   minimumduur. Richting: te laag. Drie gevallen.
+
+Wat het model goed doet, en dat hoort bij de terugmelding: beveiligde bladen met
+herkenbare invoercellen, een tariefreeks die voor IB en VpB (met het HR-arrest aan)
+identiek is aan de bron, de juiste begindatum bij gebroken boekjaren, de juiste eerste
+dag van de invorderingsrente en een consequente afronding naar beneden.
+
+**Wat er moet gebeuren:** beslissen of en hoe dit aan Wolters Kluwer wordt teruggemeld.
+Niet zelf gedaan: dat is een bericht naar buiten.
+
+### 15. Twee rekenvoorbeelden van de Belastingdienst spreken elkaar tegen
+
+**Status:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 29-09-2026.
+**Vindplaats:** belastingdienst.nl, "Belastingrente betalen bij inkomstenbelasting",
+geraadpleegd 29-09-2026.
+
+Bij een aanslag van 11 december 2024 loopt de belastingrente tot en met 22 januari 2025,
+dagtekening plus 42 dagen; zo rekenen de wet (art. 30fc lid 2 AWR met art. 9 IW 1990 en
+onderdeel 9.5 Leidraad) en de tool. Bij een aanslag van 27 juni 2024 loopt zij volgens de
+pagina tot en met 9 augustus 2024, dagtekening plus 43 dagen; de tool komt op 8 augustus en
+7 euro in plaats van 8. De tool volgt de wet en het eerste voorbeeld.
+
+**Wat er moet gebeuren:** niets in de tool. Heroverwegen als de Belastingdienst het voorbeeld
+aanpast of uitlegt; eventueel melden bij de Belastingdienst.
+### 16. Een naam uit model 02-04 staat in punt 1 van dit bestand
+
+**Status:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 29-09-2026 door de
+publicatiepoort. **Vindplaats:** punt 1 hieronder, alinea over de VpB-tarieventabel.
+
+Punt 1 noemt sinds 20-09-2026 letterlijk de naam van een schakelaar uit het model. De
+afspraak is dat teksten, formules en celadressen van het model niet in Git komen, en deze
+repository is publiek. Het is één woord en geen rekenmateriaal, maar het is wel modeltekst.
+
+**Wat er moet gebeuren:** beslissen of de naam wordt vervangen door een omschrijving ("de
+schakelaar voor het HR-arrest"). Het staat ook in de Git-historie; die herschrijven is een
+aparte en zwaardere beslissing. Niet in deze klus gedaan, omdat het een gesloten punt van
+een eerdere sessie raakt.
+
 ## Gesloten
+
+### 14. Vanaf welk boekjaar geldt belastingrente in plaats van heffingsrente?
+
+**Status:** gesloten op 29-09-2026. **Eigenaar:** Sylvain Bouwman. **Vindplaats:**
+`pages/Belastingrente_VpB.py`.
+
+Het model laat de rente voor boekjaren tot en met 2011 bij het einde van het boekjaar
+beginnen (heffingsrente) en vanaf 2012 zes maanden later. De tool rekende een ouder boekjaar
+stil met het nieuwe stelsel door. De eerste herstelversie weigerde een boekjaar dat vóór
+2012 eindigde; de bron-controleur wees erop dat dat de verkeerde grens is.
+
+**De bron:** art. XXXIV lid 1 onderdeel b Belastingplan 2012 (Stb. 2011, 639; BWBR0030999,
+geraadpleegd 29-09-2026) laat hoofdstuk VA AWR zoals het luidde op 31 december 2012 van
+toepassing op "belastingaanslagen vennootschapsbelasting die betrekking hebben op
+tijdvakken die zijn aangevangen vóór 1 januari 2012". Voor de IB (onderdeel a) telt een
+tijdvak dat vóór 1 januari 2012 is geëindigd; de IB-pagina biedt die jaren niet aan.
+
+**Wat er is gedaan:** bij een boekjaar dat vóór 2014 eindigt vraagt de VpB-pagina ook de
+begindatum, en een boekjaar dat vóór 1 januari 2012 is begonnen geeft een melding in plaats
+van een bedrag. Getest met een gebroken boekjaar 01-07-2011 t/m 30-06-2012.
+
+**Aanname die blijft:** de begindatum wordt alleen gevraagd als het boekjaar vóór 2014
+eindigt, dus de tool gaat ervan uit dat een boekjaar niet langer dan 24 maanden duurt. Art. 7
+lid 4 Wet Vpb 1969 noemt geen maximum. Een verlengd eerste boekjaar dat vóór 2012 begon en na
+2013 eindigde, rekent de tool dus met belastingrente. Zeldzaam en vijftien jaar oud; bewust
+niet verder uitgebouwd. Opgemerkt door de bron-controleur bij de herkeuring.
+
+### 12. Vier rekenkeuzes uit de gelijkwaardigheidstoets tegen model 02-04
+
+**Status:** gesloten op 29-09-2026, besluit van Sylvain Bouwman. **Vindplaats:**
+`_rente.py`, `_invorderingsrente.py`, `vrijgave-belastingtooljoindk-2026-09-29.md`.
+
+Bij de toets bleken vier punten waar model, tool en Belastingdienst uiteenliepen en de bron
+een keuze liet. Voorgelegd met advies; alle vier volgens advies beslist.
+
+1. **Eerste dag van de invorderingsrente: de dag na de uiterste betaaldatum.** De tool
+   begon op de uiterste betaaldatum zelf en rekende daardoor een dag meer dan het model en
+   de Belastingdienst ("vanaf de dag na de uiterste betaaldatum"), en telde die dag ook in
+   de belastingrente mee. Hersteld. Gevolg voor art. 28b: dat tijdvak begint "de dag na" de
+   invorderbaarheid en schuift dus ook een dag op.
+2. **Afronding van de belastingrente blijft per tariefperiode**, zoals het rekenvoorbeeld
+   van de Belastingdienst (93 + 9 = 102). Het model en de letterlijke tekst van art. 31
+   lid 2 Uitvoeringsregeling AWR ronden één keer af (103). Verklaard verschil; de tool komt
+   hooguit 1 euro per extra tariefperiode lager uit.
+3. **Tijdvak dat op de 31e eindigt telt die maand als 31**, volgens art. 31 lid 1
+   Uitvoeringsregeling AWR. Hersteld; model en tool telden 30.
+4. **Schrikkeldag in de vervalmaand telt als één dag** als de invorderingsrente op 29
+   februari begint. "Februari altijd op 28 dagen" begrenst de volle maand. Zo gebleven; het
+   model slaat 29 februari over. De bron-controleur noemt dit onzeker: art. 31 onderdeel a
+   URIW legt de lengte van de maand vast, niet hoe een dag na de 28e meetelt, en een telling
+   van nul is ook te lezen. Het besluit blijft staan; heroverwegen als er beleid of
+   rechtspraak over verschijnt.
+
+**Wat verder openstaat:** het tegenstrijdige rekenvoorbeeld van de Belastingdienst staat
+als punt 15.
 
 ### 7. Geldt art. 31 onderdeel a ook bij art. 28a?
 
