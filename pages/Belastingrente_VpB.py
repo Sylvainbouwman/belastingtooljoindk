@@ -107,7 +107,10 @@ with col_b:
 
 # Het overgangsrecht knoopt voor de VpB aan bij het begin van het boekjaar
 # (zie het blok onder "Berekening"). Alleen bij een boekjaar dat vóór 2014
-# eindigt kan dat begin vóór 2012 liggen; alleen dan wordt het gevraagd.
+# eindigt wordt dat begin gevraagd. AANNAME, geen bronwaarde: een boekjaar duurt
+# niet langer dan 24 maanden. Art. 7 lid 4 Wet Vpb 1969 noemt geen maximale duur,
+# dus een verlengd eerste boekjaar van bijvoorbeeld 1-12-2011 t/m 31-3-2014 zou
+# hier ten onrechte met belastingrente worden gerekend (OPENSTAAND.md punt 14).
 boekjaar_begin = None
 if boekjaar_eind < date(2014, 1, 1):
     # Standaard: een boekjaar van twaalf maanden.

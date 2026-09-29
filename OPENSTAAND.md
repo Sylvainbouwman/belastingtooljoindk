@@ -170,6 +170,12 @@ tijdvak dat vóór 1 januari 2012 is geëindigd; de IB-pagina biedt die jaren ni
 begindatum, en een boekjaar dat vóór 1 januari 2012 is begonnen geeft een melding in plaats
 van een bedrag. Getest met een gebroken boekjaar 01-07-2011 t/m 30-06-2012.
 
+**Aanname die blijft:** de begindatum wordt alleen gevraagd als het boekjaar vóór 2014
+eindigt, dus de tool gaat ervan uit dat een boekjaar niet langer dan 24 maanden duurt. Art. 7
+lid 4 Wet Vpb 1969 noemt geen maximum. Een verlengd eerste boekjaar dat vóór 2012 begon en na
+2013 eindigde, rekent de tool dus met belastingrente. Zeldzaam en vijftien jaar oud; bewust
+niet verder uitgebouwd. Opgemerkt door de bron-controleur bij de herkeuring.
+
 ### 12. Vier rekenkeuzes uit de gelijkwaardigheidstoets tegen model 02-04
 
 **Status:** gesloten op 29-09-2026, besluit van Sylvain Bouwman. **Vindplaats:**
