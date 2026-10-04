@@ -1,6 +1,6 @@
 # Concept: terugmelding aan Wolters Kluwer, model 02-04
 
-Concept van 04-10-2026, bedoeld om door Sylvain Bouwman zelf te worden verstuurd. Het
+Concept van 04-10-2026, op 04-10-2026 door Sylvain Bouwman zelf verstuurd. Het
 bevat alleen gedrag en wetsartikelen in eigen woorden, geen formules, celadressen of
 teksten uit het model en geen klantgegevens. Voor de achtergrond zie `OPENSTAAND.md`
 punt 13 en `WIJZIGINGSRAPPORT.md` L11.
@@ -18,7 +18,7 @@ Wij gebruiken het rekenmodel belastingrente en invorderingsrente (model 02-04, v
 
 2. Belastingrente, tijdvak dat op de 31e van een maand eindigt. Artikel 31 lid 1 van de Uitvoeringsregeling AWR 1994 telt de maand van de laatste dag waarop het tijdvak eindigt met het werkelijke aantal dagen. Het model telt ook die maand als 30 dagen, terwijl de uitleg in het model de regel wel noemt. De uitkomst is één dag rente te laag. Het speelde in 30 van de 202 gevallen.
 
-3. Belastingrente over één dag. Valt de einddatum op de begindatum, dan geeft het model nul en de melding dat de einddatum groter moet zijn. Artikel 30fc lid 2 AWR kent geen minimumduur, dus een tijdvak van één dag geeft rente. De uitkomst is te laag. Dit speelde in drie gevallen.
+3. Belastingrente over één dag. Valt de einddatum op de begindatum, dan geeft het model nul en een foutmelding. Artikel 30fc lid 2 AWR kent geen minimumduur, dus een tijdvak van één dag geeft rente. De uitkomst is te laag. Dit speelde in drie gevallen.
 
 Wat het model goed doet: beveiligde bladen met herkenbare invoercellen, een tariefreeks die voor IB en VpB (met het arrest van de Hoge Raad aan) gelijk is aan de bron, de juiste begindatum bij gebroken boekjaren, de juiste eerste dag van de invorderingsrente en een consequente afronding naar beneden.
 
