@@ -1,23 +1,22 @@
 # Openstaande punten
 
-Laatst bijgewerkt: 04-10-2026 15:27 CEST. Eerste versie van dit bestand op 29-09-2026; eerder stonden
+Laatst bijgewerkt: 04-10-2026 15:57 CEST. Eerste versie van dit bestand op 29-09-2026; eerder stonden
 openstaande punten alleen in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging) en, voor
 dit ene punt, in de nu gearchiveerde berichtenmap `PostbusClaude`.
 
-**Stand:** van de 16 punten staat er 1 open en zijn er 15 gesloten. Open is punt 13: het
-concept voor de terugmelding aan Wolters Kluwer ligt klaar en wacht op verzending door
-Sylvain. Op 04-10-2026 zijn punt 2, 3, 4, 5, 6, 10, 11 en 15 gesloten, in een sessie die alle
-open punten afrondde: punt 4 en 5 zijn daarbij gebouwd, punt 2, 3, 6, 10, 11 en 15 zijn met
-een besluit van Sylvain gesloten. Punt 12 tot en met 16 zijn op 29-09-2026 toegevoegd bij
-de gelijkwaardigheidstoets tegen model 02-04. De zeven fiscale punten van de pagina
-Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md` hierheen gehaald, en punt 11
-is op 27-09-2026 toegevoegd bij de portefeuillebrede inventarisatie van de uitgangen.
+**Stand:** van de 16 punten zijn er 16 gesloten en staat er niets open. Op 04-10-2026 zijn punt 2, 3, 4, 5, 6, 10, 11 en 15 gesloten, in een sessie die alle open punten afrondde: punt 4 en 5 zijn daarbij gebouwd, de andere zijn met een besluit van Sylvain gesloten. Punt 13 sloot op 04-10-2026, nadat hij het bericht aan Wolters Kluwer had verstuurd. Punt 12 tot en met 16 zijn op 29-09-2026 toegevoegd bij de gelijkwaardigheidstoets tegen model 02-04. De zeven fiscale punten van de pagina Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md` hierheen gehaald, en punt 11 is op 27-09-2026 toegevoegd bij de portefeuillebrede inventarisatie van de uitgangen.
 
 ## Open
 
+Geen. Alle punten zijn gesloten.
+
+## Gesloten
+
 ### 13. Fouten in model 02-04, terug te melden aan Wolters Kluwer
 
-**Status:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 29-09-2026, bij de
+**Gesloten op 04-10-2026.** Sylvain Bouwman heeft het bericht met de drie bevindingen op 04-10-2026 per e-mail aan Wolters Kluwer verstuurd. De tekst is die van `terugmelding-wolters-kluwer-model-02-04.md`. Een antwoord van Wolters Kluwer wordt niet afgewacht; komt er een reactie, dan start die als eigen sessie.
+
+**Status tot 04-10-2026:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 29-09-2026, bij de
 gelijkwaardigheidstoets. **Vindplaats:** `vrijgave-belastingtooljoindk-2026-09-29.md`,
 `WIJZIGINGSRAPPORT.md` L11, en lokaal (genegeerd) het overzicht
 `.local-testdata/gelijkwaardigheid-02-04/run4-na-broncontrole/vergelijking-02-04.xlsx` met
@@ -36,7 +35,7 @@ niet in Git):
    dagen. Het model telt ook die maand als 30, terwijl zijn eigen uitleg de regel wel
    noemt. Richting: één dag te weinig. Speelde in 30 van de 202 gevallen.
 3. **Belastingrente over één dag.** Valt de einddatum op de begindatum, dan geeft het model
-   nul en een melding dat de einddatum groter moet zijn. Art. 30fc lid 2 AWR kent geen
+   nul en een foutmelding. Art. 30fc lid 2 AWR kent geen
    minimumduur. Richting: te laag. Drie gevallen.
 
 Wat het model goed doet, en dat hoort bij de terugmelding: beveiligde bladen met
@@ -46,12 +45,6 @@ dag van de invorderingsrente en een consequente afronding naar beneden.
 
 **Wat er moet gebeuren:** beslissen of en hoe dit aan Wolters Kluwer wordt teruggemeld.
 Niet zelf gedaan: dat is een bericht naar buiten.
-
-**Stand 04-10-2026:** het concept van het bericht staat in
-`terugmelding-wolters-kluwer-model-02-04.md`. Sylvain verstuurt het zelf; het punt sluit
-zodra hij zegt dat het verstuurd is.
-
-## Gesloten
 
 ### 2. Hoe telt een gedeeltelijke maand die niet de vervalmaand is?
 
