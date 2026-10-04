@@ -1162,3 +1162,43 @@ voor IB en voor VpB met het HR-arrest aan zijn over 2012 tot en met 2026 gelijk 
 de tool, inclusief de IB-uitzondering van juni 2020. De begindatum bij gebroken boekjaren
 klopt, de eerste dag van de invorderingsrente klopt, en het model rondt consequent naar
 beneden af. De drie fouten staan in OPENSTAAND.md punt 13, om terug te melden.
+
+---
+
+## L12 — uitstel en art. 28c gebouwd, art. 28b op de uitvoering, openstaande punten gesloten, 04-10-2026 15:28 CEST
+
+Sessie die alle open punten van `OPENSTAAND.md` afrondde. Onderbouwing per wijziging; de
+stand per punt staat in `OPENSTAAND.md`.
+
+1. **Uitstel (art. 28 lid 3 en 4 IW 1990, art. 6 Uitvoeringsbesluit IW 1990)**, punt 4.
+   Voorheen blokkeerde de pagina bij uitstel. Nu rekent `uitstel_uitsluiting()` de
+   opschorting: de dagen van het uitstel tellen niet mee, en na een beëindiging door de
+   ontvanger herleeft de rente op de dag van `herlevingsdatum()` (art. 6 lid 1 voor lid 5 en
+   8 van art. 25: 1 januari van het volgende jaar plus 42 dagen; lid 2 voor de overige
+   gronden: de dag na de omstandigheid). Geen uitkomst blijft er bij betaling na afloop van
+   de uitsteltermijn voor de gronden van lid 4, en bij een beëindigd uitstel op grond van art.
+   25 lid 3. De Leidraad Invordering 2008 kent beleid voor lid 9, 11 en 17 tot en met 19
+   (onderdeel 74.5, 74.5a, 74.10 en 74.11); dat is niet gebouwd. Eerst bleek de melding
+   daarover onjuist ("geen regel"): de bron-controleur wees het Leidraadbeleid aan, de
+   melding is daarop aangepast.
+2. **Art. 28c (vergoeding bij heffing in strijd met het Unierecht)**, punt 5. Nieuwe
+   grondslag met `periode_art28c()`: de dag na de betaling tot de dag vóór de terugbetaling,
+   grondslag het terug te geven bedrag, te-vergoeden-reeks, 30 dagen per maand. De gebruiker
+   geeft aan of het verzoek tijdig is ingediend en kan de dagen opgeven van vergoede
+   belastingrente en van een vergoeding op grond van art. 28b; die tellen niet mee (art. 28c
+   lid 2, tweede volzin).
+3. **Art. 28b begint de dag na de vervaldag**, punt 6. De bron-controleur vond dat de
+   Belastingdienst de vergoeding een dag eerder laat ingaan dan de tool (KG:207:2022:2 en
+   belastingdienst.nl, Invorderingsrente: termijn eindigt 1 mei, vergoeding vanaf 2 mei).
+   Besluit van Sylvain op 04-10-2026: de uitvoering volgen. De vergoeding wordt een dag hoger.
+   Dit vervangt de regel in L11.3 punt 1 dat art. 28b "meeschuift" met de eerste rentedag van
+   art. 28.
+4. **Besluiten zonder codewijziging.** Punt 2 en 3 (onvolledige maand, formule bij een
+   vergoeding): geen bron die het anders zegt, afgeleide lezing blijft. Punt 10 en 11: de tegel
+   in het portaal blijft, geen uitgangen in de testomgeving. Punt 15: de tool volgt de wet.
+   Punt 13: concept voor Wolters Kluwer staat in `terugmelding-wolters-kluwer-model-02-04.md`.
+
+**Getest:** `python -m pytest -q`: 516 geslaagd (was 492). Nieuw: de tijdvakken en de
+uitsluiting van art. 28c, de herlevingsdatum voor beide leden van art. 6, de vier takken van
+`uitstel_uitsluiting`, twee doorgerekende gevallen met uitstel, en de pagina-blokkades.
+

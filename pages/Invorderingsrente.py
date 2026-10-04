@@ -2,7 +2,7 @@ import streamlit as st
 from datetime import date, timedelta
 
 from _invorderingsrente import (
-    ART28C_SIGNALERING,
+    ART28C_TOELICHTING,
     HERLEVING_NA_UITSTEL,
     TARIEVEN_IN_REKENING,
     TARIEVEN_TE_VERGOEDEN,
@@ -19,7 +19,9 @@ from _invorderingsrente import (
     periode_art28,
     periode_art28a,
     periode_art28b,
+    periode_art28c,
     uiterste_verzoekdatum_28c,
+    uitstel_uitsluiting,
     vervaldag_op,
     vervalmaand_van,
 )
@@ -35,8 +37,9 @@ paginakop(
     "Invorderingsrente",
     "Bereken de invorderingsrente van hoofdstuk V van de Invorderingswet 1990: de rente "
     "bij te late betaling (art. 28) en de vergoeding als de ontvanger te laat uitbetaalt "
-    "(art. 28a) of als een aanslag wordt verminderd na een afgewezen uitstelverzoek "
-    "(art. 28b). De dagentelling en de afronding volgen de Uitvoeringsregeling en wijken "
+    "(art. 28a), als een aanslag wordt verminderd na een afgewezen uitstelverzoek "
+    "(art. 28b) of als belasting in strijd met het Unierecht is geheven (art. 28c). "
+    "De dagentelling en de afronding volgen de Uitvoeringsregeling en wijken "
     "af van die bij belastingrente.",
 )
 
@@ -44,14 +47,21 @@ GRONDSLAGEN = {
     "28": "Art. 28 — rente bij te late betaling (in rekening gebracht)",
     "28a": "Art. 28a — vergoeding als de ontvanger niet binnen 6 weken uitbetaalt",
     "28b": "Art. 28b — vergoeding bij vermindering na een afgewezen uitstelverzoek",
+    "28c": "Art. 28c — vergoeding bij heffing in strijd met het Unierecht",
+}
+
+UITSLUITREDEN = {
+    "28": "voor die dagen uitstel van betaling was verleend (art. 28 lid 3 IW 1990)",
+    "28a": "daarover al belastingrente is vergoed (art. 28a lid 2, tweede volzin IW 1990)",
+    "28b": "daarover al belastingrente is vergoed",
+    "28c": "daarover belastingrente of invorderingsrente op grond van art. 28b wordt "
+           "vergoed (art. 28c lid 2, tweede volzin IW 1990)",
 }
 
 grondslag = st.radio(
     "Welke grondslag?",
     options=list(GRONDSLAGEN),
     format_func=lambda k: GRONDSLAGEN[k],
-    help="Art. 28c (heffing in strijd met het Unierecht) wordt door deze tool niet "
-         "berekend. Zie de signalering onder aan de pagina.",
 )
 
 vandaag = date.today()
@@ -316,11 +326,106 @@ elif grondslag == "28b":
         st.stop()
     uitgangspunten.append(("Dagtekening vermindering", nl_date(dagtekening_vermindering)))
 
-# ── Uitstel: uitvragen en blokkeren ─────────────────────────────────────────
-# Besluit van Sylvain: de opschorting tijdens uitstel (art. 28 lid 3 en 4) wordt
-# in deze versie niet doorgerekend. De tool vraagt uit of er uitstel is verleend
-# en geeft geen uitkomst zolang dat niet is ingevuld. Dat is dezelfde lijn die
-# de rentepagina's al volgen bij een onvolledige verklaring.
+elif grondslag == "28c":
+    st.caption(ART28C_TOELICHTING)
+    col_c, col_d = st.columns(2)
+    with col_c:
+        dagtekening_beschikking = st.date_input(
+            "Dagtekening van de beschikking tot teruggaaf",
+            value=vandaag, min_value=MIN_DATUM, max_value=MAX_DATUM, format="DD-MM-YYYY",
+            help="De beschikking van de inspecteur op grond waarvan de ontvanger belasting "
+                 "moet teruggeven omdat die in strijd met het Unierecht is geheven.",
+        )
+    with col_d:
+        grondslagbedrag = st.number_input(
+            "Terug te geven bedrag (€)", min_value=0.0, value=10000.0, step=500.0,
+            format="%.2f",
+            help="Art. 28c lid 2: het aan de belastingschuldige terug te geven of "
+                 "teruggegeven bedrag is de grondslag.",
+        )
+
+    col_e, col_f = st.columns(2)
+    with col_e:
+        betaald_op = st.date_input(
+            "Datum waarop de belasting is betaald, voldaan of afgedragen",
+            value=vandaag - timedelta(days=400),
+            min_value=MIN_DATUM, max_value=MAX_DATUM, format="DD-MM-YYYY",
+        )
+    with col_f:
+        terugbetaald_op = st.date_input(
+            "Datum van de terugbetaling",
+            value=vandaag, min_value=MIN_DATUM, max_value=MAX_DATUM, format="DD-MM-YYYY",
+        )
+
+    uiterste = uiterste_verzoekdatum_28c(dagtekening_beschikking)
+    verzoek = st.radio(
+        "Is het verzoek om vergoeding van invorderingsrente tijdig ingediend?",
+        options=["", "ja", "nee"],
+        format_func=lambda k: {"": "nog niet ingevuld", "ja": "Ja", "nee": "Nee"}[k],
+        horizontal=True,
+        help=f"Art. 28c lid 3: de termijn eindigt zes weken na de dagtekening van de "
+             f"beschikking, dus op {nl_date(uiterste)}.",
+    )
+    if verzoek == "":
+        st.error(
+            "**Nog geen uitkomst.** Art. 28c lid 1 IW 1990 vergoedt alleen op verzoek, en "
+            f"dat verzoek moet uiterlijk {nl_date(uiterste)} zijn ingediend (lid 3). Vul "
+            "in of dat is gebeurd."
+        )
+        st.stop()
+    if verzoek == "nee":
+        st.error(
+            "**Geen vergoeding van invorderingsrente.** Zonder tijdig verzoek bestaat "
+            f"geen recht op vergoeding op grond van art. 28c (termijn tot {nl_date(uiterste)})."
+        )
+        st.stop()
+
+    periode = periode_art28c(betaald_op, terugbetaald_op)
+    if periode is None:
+        st.success(
+            f"**Geen vergoeding van invorderingsrente.** Het tijdvak loopt van de dag na "
+            f"de betaling ({nl_date(betaald_op)}) tot de dag vóór de terugbetaling "
+            f"({nl_date(terugbetaald_op)}) en bevat hier geen dag."
+        )
+        st.stop()
+    uitgangspunten.append(("Dagtekening beschikking", nl_date(dagtekening_beschikking)))
+    uitgangspunten.append(("Verzoek uiterlijk", nl_date(uiterste)))
+    uitgangspunten.append(("Belasting betaald op", nl_date(betaald_op)))
+    uitgangspunten.append(("Datum terugbetaling", nl_date(terugbetaald_op)))
+
+    # Art. 28c lid 2, tweede volzin: twee soorten dagen tellen niet mee.
+    for sleutel, wat, vanaf_label, tot_label in (
+        ("belastingrente", "belastingrente is vergoed (hoofdstuk VA AWR)",
+         "Vergoede belastingrente: vanaf", "Vergoede belastingrente: tot en met"),
+        ("28b", "invorderingsrente is vergoed op grond van art. 28b",
+         "Vergoeding art. 28b: vanaf", "Vergoeding art. 28b: tot en met"),
+    ):
+        if st.toggle(f"Over een deel van dit tijdvak {wat}", value=False,
+                     help="Art. 28c lid 2, tweede volzin: over die dagen wordt geen "
+                          "invorderingsrente berekend."):
+            col_g, col_h = st.columns(2)
+            with col_g:
+                u_van = st.date_input(vanaf_label, value=None, min_value=MIN_DATUM,
+                                      max_value=MAX_DATUM, format="DD-MM-YYYY")
+            with col_h:
+                u_tot = st.date_input(tot_label, value=None, min_value=MIN_DATUM,
+                                      max_value=MAX_DATUM, format="DD-MM-YYYY")
+            if u_van is None or u_tot is None:
+                st.error("Vul beide datums in, of zet de schakelaar uit. Zonder die periode "
+                         "zou de tool te veel vergoeding berekenen.")
+                st.stop()
+            if u_tot < u_van:
+                st.error("De einddatum ligt vóór de begindatum.")
+                st.stop()
+            uitgesloten.append((u_van, u_tot))
+            uitgangspunten.append((f"Uitgesloten ({sleutel})",
+                                   f"{nl_date(u_van)} t/m {nl_date(u_tot)}"))
+
+# ── Uitstel: opschorting en herleving ───────────────────────────────────────
+# Art. 28 lid 3 brengt geen rente in rekening over de tijd waarvoor uitstel is
+# verleend; lid 4 en art. 6 Uitvoeringsbesluit IW 1990 laten haar herleven na een
+# beëindiging. De rekenregels staan in `uitstel_uitsluiting()`. Wat de wet niet
+# regelt geeft hier geen uitkomst.
 if grondslag == "28":
     st.markdown("**Uitstel van betaling**")
     uitstel = st.radio(
@@ -330,16 +435,15 @@ if grondslag == "28":
                                "ja": "Ja"}[k],
         horizontal=True,
         help="Art. 28 lid 3 IW 1990 brengt geen invorderingsrente in rekening over de "
-             "tijd waarvoor uitstel is verleend krachtens negen genoemde leden van "
-             "art. 25. Deze tool rekent die opschorting niet uit.",
+             "tijd waarvoor uitstel is verleend krachtens art. 25 lid 3, 5, 8, 9, 11, "
+             "17, 18, 19 of 21.",
     )
     if uitstel == "":
         st.error(
             "**Nog geen uitkomst.** Vul eerst in of er uitstel van betaling is verleend. "
             "Art. 28 lid 3 IW 1990 schort de rente op over de tijd waarvoor uitstel is "
-            "verleend krachtens art. 25 lid 3, 5, 8, 9, 11, 17, 18, 19 of 21. Deze "
-            "versie rekent die opschorting niet door, dus zonder dit antwoord zou de "
-            "uitkomst te hoog kunnen zijn."
+            "verleend krachtens art. 25 lid 3, 5, 8, 9, 11, 17, 18, 19 of 21, dus zonder "
+            "dit antwoord zou de uitkomst te hoog kunnen zijn."
         )
         st.stop()
 
@@ -353,28 +457,52 @@ if grondslag == "28":
             st.error("Vul de grond van het uitstel in.")
             st.stop()
 
-        st.error(
-            "**Geen uitkomst: deze tool rekent de opschorting tijdens uitstel niet door.** "
-            f"Het uitstel is verleend op grond van {dict(UITSTELGRONDEN)[grond]}. "
-            "Art. 28 lid 3 IW 1990 brengt over die tijd geen invorderingsrente in "
-            "rekening. Een uitkomst zonder die opschorting zou te hoog zijn."
-        )
-        herleving = HERLEVING_NA_UITSTEL.get(grond)
-        if herleving:
-            st.info(
-                "Wordt het uitstel beëindigd of wordt er niet binnen de uitsteltermijn "
-                f"betaald, dan loopt de rente alsnog (art. 28 lid 4 IW 1990). {herleving}"
+        col_u, col_v = st.columns(2)
+        with col_u:
+            uitstel_van = st.date_input(
+                "Uitstel verleend vanaf", value=invorderbaar,
+                min_value=MIN_DATUM, max_value=MAX_DATUM, format="DD-MM-YYYY",
             )
-        else:
-            st.info(
-                "Art. 28 lid 4 IW 1990 noemt deze grond niet, en art. 6 van het "
-                "Uitvoeringsbesluit IW 1990 wijst er geen herlevingstijdvak voor aan. "
-                "Over het tijdvak na een beëindiging van dit uitstel doet deze tool dus "
-                "geen uitspraak."
+        with col_v:
+            uitstel_tot = st.date_input(
+                "Uitstel verleend tot en met (leeg als er geen einddatum is)", value=None,
+                min_value=MIN_DATUM, max_value=MAX_DATUM, format="DD-MM-YYYY",
             )
-        st.stop()
 
-    uitgangspunten.append(("Uitstel van betaling verleend", "nee"))
+        beeindigd = False
+        gebeurtenis = None
+        if grond in HERLEVING_NA_UITSTEL:
+            beeindigd = st.toggle(
+                "Het uitstel is door de ontvanger beëindigd", value=False,
+                help="Art. 28 lid 4 IW 1990: dan loopt de rente weer vanaf een dag die "
+                     "art. 6 Uitvoeringsbesluit IW 1990 aanwijst.",
+            )
+            if beeindigd:
+                gebeurtenis = st.date_input(
+                    "Datum van de handeling of gebeurtenis waarop het uitstel is beëindigd",
+                    value=None, min_value=MIN_DATUM, max_value=MAX_DATUM,
+                    format="DD-MM-YYYY",
+                )
+        else:
+            st.caption(
+                "Art. 28 lid 4 IW 1990 noemt art. 25 lid 3 niet, en art. 6 van het "
+                "Uitvoeringsbesluit IW 1990 wijst er geen herlevingstijdvak voor aan. "
+                "Alleen de tijd waarvoor het uitstel is verleend telt dus niet mee."
+            )
+
+        opschorting = uitstel_uitsluiting(
+            grond, uitstel_van, uitstel_tot, beeindigd, gebeurtenis, betaaldatum)
+        if opschorting["blokkade"]:
+            st.error("**Geen uitkomst.** " + opschorting["blokkade"])
+            st.stop()
+        uitgesloten = uitgesloten + opschorting["uitgesloten"]
+        uitgangspunten.append(("Uitstel verleend", f"ja, grond {grond}"))
+        for a, b in opschorting["uitgesloten"]:
+            uitgangspunten.append(("Rente opgeschort", f"{nl_date(a)} t/m {nl_date(b)}"))
+        if opschorting["herleving"]:
+            uitgangspunten.append(("Rente herleeft op", nl_date(opschorting["herleving"])))
+    else:
+        uitgangspunten.append(("Uitstel van betaling verleend", "nee"))
 
     # Art. 28 lid 5: de aangewezen gevallen waarin geen rente in rekening wordt
     # gebracht, plus de beleidsmatige vermindering uit de Leidraad.
@@ -484,7 +612,7 @@ with col2:
 
 with col3:
     naam = {"28": "Betaald bedrag", "28a": "Uit te betalen bedrag",
-            "28b": "Terug te geven bedrag"}[grondslag]
+            "28b": "Terug te geven bedrag", "28c": "Terug te geven bedrag"}[grondslag]
     st.markdown(f"""
     <div class="bk-tile">
       <div class="label">{naam}</div>
@@ -494,8 +622,7 @@ with col3:
 
 if uit["dagen_uitgesloten"]:
     st.info(
-        f"{uit['dagen_uitgesloten']} dagen tellen niet mee omdat daarover al "
-        f"belastingrente is vergoed (art. 28a lid 2, tweede volzin IW 1990)."
+        f"{uit['dagen_uitgesloten']} dagen tellen niet mee omdat {UITSLUITREDEN[grondslag]}."
     )
 
 st.markdown("**Berekening per periode**")
@@ -530,14 +657,6 @@ with st.expander("Uitgangspunten van deze berekening", expanded=False):
 | Bedrag vóór afronding | {nl_euro(uit["onafgerond"])} |
 | Drempelbedrag art. 33 | {nl_euro_heel(uit["drempel"]) if uit["drempel"] is not None else "niet van toepassing"} |
 """)
-
-with st.expander("Art. 28c — heffing in strijd met het Unierecht (alleen signalering)"):
-    st.markdown(ART28C_SIGNALERING)
-    st.caption(
-        "Wie die vergoeding wil, moet het verzoek tijdig indienen. Voor een beschikking "
-        f"met dagtekening vandaag ({nl_date(vandaag)}) eindigt die termijn op "
-        f"{nl_date(uiterste_verzoekdatum_28c(vandaag))}."
-    )
 
 st.caption(
     "Rekenmethode volgens hoofdstuk V van de Invorderingswet 1990 en hoofdstuk III van "

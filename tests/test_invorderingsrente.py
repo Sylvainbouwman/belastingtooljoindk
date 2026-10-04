@@ -17,7 +17,7 @@ from datetime import date, timedelta
 import pytest
 
 from _invorderingsrente import (
-    ART28C_SIGNALERING,
+    ART28C_TOELICHTING,
     DREMPELS,
     TARIEVEN_IN_REKENING,
     TARIEVEN_TE_VERGOEDEN,
@@ -35,11 +35,14 @@ from _invorderingsrente import (
     maandlengte,
     periode_art28,
     periode_art28a,
+    herlevingsdatum,
     periode_art28b,
+    periode_art28c,
     samenvoegen,
     splits_betaling,
     tarief_op,
     uiterste_verzoekdatum_28c,
+    uitstel_uitsluiting,
     vervaldag_op,
     vervalmaand_van,
 )
@@ -439,14 +442,15 @@ def test_artikel_28a_pas_na_zes_weken_maar_dan_terug_tot_de_dagtekening():
 
 
 def test_artikel_28b_eindigt_zes_weken_na_de_vermindering():
-    """Art. 28b lid 2 IW 1990: aanvang de dag ná de invorderbaarheid, einde zes
-    weken na de dagtekening van de vermindering of herziening. De
-    invorderbaarheid is de dag na de vervaldag, dus de aanvang ligt twee dagen
-    na de vervaldag."""
+    """Art. 28b lid 2 IW 1990: einde zes weken na de dagtekening van de
+    vermindering of herziening. De aanvang is de dag na de vervaldag, dus de dag
+    waarop de aanslag invorderbaar is. Dat volgt de uitvoering (KG:207:2022:2,
+    belastingdienst.nl); de letterlijke tekst ("de dag na die waarop de aanslag
+    invorderbaar is") laat ook een dag later toe. Besluit van Sylvain op 04-10-2026."""
     vervaldag = vervaldag_op(date(2025, 1, 10))
     vanaf, tot = periode_art28b(vervaldag, date(2026, 3, 5))
-    assert vanaf == date(2025, 2, 23)
-    assert vanaf == invorderbaar_op(date(2025, 1, 10)) + timedelta(days=1)
+    assert vanaf == date(2025, 2, 22)
+    assert vanaf == invorderbaar_op(date(2025, 1, 10))
     assert tot == date(2026, 4, 16)
 
 
@@ -462,8 +466,7 @@ def test_alleen_artikel_28a_kent_de_uitsluiting():
 
     Art. 28a lid 2, tweede volzin, sluit de dagen uit waarover al
     belastingrente is vergoed. Art. 28 lid 2 en art. 28b lid 2 kennen die
-    uitsluiting niet. Art. 28c lid 2 kent haar wel, maar die grondslag wordt
-    door deze tool niet gerekend.
+    uitsluiting niet. Art. 28c lid 2 kent haar wel; die rekent de tool sinds 04-10-2026.
     """
     assert UITSLUITING_BELASTINGRENTE["28"] is False
     assert UITSLUITING_BELASTINGRENTE["28a"] is True
@@ -540,11 +543,149 @@ def test_twee_aanwijzingen_op_grond_van_artikel_28_lid_5():
     assert [u["code"] for u in beleid] == ["leidraad-25.4.6"]
 
 
-def test_artikel_28c_wordt_gesignaleerd_en_niet_gerekend():
-    """Art. 28c lid 1 en lid 3 IW 1990. De tool rekent deze grondslag niet."""
-    assert "op verzoek" in ART28C_SIGNALERING or "alleen op verzoek" in ART28C_SIGNALERING
-    assert "zes weken" in ART28C_SIGNALERING
-    assert "rekent die grondslag niet uit" in ART28C_SIGNALERING
+def test_artikel_28c_toelichting_noemt_verzoek_en_tijdvak():
+    """Art. 28c lid 1 tot en met 3 IW 1990."""
+    assert "op verzoek" in ART28C_TOELICHTING
+    assert "zes weken" in ART28C_TOELICHTING
+    assert "dag na de betaling tot de dag vóór de terugbetaling" in ART28C_TOELICHTING
+
+
+def test_periode_art28c_dag_na_betaling_tot_dag_voor_terugbetaling():
+    """Art. 28c lid 2. Voorbeeld op belastingdienst.nl: betaald 1 juni, terug 1
+    augustus, vergoeding van 2 juni tot 1 augustus (geraadpleegd 04-10-2026)."""
+    assert periode_art28c(date(2025, 6, 1), date(2025, 8, 1)) == (
+        date(2025, 6, 2), date(2025, 7, 31))
+    assert periode_art28c(date(2025, 6, 1), date(2025, 6, 1)) is None
+    assert periode_art28c(date(2025, 6, 1), date(2025, 6, 2)) is None
+    assert periode_art28c(date(2025, 6, 1), date(2025, 6, 3)) == (
+        date(2025, 6, 2), date(2025, 6, 2))
+
+
+def test_artikel_28c_rekent_de_te_vergoeden_reeks_zonder_vervalmaand():
+    """Vier volle maanden zijn 120 dagen; 120 x 4 x 10.000 / 36.000 = 133,33,
+    naar boven afgerond 134 (art. 32 lid 2 URIW)."""
+    vanaf, tot = periode_art28c(date(2024, 2, 29), date(2024, 7, 1))
+    assert (vanaf, tot) == (date(2024, 3, 1), date(2024, 6, 30))
+    uit = bereken(10000, vanaf, tot, TARIEVEN_TE_VERGOEDEN, "te_vergoeden")
+    assert uit["dagen"] == 120
+    assert uit["bedrag"] == 134
+
+
+def test_artikel_28c_trekt_belastingrente_en_artikel_28b_af():
+    """Art. 28c lid 2, tweede volzin: beide soorten dagen tellen niet mee. Twee
+    maanden eruit laat 60 dagen over: 60 x 4 x 10.000 / 36.000 = 66,67, dus 67."""
+    uit = bereken(10000, date(2024, 3, 1), date(2024, 6, 30),
+                  TARIEVEN_TE_VERGOEDEN, "te_vergoeden",
+                  uitgesloten=[(date(2024, 3, 1), date(2024, 3, 31)),
+                               (date(2024, 4, 1), date(2024, 4, 30))])
+    assert uit["dagen"] == 60
+    assert uit["bedrag"] == 67
+
+
+# ── Uitstel: opschorting en herleving (art. 28 lid 3 en 4, art. 6 Uitvoeringsbesluit) ──
+
+def test_herlevingsdatum_art_6_lid_1_zes_weken_na_de_eerste_dag_van_het_volgende_jaar():
+    assert herlevingsdatum("25-5", date(2025, 9, 15)) == date(2026, 2, 12)
+    assert herlevingsdatum("25-8", date(2025, 12, 31)) == date(2026, 2, 12)
+
+
+def test_herlevingsdatum_art_6_lid_2_de_dag_na_de_omstandigheid():
+    for grond in ("25-9", "25-11", "25-17", "25-18", "25-19", "25-21"):
+        assert herlevingsdatum(grond, date(2025, 9, 15)) == date(2025, 9, 16)
+
+
+def test_herlevingsdatum_bestaat_niet_voor_artikel_25_lid_3():
+    assert herlevingsdatum("25-3", date(2025, 9, 15)) is None
+
+
+def test_uitstel_zonder_einddatum_schort_de_rente_op_tot_de_betaling():
+    uit = uitstel_uitsluiting("25-21", date(2025, 2, 27), None, False, None, date(2025, 6, 11))
+    assert uit["uitgesloten"] == [(date(2025, 2, 27), date(2025, 6, 11))]
+    assert uit["blokkade"] is None
+
+
+def test_uitstel_met_einddatum_en_betaling_binnen_de_termijn():
+    uit = uitstel_uitsluiting("25-9", date(2025, 2, 27), date(2025, 6, 30), False, None,
+                              date(2025, 6, 11))
+    assert uit["uitgesloten"] == [(date(2025, 2, 27), date(2025, 6, 30))]
+    assert uit["blokkade"] is None
+
+
+def test_betaling_na_de_uitsteltermijn_geeft_bij_de_gronden_van_lid_4_geen_uitkomst():
+    """Art. 28 lid 4: het tijdvak laat de wet aan een AMvB, en art. 6
+    Uitvoeringsbesluit regelt alleen de beëindiging."""
+    uit = uitstel_uitsluiting("25-5", date(2025, 2, 27), date(2025, 4, 30), False, None,
+                              date(2025, 6, 11))
+    assert uit["blokkade"] and "algemene maatregel van bestuur" in uit["blokkade"]
+
+
+def test_betaling_na_de_uitsteltermijn_bij_artikel_25_lid_3_telt_alleen_de_uitsteltijd_af():
+    """Art. 25 lid 3 staat niet in art. 28 lid 4: de dagen na de termijn tellen mee."""
+    uit = uitstel_uitsluiting("25-3", date(2025, 2, 27), date(2025, 4, 30), False, None,
+                              date(2025, 6, 11))
+    assert uit["uitgesloten"] == [(date(2025, 2, 27), date(2025, 4, 30))]
+    assert uit["blokkade"] is None
+
+
+def test_beeindigd_uitstel_laat_de_rente_herleven_op_de_datum_van_artikel_6():
+    uit = uitstel_uitsluiting("25-5", date(2025, 2, 27), None, True, date(2025, 9, 15),
+                              date(2026, 6, 10))
+    assert uit["herleving"] == date(2026, 2, 12)
+    assert uit["uitgesloten"] == [(date(2025, 2, 27), date(2026, 2, 11))]
+    assert uit["blokkade"] is None
+
+
+def test_beeindigd_uitstel_artikel_25_lid_3_geeft_geen_uitkomst():
+    uit = uitstel_uitsluiting("25-3", date(2025, 2, 27), None, True, date(2025, 9, 15),
+                              date(2026, 6, 10))
+    assert uit["blokkade"] and "art. 25 lid 3" in uit["blokkade"]
+
+
+def test_beeindigd_uitstel_zonder_datum_van_de_gebeurtenis_geeft_geen_uitkomst():
+    uit = uitstel_uitsluiting("25-9", date(2025, 2, 27), None, True, None, date(2026, 6, 10))
+    assert uit["blokkade"] and "Vul de datum" in uit["blokkade"]
+
+
+def test_herleving_voor_het_begin_van_het_uitstel_geeft_geen_uitkomst():
+    uit = uitstel_uitsluiting("25-9", date(2025, 2, 27), None, True, date(2025, 1, 1),
+                              date(2026, 6, 10))
+    assert uit["blokkade"]
+
+
+def test_volledig_geval_artikel_28_met_uitstel():
+    """Dagtekening 15-01-2025: vervaldag 26-02-2025, vervalmaand februari (28 dagen).
+    Tijdvak 27-02 tot en met 10-06-2025: februari 2 dagen, maart tot en met mei
+    90 dagen en juni 10 dagen, samen 102. Uitstel (art. 25 lid 3) van 27-02 tot en
+    met 30-04: 2 + 30 + 30 = 62 dagen eraf, dus 40 over. 40 x 4 x 10.000 / 36.000
+    = 44,44, naar beneden afgerond 44."""
+    vervaldag = vervaldag_op(date(2025, 1, 15))
+    assert vervaldag == date(2025, 2, 26)
+    vanaf, tot = periode_art28(vervaldag, date(2025, 6, 11))
+    uitstel = uitstel_uitsluiting("25-3", date(2025, 2, 27), date(2025, 4, 30), False,
+                                  None, date(2025, 6, 11))
+    uit = bereken(10000, vanaf, tot, TARIEVEN_IN_REKENING, "in_rekening",
+                  vervalmaand=vervalmaand_van(vervaldag),
+                  uitgesloten=uitstel["uitgesloten"])
+    assert uit["dagen_uitgesloten"] == 62
+    assert uit["dagen"] == 40
+    assert uit["bedrag"] == 44
+
+
+def test_volledig_geval_artikel_28_met_beeindigd_uitstel():
+    """Uitstel (art. 25 lid 5) van 27-02-2025, beëindigd door een gebeurtenis op
+    15-09-2025. De rente herleeft op 12-02-2026 (art. 6 lid 1 Uitvoeringsbesluit).
+    Betaald op 10-06-2026: tijdvak tot en met 09-06-2026. Februari 2026 telt 19
+    dagen (12 tot en met 30), maart tot en met mei 90 en juni 9: 118 dagen tegen
+    4,3 procent. 118 x 4,3 x 10.000 / 36.000 = 140,94, naar beneden 140."""
+    vervaldag = vervaldag_op(date(2025, 1, 15))
+    vanaf, tot = periode_art28(vervaldag, date(2026, 6, 10))
+    uitstel = uitstel_uitsluiting("25-5", date(2025, 2, 27), None, True,
+                                  date(2025, 9, 15), date(2026, 6, 10))
+    uit = bereken(10000, vanaf, tot, TARIEVEN_IN_REKENING, "in_rekening",
+                  vervalmaand=vervalmaand_van(vervaldag),
+                  uitgesloten=uitstel["uitgesloten"])
+    assert uit["dagen"] == 118
+    assert uit["bedrag"] == 140
 
 
 def test_uiterste_verzoekdatum_28c():
@@ -593,20 +734,20 @@ def test_volledig_geval_artikel_28b():
     """Aanslag met dagtekening 10-01-2025, uitstelverzoek afgewezen, vermindering
     met dagtekening 05-03-2026 en een terug te geven bedrag van 12.000 euro.
 
-    De termijn vervalt op 21-02-2025 en de aanslag is invorderbaar op
-    22-02-2025, dus het tijdvak vangt aan op 23-02-2025 en eindigt zes weken na
-    05-03-2026, dat is 16-04-2026. De vervalmaand is februari 2025 en telt 28
-    dagen.
+    De termijn vervalt op 21-02-2025, dus het tijdvak vangt aan op 22-02-2025 (de
+    dag na de vervaldag, zoals de Belastingdienst het uitvoert) en eindigt zes
+    weken na 05-03-2026, dat is 16-04-2026. De vervalmaand is februari 2025 en
+    telt 28 dagen.
     """
     vervaldag = vervaldag_op(date(2025, 1, 10))
     assert vervaldag == date(2025, 2, 21)
     vanaf, tot = periode_art28b(vervaldag, date(2026, 3, 5))
-    assert (vanaf, tot) == (date(2025, 2, 23), date(2026, 4, 16))
+    assert (vanaf, tot) == (date(2025, 2, 22), date(2026, 4, 16))
     uit = bereken(12000, vanaf, tot, TARIEVEN_TE_VERGOEDEN, "te_vergoeden",
                   vervalmaand=vervalmaand_van(vervaldag))
-    # 23-02 t/m 28-02 is 6 dagen, maart t/m december 2025 is 300, januari t/m
-    # maart 2026 is 90 en april tot en met dag 16 is 16: samen 412 dagen.
-    assert uit["dagen"] == 412
+    # 22-02 t/m 28-02 is 7 dagen, maart t/m december 2025 is 300, januari t/m
+    # maart 2026 is 90 en april tot en met dag 16 is 16: samen 413 dagen.
+    assert uit["dagen"] == 413
     assert uit["perioden"][0]["pct"] == 4.0
     assert uit["perioden"][1]["pct"] == 4.3
 

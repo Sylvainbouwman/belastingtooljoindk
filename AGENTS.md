@@ -3,8 +3,10 @@
 Streamlit-app met zeven belastingtools voor Join Administraties en DK Accountants:
 betalingskenmerk, VIES BTW-controle, KvK/SBI, belastingrente IB en VpB,
 invorderingsrente, auto BTW privé. Begonnen als betalingskenmerk-tool; heet sinds 18-08-2026
-`belastingtooljoindk`. Hoort **niet** bij de portal op bouwman.tools en heet dus
-nooit "Bouwman Tools".
+`belastingtooljoindk`. Staat als tegel in het portaal van bouwman.tools (register:
+`in_portal: true`, met een link naar de Streamlit-app; besluit 04-10-2026), maar is geen
+onderdeel van Bouwman Tools, valt niet onder Cloudflare Access en heet dus nooit
+"Bouwman Tools".
 
 ## Documentatie
 
@@ -81,7 +83,7 @@ een testomgeving voor collega's (productie komt in een beveiligde omgeving). Gee
 sync naar `bouwman-tools`. Repo is publiek: geen klantgegevens in tests,
 voorbeelden of commits — gebruik de voorbeelden uit de officiële specificatie.
 
-Gereed: `python -m pytest -q` groen (nu 492 tests), gewijzigde logica gedekt door
+Gereed: `python -m pytest -q` groen (nu 516 tests), gewijzigde logica gedekt door
 een test, README of WIJZIGINGSRAPPORT bijgewerkt waar dat geldt.
 
 Open punt: samenvoegen met de WWFT multi-page app (`pages/` plus losse modules
