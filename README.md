@@ -148,10 +148,12 @@ eigen rekenmethode.
 - **Eerste rentedag.** De rente van art. 28 begint op de dag ná de uiterste
   betaaldatum, want pas dan is de aanslag invorderbaar. Zo rekenen ook de
   Belastingdienst en model 02-04; tot 29-09-2026 begon de tool een dag eerder
-- **Drie grondslagen.** Art. 28 (rente bij te late betaling, in rekening gebracht),
-  art. 28a (vergoeding als de ontvanger niet binnen zes weken uitbetaalt) en art. 28b
-  (vergoeding bij vermindering na een afgewezen uitstelverzoek). Art. 28c, de heffing in
-  strijd met het Unierecht, wordt alleen gesignaleerd en niet berekend
+- **Vier grondslagen.** Art. 28 (rente bij te late betaling, in rekening gebracht),
+  art. 28a (vergoeding als de ontvanger niet binnen zes weken uitbetaalt), art. 28b
+  (vergoeding bij vermindering na een afgewezen uitstelverzoek, vanaf de dag na de
+  vervaldag zoals de Belastingdienst het uitvoert) en art. 28c (vergoeding op verzoek bij
+  heffing in strijd met het Unierecht, van de dag na de betaling tot de dag vóór de
+  terugbetaling)
 - **Eigen dagentelling.** Art. 31 van de Uitvoeringsregeling IW 1990 telt de maand waarin
   de enige of laatste betalingstermijn vervalt op haar werkelijke aantal dagen, met
   februari altijd op 28, en verder 30 dagen per maand en 360 per jaar. Dat is dus niet de
@@ -165,9 +167,12 @@ eigen rekenmethode.
   een apart percentage voor vergoedingen, gekoppeld aan de wettelijke rente met een bodem
   van 4 procent. In de tweede helft van 2023 verschilt dat meer dan een beetje: 3 procent
   in rekening tegenover 6 procent vergoed
-- **Uitstel wordt uitgevraagd, niet gerekend.** De opschorting van art. 28 lid 3 zit niet
-  in deze versie. De pagina vraagt of er uitstel is verleend en op welke grond, en geeft
-  geen uitkomst zolang dat niet is ingevuld
+- **Uitstel.** De pagina vraagt of er uitstel is verleend, op welke grond en voor welke
+  periode, en laat de rente over die tijd weg (art. 28 lid 3). Is het uitstel door de
+  ontvanger beëindigd, dan herleeft de rente op de dag die art. 6 Uitvoeringsbesluit IW 1990
+  aanwijst. Bij betaling na afloop van de uitsteltermijn voor de gronden van art. 28 lid 4
+  geeft de tool geen bedrag, omdat de wet het tijdvak daarvoor niet vastlegt; zonder antwoord
+  op de uitstelvraag komt er ook geen uitkomst
 - **Uitzonderingen.** De twee gevallen die op grond van art. 28 lid 5 zijn aangewezen in
   het Uitvoeringsbesluit IW 1990 staan als aanvinkbare lijst op de pagina, samen met de
   beleidsmatige vermindering uit de Leidraad Invordering 2008
@@ -215,7 +220,7 @@ Berekent de BTW-correctie en bijtelling voor privégebruik van een zakelijke aut
 | `pages/KvK_SBI_Opzoeken.py` | KvK / SBI opzoeken op naam, KvK-nr of RSIN |
 | `pages/Belastingrente_IB.py` | Belastingrente IB calculator |
 | `pages/Belastingrente_VpB.py` | Belastingrente VpB calculator |
-| `pages/Invorderingsrente.py` | Invorderingsrente art. 28, 28a en 28b (signalering art. 28c) |
+| `pages/Invorderingsrente.py` | Invorderingsrente art. 28, 28a, 28b en 28c, met uitstel |
 | `pages/Auto_BTW_Prive.py` | Auto BTW privé calculator (RDW-koppeling) |
 | `_auto_paste.py` | Streamlit custom component declaratie (paste-detectie) |
 | `_components/auto_paste/` | HTML/JS voor de paste-component |

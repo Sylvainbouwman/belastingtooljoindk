@@ -1,10 +1,10 @@
 """Voer de echte invorderingsrentepagina uit met een nagebouwde Streamlit.
 
 De pagina bevat geen rekenlogica maar wel de blokkades, en juist die blokkades
-zijn het antwoord op twee keuzes van Sylvain: de opschorting tijdens uitstel
-wordt niet doorgerekend maar uitgevraagd, en art. 28c wordt alleen gesignaleerd.
-Een blokkade die stilletjes wegvalt levert een te hoog bedrag op, dus zij hoort
-onder test te staan.
+beschermen de rekenkern: zonder antwoord op de uitstelvraag en zonder tijdig
+verzoek bij art. 28c komt er geen uitkomst, en waar de wet het tijdvak open laat
+(betaling na afloop van het uitstel) blijft het bij een melding. Een blokkade die
+stilletjes wegvalt levert een te hoog bedrag op, dus zij hoort onder test te staan.
 
 Er wordt geen Streamlit-server gestart en er gaat geen verkeer naar buiten. De
 nep-Streamlit geeft per widget de opgegeven waarde terug, gezocht op een stukje
@@ -124,13 +124,12 @@ def test_uitstel_nee_geeft_wel_een_uitkomst():
     assert nep.uitkomst_getoond is True
 
 
-def test_uitstel_ja_blokkeert_en_noemt_de_grond():
-    """Art. 28 lid 3 IW 1990 schort de rente op; deze versie rekent dat niet door."""
+def test_uitstel_ja_zonder_einddatum_schort_de_rente_op_en_geeft_een_uitkomst():
+    """Art. 28 lid 3 IW 1990: geen rente over de tijd waarvoor uitstel is verleend."""
     nep = pagina(**{"uitstel van betaling verleend?": "ja",
                     "Op welke grond": "25-21"})
-    assert nep.uitkomst_getoond is False
-    assert meldingen_met(nep, "error", "rekent de opschorting tijdens uitstel niet door")
-    assert meldingen_met(nep, "error", "art. 25 lid 21")
+    assert nep.uitkomst_getoond is True
+    assert meldingen_met(nep, "info", "uitstel van betaling was verleend")
 
 
 def test_uitstel_ja_zonder_grond_vraagt_de_grond():
@@ -139,17 +138,45 @@ def test_uitstel_ja_zonder_grond_vraagt_de_grond():
     assert meldingen_met(nep, "error", "Vul de grond van het uitstel in")
 
 
-def test_herlevingstijdvak_wordt_getoond_bij_een_grond_uit_artikel_6_lid_1():
+def test_beeindigd_uitstel_zonder_datum_van_de_gebeurtenis_vraagt_die_datum():
+    nep = pagina(**{"uitstel van betaling verleend?": "ja", "Op welke grond": "25-5",
+                    "door de ontvanger beëindigd": True})
+    assert nep.uitkomst_getoond is False
+    assert meldingen_met(nep, "error", "Vul de datum in van de handeling")
+
+
+def test_beeindigd_uitstel_toont_de_herlevingsdatum():
     """Art. 28 lid 4 IW 1990 met art. 6 lid 1 Uitvoeringsbesluit IW 1990."""
-    nep = pagina(**{"uitstel van betaling verleend?": "ja", "Op welke grond": "25-5"})
-    assert meldingen_met(nep, "info", "eerste dag van het jaar volgend")
+    nep = pagina(**{"uitstel van betaling verleend?": "ja", "Op welke grond": "25-5",
+                    "Dagtekening aanslagbiljet": date(2025, 1, 15),
+                    "Datum van de betaling": date(2026, 6, 10),
+                    "Uitstel verleend vanaf": date(2025, 2, 27),
+                    "door de ontvanger beëindigd": True,
+                    "Datum van de handeling of gebeurtenis": date(2025, 9, 15)})
+    assert nep.uitkomst_getoond is True
+    gezien = " ".join(t for _, t in nep.meldingen)
+    assert "Rente herleeft op | 12-02-2026" in gezien
+
+
+def test_betaling_na_de_uitsteltermijn_bij_een_grond_van_lid_4_geeft_geen_uitkomst():
+    """Art. 28 lid 4: het tijdvak laat de wet aan een AMvB die het niet regelt."""
+    nep = pagina(**{"uitstel van betaling verleend?": "ja", "Op welke grond": "25-5",
+                    "Uitstel verleend tot en met": date.today() - timedelta(days=10)})
+    assert nep.uitkomst_getoond is False
+    assert meldingen_met(nep, "error", "algemene maatregel van bestuur")
+
+
+def test_betaling_na_de_uitsteltermijn_bij_artikel_25_lid_3_geeft_wel_een_uitkomst():
+    nep = pagina(**{"uitstel van betaling verleend?": "ja", "Op welke grond": "25-3",
+                    "Uitstel verleend tot en met": date.today() - timedelta(days=10)})
+    assert nep.uitkomst_getoond is True
 
 
 def test_grond_zonder_aangewezen_herlevingstijdvak_beweert_niets():
     """Art. 25 lid 3 staat in art. 28 lid 3 maar niet in lid 4, en art. 6 van het
-    Uitvoeringsbesluit wijst er geen tijdvak voor aan."""
+    Uitvoeringsbesluit wijst er geen tijdvak voor aan: geen vraag naar beëindiging."""
     nep = pagina(**{"uitstel van betaling verleend?": "ja", "Op welke grond": "25-3"})
-    assert meldingen_met(nep, "info", "geen herlevingstijdvak voor aan")
+    assert meldingen_met(nep, "caption", "geen herlevingstijdvak voor aan")
 
 
 # ── Art. 28 lid 5: de aangewezen uitzonderingen ─────────────────────────────
@@ -267,18 +294,52 @@ def test_artikel_28b_vraagt_niet_naar_uitstel():
     assert not meldingen_met(nep, "error", "uitstel van betaling is verleend")
 
 
-# ── Art. 28c: alleen signalering ────────────────────────────────────────────
+# ── Art. 28c: vergoeding bij heffing in strijd met het Unierecht ────────────
 
-def test_artikel_28c_wordt_gesignaleerd_en_niet_gerekend():
-    nep = pagina(**{"uitstel van betaling verleend?": "nee"})
-    getoond = " ".join(t for _, t in nep.meldingen)
-    assert "art. 28c IW 1990" in getoond
-    assert "rekent die grondslag niet uit" in getoond
-
-
-def test_de_pagina_kent_geen_grondslag_28c():
-    """Art. 28c mag niet als rekenoptie in de keuzelijst staan."""
-    nep = pagina(**{"uitstel van betaling verleend?": "nee"})
-    assert nep.antwoorden.get("Welke grondslag?") is None
+def test_artikel_28c_staat_in_de_keuzelijst():
     bron = PAGINA.read_text(encoding="utf-8")
-    assert '"28c":' not in bron.split("GRONDSLAGEN = {", 1)[1].split("}", 1)[0]
+    assert '"28c":' in bron.split("GRONDSLAGEN = {", 1)[1].split("}", 1)[0]
+
+
+def test_artikel_28c_zonder_antwoord_over_het_verzoek_geeft_geen_uitkomst():
+    """Art. 28c lid 1 en 3: alleen op verzoek, binnen zes weken na de beschikking."""
+    nep = pagina(**{"Welke grondslag?": "28c"})
+    assert nep.uitkomst_getoond is False
+    assert meldingen_met(nep, "error", "Nog geen uitkomst")
+
+
+def test_artikel_28c_zonder_tijdig_verzoek_geeft_geen_vergoeding():
+    nep = pagina(**{"Welke grondslag?": "28c", "tijdig ingediend?": "nee"})
+    assert nep.uitkomst_getoond is False
+    assert meldingen_met(nep, "error", "Zonder tijdig verzoek")
+
+
+def test_artikel_28c_rekent_met_een_tijdig_verzoek():
+    nep = pagina(**{"Welke grondslag?": "28c", "tijdig ingediend?": "ja"})
+    assert nep.uitkomst_getoond is True
+
+
+def test_artikel_28c_zonder_dagen_in_het_tijdvak_geeft_geen_vergoeding():
+    vandaag = date.today()
+    nep = pagina(**{"Welke grondslag?": "28c", "tijdig ingediend?": "ja",
+                    "Datum waarop de belasting is betaald": vandaag,
+                    "Datum van de terugbetaling": vandaag})
+    assert nep.uitkomst_getoond is False
+    assert meldingen_met(nep, "success", "bevat hier geen dag")
+
+
+def test_artikel_28c_vraagt_de_periode_van_de_al_vergoede_belastingrente():
+    nep = pagina(**{"Welke grondslag?": "28c", "tijdig ingediend?": "ja",
+                    "belastingrente is vergoed": True})
+    assert nep.uitkomst_getoond is False
+    assert meldingen_met(nep, "error", "Vul beide datums in")
+
+
+def test_artikel_28c_trekt_de_opgegeven_dagen_af():
+    vandaag = date.today()
+    nep = pagina(**{"Welke grondslag?": "28c", "tijdig ingediend?": "ja",
+                    "belastingrente is vergoed": True,
+                    "Vergoede belastingrente: vanaf": vandaag - timedelta(days=300),
+                    "Vergoede belastingrente: tot en met": vandaag - timedelta(days=200)})
+    assert nep.uitkomst_getoond is True
+    assert meldingen_met(nep, "info", "belastingrente of invorderingsrente op grond van art. 28b")

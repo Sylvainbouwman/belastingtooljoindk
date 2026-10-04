@@ -1,105 +1,19 @@
 # Openstaande punten
 
-Laatst bijgewerkt: 29-09-2026 22:56 CEST. Eerste versie van dit bestand; eerder stonden
+Laatst bijgewerkt: 04-10-2026 15:27 CEST. Eerste versie van dit bestand op 29-09-2026; eerder stonden
 openstaande punten alleen in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging) en, voor
 dit ene punt, in de nu gearchiveerde berichtenmap `PostbusClaude`.
 
-**Stand:** van de 16 punten staan er 9 open en zijn er 7 gesloten. Punt 12 tot en met 16
-zijn op 29-09-2026 toegevoegd bij de gelijkwaardigheidstoets tegen model 02-04; punt 12, 14
-en 16 zijn diezelfde dag gesloten. De zeven fiscale
-punten van de pagina Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md`
-hierheen gehaald; twee daarvan zijn diezelfde dag beslist. Punt 11 is op 27-09-2026
-toegevoegd bij de portefeuillebrede inventarisatie van de uitgangen.
+**Stand:** van de 16 punten staat er 1 open en zijn er 15 gesloten. Open is punt 13: het
+concept voor de terugmelding aan Wolters Kluwer ligt klaar en wacht op verzending door
+Sylvain. Op 04-10-2026 zijn punt 2, 3, 4, 5, 6, 10, 11 en 15 gesloten, in een sessie die alle
+open punten afrondde: punt 4 en 5 zijn daarbij gebouwd, punt 2, 3, 6, 10, 11 en 15 zijn met
+een besluit van Sylvain gesloten. Punt 12 tot en met 16 zijn op 29-09-2026 toegevoegd bij
+de gelijkwaardigheidstoets tegen model 02-04. De zeven fiscale punten van de pagina
+Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md` hierheen gehaald, en punt 11
+is op 27-09-2026 toegevoegd bij de portefeuillebrede inventarisatie van de uitgangen.
 
 ## Open
-
-Deze punten stonden tot 20-09-2026 alleen in `WIJZIGINGSRAPPORT.md`, paragraaf L10.7. Zij
-raken alle de pagina Invorderingsrente. Ze zijn hierheen gehaald omdat de index over de
-repository's heen naar dit bestand kijkt en ze daar dus niet zag; het wijzigingsrapport
-verwijst nu hierheen.
-
-### 2. Hoe telt een gedeeltelijke maand die niet de vervalmaand is?
-
-**Status:** open. **Eigenaar:** Sylvain Bouwman. **Vindplaats:** `_invorderingsrente.py`,
-`WIJZIGINGSRAPPORT.md` L10.7 punt 2.
-
-Art. 31 URIW noemt de vervalmaand en de volle maand, maar niet met zoveel woorden de
-laatste, onvolledige maand van een tijdvak. De module telt die naar rato binnen een
-maandlengte van 30, dezelfde systematiek die `dagen_30_360()` gebruikt. Dat volgt uit
-onderdeel b maar staat er niet letterlijk.
-
-### 3. Welke formule geldt voor een vergoeding?
-
-**Status:** open. **Eigenaar:** Sylvain Bouwman. **Vindplaats:** `_invorderingsrente.py`,
-`WIJZIGINGSRAPPORT.md` L10.7 punt 3.
-
-Art. 30 URIW is naar zijn tekst geschreven voor de in rekening te brengen rente over een
-betaling. Voor art. 28a en 28b kent de regeling geen eigen formule. De module gebruikt
-dezelfde enkelvoudige formule met het uit te betalen respectievelijk het terug te geven
-bedrag als grondslag; de wet noemt die grondslag zelf in art. 28b lid 2, slot.
-
-### 4. Uitstel wordt niet doorgerekend
-
-**Status:** open, als bekende beperking. **Eigenaar:** Sylvain Bouwman.
-**Vindplaats:** `WIJZIGINGSRAPPORT.md` L10.7 punt 5.
-
-Dat is een keuze van Sylvain en geen tekort van het onderzoek, maar het blijft een grens:
-voor een aanslag waarvoor uitstel is verleend geeft de tool geen bedrag. Staat hier zodat
-zichtbaar blijft wat de tool niet doet.
-
-### 5. Art. 28c wordt niet gerekend
-
-**Status:** open, als bekende beperking. **Eigenaar:** Sylvain Bouwman.
-**Vindplaats:** `WIJZIGINGSRAPPORT.md` L10.7 punt 6.
-
-Ook een keuze van Sylvain. De pagina signaleert wel de grond en de verzoektermijn van zes
-weken, maar rekent het bedrag niet uit.
-
-### 6. De vier tijdvakken zijn niet aan uitvoeringsbeleid of rechtspraak getoetst
-
-**Status:** open. **Eigenaar:** Sylvain Bouwman. **Vindplaats:**
-`WIJZIGINGSRAPPORT.md` L10.7 punt 7.
-
-Zij zijn uit de wettekst overgenomen, net als in de onderzoeksnotitie. De Leidraad
-Invordering 2008 is wel nagelezen op afwijkingen en gaf er op dit punt geen. Wat ontbreekt
-is een toets aan rechtspraak en aan gepubliceerd uitvoeringsbeleid daarbuiten.
-
-### 10. Hoort deze tool in het portaal van bouwman.tools, of niet?
-
-**Status:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 20-09-2026.
-
-`AGENTS.md` van deze repository opent met: "Hoort **niet** bij de portal op bouwman.tools
-en heet dus nooit Bouwman Tools." Het toolregister zegt het omgekeerde: `in_portal` staat
-op `true`, met een `url` naar `belastingtooljoindk.streamlit.app`. Het portaal bouwt zijn
-kaarten uit dat register op, dus de tool wordt daar getoond met een link naar de
-Streamlit-app.
-
-Dat is geen fout in het register: er staan drie tools zo in, naast deze ook `auditfile-app`
-en `dba-risicoscan`. Maar een van de twee teksten klopt niet, en dat maakt uit voor wie de
-tool ziet en welke status-tag daarbij hoort.
-
-**Wat er moet gebeuren:** vaststellen welke van de twee de bedoeling is. Hoort hij in het
-portaal, dan moet die zin uit `AGENTS.md`. Hoort hij er niet in, dan moet `in_portal` naar
-`false` en verdwijnt de kaart. Niet zelf gekozen, want het raakt wie de tool te zien krijgt.
-
-### 11. Krijgt deze tool (of zijn zes onderdelen) een dossierstuk, Excel-export of dossierbestand?
-
-**Status:** open, bewust niet nu opgepakt. **Eigenaar:** Sylvain Bouwman. **Gevonden op**
-27-09-2026, bij de portefeuillebrede inventarisatie van de uitgangen.
-
-`tools.json` in `bouwman-tools` heeft voor `belastingtool-joindk` alle drie de
-uitgangen op `false` staan. Besloten op 27-09-2026: nu geen bouwsessie hiervoor. Twee
-redenen. Ten eerste raakt dit een Streamlit-app en niet de single-file HTML-opzet
-waarvoor de skill `tool-uitgangen` is geschreven; de standaardaanpak (een `@media
-print`-blok, een bevroren werkblad, een JSON-dossierbestand) veronderstelt een
-losstaand HTML-bestand en moet voor Streamlit eerst worden vertaald. Ten tweede is er
-overlap met `Berekeningen` (zie punt 1 hierboven, en de open vraag in punt 10 of deze
-tool zelfs in het portaal hoort): eerst bouwen op een plek die mogelijk verdwijnt of
-van eigenaar wisselt, is voorbarig werk.
-
-**Wat er moet gebeuren, ná punt 10:** zodra vaststaat of deze tool blijft en waar de
-belastingrente/revisierente-onderdelen definitief wonen, opnieuw beoordelen of een
-uitgang per onderdeel zinvol is, en zo ja, hoe dat in Streamlit vorm krijgt.
 
 ### 13. Fouten in model 02-04, terug te melden aan Wolters Kluwer
 
@@ -133,9 +47,182 @@ dag van de invorderingsrente en een consequente afronding naar beneden.
 **Wat er moet gebeuren:** beslissen of en hoe dit aan Wolters Kluwer wordt teruggemeld.
 Niet zelf gedaan: dat is een bericht naar buiten.
 
+**Stand 04-10-2026:** het concept van het bericht staat in
+`terugmelding-wolters-kluwer-model-02-04.md`. Sylvain verstuurt het zelf; het punt sluit
+zodra hij zegt dat het verstuurd is.
+
+## Gesloten
+
+### 2. Hoe telt een gedeeltelijke maand die niet de vervalmaand is?
+
+**Gesloten op 04-10-2026, besluit van Sylvain Bouwman.** De bron-controleur zocht in de
+wettekst, de Leidraad Invordering 2008 (art. 28 en 28a/28b), belastingdienst.nl en
+rechtspraak naar een regel voor de laatste onvolledige maand en vond niets. De
+rekenvoorbeelden van de Belastingdienst gebruiken alleen volle maanden. **Besluit:** de
+tool telt die maand naar rato binnen 30 dagen, afgeleid uit art. 31 onderdeel b URIW, en
+dat blijft zo.
+
+**Wat onzeker blijft:** belastingdienst.nl zegt "voor een volle maand tellen wij 30 dagen
+(voor februari 28 dagen)", ruimer dan art. 31, waar alleen de vervalmaand februari op 28
+telt. De tool volgt de wettekst. Heroverwegen zodra beleid of een uitspraak over de
+onvolledige maand verschijnt.
+
+**Status tot 04-10-2026:** open. **Eigenaar:** Sylvain Bouwman. **Vindplaats:** `_invorderingsrente.py`,
+`WIJZIGINGSRAPPORT.md` L10.7 punt 2.
+
+Art. 31 URIW noemt de vervalmaand en de volle maand, maar niet met zoveel woorden de
+laatste, onvolledige maand van een tijdvak. De module telt die naar rato binnen een
+maandlengte van 30, dezelfde systematiek die `dagen_30_360()` gebruikt. Dat volgt uit
+onderdeel b maar staat er niet letterlijk.
+
+### 3. Welke formule geldt voor een vergoeding?
+
+**Gesloten op 04-10-2026, besluit van Sylvain Bouwman.** De grondslag (het uit te betalen
+respectievelijk terug te geven bedrag) is bevestigd door art. 28b lid 2, slot, en door
+KG:207:2022:2, antwoord 3 (Kennisgroep Belastingdienst, 28-03-2023). Voor de formule bij
+een vergoeding is niets gevonden: de Leidraad zegt dat er op art. 28a en 28b geen
+beleidsregels zijn gemaakt, en art. 30 lid 1 URIW spreekt van de in rekening te brengen
+rente. Art. 32 lid 2 URIW (afronding van de "te vergoeden invorderingsrente") wijst er
+indirect op dat het hoofdstuk ook voor een vergoeding geldt. **Besluit:** dezelfde
+enkelvoudige formule blijft gelden. Heroverwegen bij beleid of een uitspraak.
+
+**Status tot 04-10-2026:** open. **Eigenaar:** Sylvain Bouwman. **Vindplaats:** `_invorderingsrente.py`,
+`WIJZIGINGSRAPPORT.md` L10.7 punt 3.
+
+Art. 30 URIW is naar zijn tekst geschreven voor de in rekening te brengen rente over een
+betaling. Voor art. 28a en 28b kent de regeling geen eigen formule. De module gebruikt
+dezelfde enkelvoudige formule met het uit te betalen respectievelijk het terug te geven
+bedrag als grondslag; de wet noemt die grondslag zelf in art. 28b lid 2, slot.
+
+### 4. Uitstel wordt niet doorgerekend
+
+**Gesloten op 04-10-2026: gebouwd, op besluit van Sylvain Bouwman ("alsnog bouwen").** De
+pagina rekent nu de opschorting van art. 28 lid 3 en de herleving van lid 4 met art. 6
+Uitvoeringsbesluit IW 1990 (`_invorderingsrente.uitstel_uitsluiting` en
+`herlevingsdatum`). De gebruiker vult de grond, de begindatum en eventueel de einddatum
+van het uitstel in, en bij een beëindiging de datum van de gebeurtenis. De
+bron-controleur toetste de regels op 04-10-2026 aan de wettekst: art. 28, art. 25 en
+art. 6 Uitvoeringsbesluit kloppen. Twee doorgerekende gevallen staan in de tests.
+
+**Wat de tool bewust niet rekent, en daarvoor een melding geeft in plaats van een
+bedrag:**
+
+- Betaling na afloop van de uitsteltermijn bij de gronden van art. 28 lid 4. De wet laat
+  het tijdvak aan een algemene maatregel van bestuur en art. 6 Uitvoeringsbesluit regelt
+  alleen de beëindiging. De Leidraad kent beleid voor lid 9, 11 en 17 tot en met 19
+  (onderdeel 74.5, 74.5a, 74.10 en 74.11), maar of dat ook het gewoon aflopen van de
+  termijn dekt is uitleg. Voor lid 5, 8 en 21 is niets gevonden.
+- Een beëindigd uitstel op grond van art. 25 lid 3: lid 4 noemt die grond niet.
+
+**Aanname die blijft:** bij uitstel op grond van art. 25 lid 5 of 8 neemt de tool "de dag
+waarop zes weken zijn verstreken na de eerste dag van het jaar" als die dag zelf (1 januari
+plus 42 dagen, dus 12 februari) en niet een dag later. Art. 6 lid 1 zegt "met ingang van de
+dag waarop", lid 2 zegt "de dag volgende op". Geen gelezen bron beslist het; het verschil is
+één dag rente. De nota van toelichting bij de oorspronkelijke tekst (Stb. 1991, 718) is
+alleen als scan beschikbaar en niet gelezen.
+
+**Status tot 04-10-2026:** open, als bekende beperking. **Eigenaar:** Sylvain Bouwman.
+**Vindplaats:** `WIJZIGINGSRAPPORT.md` L10.7 punt 5.
+
+Dat is een keuze van Sylvain en geen tekort van het onderzoek, maar het blijft een grens:
+voor een aanslag waarvoor uitstel is verleend geeft de tool geen bedrag. Staat hier zodat
+zichtbaar blijft wat de tool niet doet.
+
+### 5. Art. 28c wordt niet gerekend
+
+**Gesloten op 04-10-2026: gebouwd, op besluit van Sylvain Bouwman.** Art. 28c staat nu in de
+keuzelijst (`_invorderingsrente.periode_art28c`). Het tijdvak loopt van de dag na de betaling
+tot de dag vóór de terugbetaling, met het terug te geven bedrag als grondslag en de te
+vergoeden tariefreeks, zonder vervalmaand (30 dagen per maand). De gebruiker geeft aan of het
+verzoek tijdig is ingediend (uiterlijk zes weken na de beschikking) en kan de dagen opgeven
+waarover belastingrente of invorderingsrente op grond van art. 28b wordt vergoed; die tellen
+niet mee. Bron-controleur 04-10-2026: tijdvak, grondslag, uitsluiting en verzoektermijn
+kloppen. Wat de tool niet toetst: of de heffing werkelijk in strijd met het Unierecht is en of
+er een beschikking ligt; dat vult de gebruiker in.
+
+**Status tot 04-10-2026:** open, als bekende beperking. **Eigenaar:** Sylvain Bouwman.
+**Vindplaats:** `WIJZIGINGSRAPPORT.md` L10.7 punt 6.
+
+Ook een keuze van Sylvain. De pagina signaleert wel de grond en de verzoektermijn van zes
+weken, maar rekent het bedrag niet uit.
+
+### 6. De vier tijdvakken zijn niet aan uitvoeringsbeleid of rechtspraak getoetst
+
+**Gesloten op 04-10-2026.** Beoordeeld als de vier tijdvakken van art. 28, 28a, 28b en 28c.
+De bron-controleur toetste ze aan de wet, de Leidraad, KG:207:2022:2 (Kennisgroep
+Belastingdienst, 28-03-2023), belastingdienst.nl (Invorderingsrente) en rechtspraak (HR
+2024:756, HR 2024:853, RBNHO 2020:7456 en RBNNE 2020:1995). Bevestigd: het tijdvak van art.
+28 en 28a, het einde van 28b, art. 28c en alle percentages. Afwijkend: de eerste dag van art.
+28b lag een dag later dan de uitvoering. **Besluit van Sylvain op 04-10-2026: de uitvoering
+volgen.** Het tijdvak begint nu de dag na de vervaldag (`periode_art28b`); een vergoeding
+wordt daardoor een dag hoger. Dit vervangt wat bij punt 12 over art. 28b stond. Geen
+uitspraak gevonden over de dagentelling of de formule. De database van rechtspraak.nl is niet
+rechtstreeks doorzocht, alleen via een zoekmachine.
+
+**Status tot 04-10-2026:** open. **Eigenaar:** Sylvain Bouwman. **Vindplaats:**
+`WIJZIGINGSRAPPORT.md` L10.7 punt 7.
+
+Zij zijn uit de wettekst overgenomen, net als in de onderzoeksnotitie. De Leidraad
+Invordering 2008 is wel nagelezen op afwijkingen en gaf er op dit punt geen. Wat ontbreekt
+is een toets aan rechtspraak en aan gepubliceerd uitvoeringsbeleid daarbuiten.
+
+### 10. Hoort deze tool in het portaal van bouwman.tools, of niet?
+
+**Gesloten op 04-10-2026, besluit van Sylvain Bouwman: de tegel blijft in het portaal.** Het
+register (`in_portal: true`, met een link naar de Streamlit-app) klopt dus. De zin in
+`AGENTS.md` is aangepast: de tool staat als tegel in het portaal maar valt niet onder
+Cloudflare Access en heet nooit "Bouwman Tools". Voor de gebruiker verandert niets.
+
+**Status tot 04-10-2026:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 20-09-2026.
+
+`AGENTS.md` van deze repository opent met: "Hoort **niet** bij de portal op bouwman.tools
+en heet dus nooit Bouwman Tools." Het toolregister zegt het omgekeerde: `in_portal` staat
+op `true`, met een `url` naar `belastingtooljoindk.streamlit.app`. Het portaal bouwt zijn
+kaarten uit dat register op, dus de tool wordt daar getoond met een link naar de
+Streamlit-app.
+
+Dat is geen fout in het register: er staan drie tools zo in, naast deze ook `auditfile-app`
+en `dba-risicoscan`. Maar een van de twee teksten klopt niet, en dat maakt uit voor wie de
+tool ziet en welke status-tag daarbij hoort.
+
+**Wat er moet gebeuren:** vaststellen welke van de twee de bedoeling is. Hoort hij in het
+portaal, dan moet die zin uit `AGENTS.md`. Hoort hij er niet in, dan moet `in_portal` naar
+`false` en verdwijnt de kaart. Niet zelf gekozen, want het raakt wie de tool te zien krijgt.
+
+### 11. Krijgt deze tool (of zijn zes onderdelen) een dossierstuk, Excel-export of dossierbestand?
+
+**Gesloten op 04-10-2026, besluit van Sylvain Bouwman.** Punt 10 is beslist: de tool blijft
+in het portaal. De Streamlit-app krijgt in deze testomgeving geen dossierstuk, Excel-export
+of dossierbestand. Dat hoort bij de overdracht aan de platformbouw, waar de productieversie
+in een beveiligde omgeving komt. De drie uitgangen blijven in `tools.json` op `false`.
+Komt de vraag uit de collega-test, dan start die als eigen sessie.
+
+**Status tot 04-10-2026:** open, bewust niet nu opgepakt. **Eigenaar:** Sylvain Bouwman. **Gevonden op**
+27-09-2026, bij de portefeuillebrede inventarisatie van de uitgangen.
+
+`tools.json` in `bouwman-tools` heeft voor `belastingtool-joindk` alle drie de
+uitgangen op `false` staan. Besloten op 27-09-2026: nu geen bouwsessie hiervoor. Twee
+redenen. Ten eerste raakt dit een Streamlit-app en niet de single-file HTML-opzet
+waarvoor de skill `tool-uitgangen` is geschreven; de standaardaanpak (een `@media
+print`-blok, een bevroren werkblad, een JSON-dossierbestand) veronderstelt een
+losstaand HTML-bestand en moet voor Streamlit eerst worden vertaald. Ten tweede is er
+overlap met `Berekeningen` (zie punt 1 hierboven, en de open vraag in punt 10 of deze
+tool zelfs in het portaal hoort): eerst bouwen op een plek die mogelijk verdwijnt of
+van eigenaar wisselt, is voorbarig werk.
+
+**Wat er moet gebeuren, ná punt 10:** zodra vaststaat of deze tool blijft en waar de
+belastingrente/revisierente-onderdelen definitief wonen, opnieuw beoordelen of een
+uitgang per onderdeel zinvol is, en zo ja, hoe dat in Streamlit vorm krijgt.
+
 ### 15. Twee rekenvoorbeelden van de Belastingdienst spreken elkaar tegen
 
-**Status:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 29-09-2026.
+**Gesloten op 04-10-2026, besluit van Sylvain Bouwman.** Er verandert niets in de tool: die
+volgt de wet (art. 30fc lid 2 AWR met art. 9 IW 1990 en onderdeel 9.5 Leidraad) en het
+eerste voorbeeld. Het tweede voorbeeld op belastingdienst.nl rekent een dag verder, en dat
+blijft een afwijking van de Belastingdienst zelf. Heroverwegen als de Belastingdienst het
+voorbeeld aanpast of uitlegt.
+
+**Status tot 04-10-2026:** open. **Eigenaar:** Sylvain Bouwman. **Gevonden op** 29-09-2026.
 **Vindplaats:** belastingdienst.nl, "Belastingrente betalen bij inkomstenbelasting",
 geraadpleegd 29-09-2026.
 
@@ -147,7 +234,6 @@ pagina tot en met 9 augustus 2024, dagtekening plus 43 dagen; de tool komt op 8 
 
 **Wat er moet gebeuren:** niets in de tool. Heroverwegen als de Belastingdienst het voorbeeld
 aanpast of uitlegt; eventueel melden bij de Belastingdienst.
-## Gesloten
 
 ### 16. Een naam uit model 02-04 stond in punt 1 van dit bestand
 
@@ -203,7 +289,8 @@ een keuze liet. Voorgelegd met advies; alle vier volgens advies beslist.
    begon op de uiterste betaaldatum zelf en rekende daardoor een dag meer dan het model en
    de Belastingdienst ("vanaf de dag na de uiterste betaaldatum"), en telde die dag ook in
    de belastingrente mee. Hersteld. Gevolg voor art. 28b: dat tijdvak begint "de dag na" de
-   invorderbaarheid en schuift dus ook een dag op.
+   invorderbaarheid en schuift dus ook een dag op. **Bijgewerkt op 04-10-2026:** art. 28b
+   begint toch de dag na de vervaldag, zoals de Belastingdienst het uitvoert; zie punt 6.
 2. **Afronding van de belastingrente blijft per tariefperiode**, zoals het rekenvoorbeeld
    van de Belastingdienst (93 + 9 = 102). Het model en de letterlijke tekst van art. 31
    lid 2 Uitvoeringsregeling AWR ronden één keer af (103). Verklaard verschil; de tool komt

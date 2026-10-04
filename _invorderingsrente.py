@@ -2,8 +2,8 @@
 
 Bewust vrij van Streamlit-afhankelijkheden, net als `_rente.py`. Deze module
 rekent de invorderingsrente van artikel 28 (in rekening brengen), artikel 28a en
-artikel 28b (vergoeden). Artikel 28c wordt niet gerekend maar alleen
-gesignaleerd; zie ART28C_SIGNALERING onderaan.
+artikel 28b en artikel 28c (vergoeden), met de opschorting tijdens uitstel van
+artikel 28 lid 3 en 4; zie `uitstel_uitsluiting()` en `periode_art28c()`.
 
 Alle bronnen hieronder zijn opgehaald uit de KOOP-repository
 (repository.officiele-overheidspublicaties.nl/bwb/<BWB>/<versie>/xml/...) op
@@ -119,10 +119,10 @@ VERZOEK_WEKEN_28C = 6         # art. 28c lid 3 IW 1990
 
 # ── Uitstel ─────────────────────────────────────────────────────────────────
 # Art. 28 lid 3 schort de rente op tijdens uitstel krachtens negen leden van
-# art. 25. Op verzoek van Sylvain wordt die opschorting in deze versie NIET
-# gerekend: de tool vraagt uit of er uitstel is verleend en op welke grond, en
-# geeft geen uitkomst zolang dat niet is ingevuld. Zie het blokkeerpad in
-# pages/Invorderingsrente.py.
+# art. 25. De opschorting wordt gerekend in `uitstel_uitsluiting()`; wat de wet
+# niet regelt (betaling na afloop van de uitsteltermijn bij de gronden van lid 4)
+# geeft geen uitkomst. Tot 04-10-2026 rekende de tool de opschorting niet door
+# (OPENSTAAND.md punt 4).
 UITSTELGRONDEN = [
     ("25-3", "art. 25 lid 3 — schenk- of erfbelasting, sociaal-economisch of cultureel belang"),
     ("25-5", "art. 25 lid 5 — geconserveerd inkomen uit loon- en lijfrentesfeer"),
@@ -136,8 +136,14 @@ UITSTELGRONDEN = [
 ]
 
 # Art. 28 lid 4: wordt het uitstel beëindigd, dan loopt de rente alsnog. Het
-# tijdvak daarvoor staat in art. 6 Uitvoeringsbesluit IW 1990. Ook dat wordt
-# hier niet gerekend, maar wel getoond, zodat zichtbaar is wat er dan geldt.
+# tijdvak daarvoor staat in art. 6 Uitvoeringsbesluit IW 1990; `herlevingsdatum()`
+# rekent het uit. De teksten hieronder blijven de vindplaats voor de gebruiker.
+#
+# Onzeker blijft bij lid 5 en 8 of de rente op de dag zelf ingaat waarop zes weken
+# zijn verstreken (1 januari plus 42 dagen, 12 februari) of een dag later: art. 6
+# lid 1 zegt "met ingang van de dag waarop", lid 2 zegt "de dag volgende op", en
+# geen bron die is nagelezen (Leidraad, Stb. 2022, 540) beslist het. De tool kiest de
+# letterlijke lezing, 12 februari; het verschil is één dag rente.
 HERLEVING_NA_UITSTEL = {
     "25-5": "art. 6 lid 1 Uitvoeringsbesluit IW 1990: de rente loopt vanaf de dag "
             "waarop zes weken zijn verstreken na de eerste dag van het jaar volgend "
@@ -212,8 +218,8 @@ UITZONDERINGEN = [
 # Nagelezen in de wettekst zelf en niet overgenomen uit de onderzoeksnotitie.
 # Alleen art. 28a lid 2, tweede volzin, sluit de dagen uit waarover al
 # belastingrente is vergoed. Art. 28c lid 2 doet dat ook, en sluit daarnaast de
-# dagen uit waarover op grond van art. 28b invorderingsrente wordt vergoed —
-# maar art. 28c wordt door deze tool niet gerekend.
+# dagen uit waarover op grond van art. 28b invorderingsrente wordt vergoed;
+# beide uitsluitingen rekent de tool sinds 04-10-2026 bij art. 28c.
 #
 # Art. 28 lid 2 en art. 28b lid 2 kennen die uitsluiting NIET. Art. 28 lid 1
 # kent wel een eigen, andere beperking: geen rente voor zover met de aanslag
@@ -227,7 +233,7 @@ UITSLUITING_BELASTINGRENTE = {
     "28": False,    # art. 28 lid 2 IW 1990 — geen uitsluiting
     "28a": True,    # art. 28a lid 2, tweede volzin IW 1990
     "28b": False,   # art. 28b lid 2 IW 1990 — geen uitsluiting
-    "28c": True,    # art. 28c lid 2, tweede volzin IW 1990 — niet gerekend
+    "28c": True,    # art. 28c lid 2, tweede volzin IW 1990
 }
 
 
@@ -567,17 +573,21 @@ def periode_art28a(dagtekening: date, betaaldatum: date) -> tuple[date, date] | 
 def periode_art28b(vervaldag: date, dagtekening_vermindering: date) -> tuple[date, date] | None:
     """Tijdvak van art. 28b lid 2.
 
-    Vangt aan de dag ná de dag waarop de aanslag invorderbaar is en eindigt zes
-    weken na de dagtekening van de vermindering of herziening. Anders dan bij
-    art. 28 en 28a loopt het tijdvak dus door tot een datum die uit de
+    Eindigt zes weken na de dagtekening van de vermindering of herziening. Anders
+    dan bij art. 28 en 28a loopt het tijdvak dus door tot een datum die uit de
     vermindering volgt en niet tot de dag vóór een betaling.
 
-    'vervaldag' is de laatste dag van de betalingstermijn. De aanslag is de dag
-    daarna invorderbaar (`invorderbaar_op()`), dus het tijdvak vangt twee dagen
-    na de vervaldag aan.
+    'vervaldag' is de laatste dag van de betalingstermijn. Het tijdvak vangt aan
+    op de dag erna (`invorderbaar_op()`). De letterlijke tekst van lid 2 ("de dag
+    na die waarop de aanslag invorderbaar is") zou een dag later geven, maar de
+    Belastingdienst laat de vergoeding de dag na de vervaldag ingaan: KG:207:2022:2
+    (Kennisgroep Belastingdienst, 28-03-2023) en belastingdienst.nl, Invorderingsrente
+    (geraadpleegd 04-10-2026: termijn eindigt 1 mei, vergoeding vanaf 2 mei).
+    Besluit van Sylvain op 04-10-2026 om de uitvoering te volgen; tot dan begon
+    het tijdvak twee dagen na de vervaldag.
     """
     eind = dagtekening_vermindering + timedelta(weeks=VERMINDERING_WEKEN)
-    start = vervaldag + timedelta(days=2)
+    start = vervaldag + timedelta(days=1)
     if eind < start:
         return None
     return start, eind
@@ -592,16 +602,116 @@ def uiterste_verzoekdatum_28c(dagtekening_beschikking: date) -> date:
     return dagtekening_beschikking + timedelta(weeks=VERZOEK_WEKEN_28C)
 
 
-# ── Artikel 28c: alleen signaleren ──────────────────────────────────────────
-ART28C_SIGNALERING = (
+# ── Artikel 28c: vergoeding bij heffing in strijd met het Unierecht ─────────
+# Tekst nagelezen in BWBR0004770 versie 2026-07-01_0 (KOOP, 04-10-2026). Lid 1:
+# op verzoek wordt invorderingsrente vergoed voor zover de ontvanger op grond van
+# een beschikking van de inspecteur belasting moet teruggeven omdat die in strijd
+# met het Unierecht is geheven. Lid 2: enkelvoudig, over het tijdvak vanaf de dag
+# na die van de betaling tot de dag vóór de terugbetaling, met als grondslag het
+# terug te geven bedrag; niet over dagen waarover belastingrente (hoofdstuk VA
+# AWR) of invorderingsrente op grond van art. 28b wordt vergoed. Lid 3: het
+# verzoek moet binnen zes weken na de dagtekening van de beschikking zijn gedaan.
+ART28C_TOELICHTING = (
     "Is de belasting geheven in strijd met het Unierecht en geeft de ontvanger "
-    "terug op grond van een beschikking van de inspecteur, dan bestaat er op "
-    "grond van art. 28c IW 1990 recht op een vergoeding van invorderingsrente "
-    "over het tijdvak van de dag na de betaling tot de dag vóór de terugbetaling. "
-    "Die vergoeding wordt alleen op verzoek gegeven, en de termijn voor dat "
-    "verzoek eindigt zes weken na de dagtekening van die beschikking "
-    "(art. 28c lid 3). Deze tool rekent die grondslag niet uit."
+    "terug op grond van een beschikking van de inspecteur, dan wordt op verzoek "
+    "invorderingsrente vergoed (art. 28c lid 1 IW 1990). Het tijdvak loopt van de "
+    "dag na de betaling tot de dag vóór de terugbetaling, met het terug te geven "
+    "bedrag als grondslag (lid 2). Het verzoek moet binnen zes weken na de "
+    "dagtekening van de beschikking zijn gedaan (lid 3)."
 )
+
+
+def periode_art28c(betaald_op: date, terugbetaald_op: date) -> tuple[date, date] | None:
+    """Tijdvak van art. 28c lid 2: de dag na de betaling tot de dag vóór de terugbetaling.
+
+    Geeft None als dat tijdvak geen dag bevat. Anders dan bij art. 28 is er geen
+    betalingstermijn van een aanslag, dus ook geen vervalmaand in de zin van art. 31
+    onderdeel a URIW: alle maanden vallen onder onderdeel b en tellen 30 dagen. Dat
+    is dezelfde redenering als bij art. 28a (OPENSTAAND.md punt 7).
+    """
+    start = betaald_op + timedelta(days=1)
+    eind = terugbetaald_op - timedelta(days=1)
+    if eind < start:
+        return None
+    return start, eind
+
+
+# ── Uitstel: opschorting en herleving (art. 28 lid 3 en 4) ──────────────────
+
+def herlevingsdatum(grond: str, gebeurtenis: date) -> date | None:
+    """De dag waarop de rente herleeft nadat de ontvanger het uitstel beëindigt.
+
+    Art. 6 lid 1 Uitvoeringsbesluit IW 1990 (uitstel krachtens art. 25 lid 5 of 8):
+    de dag waarop zes weken zijn verstreken na de eerste dag van het jaar volgend
+    op het jaar van de handeling of gebeurtenis. Art. 6 lid 2 (lid 9, 11, 17 tot
+    en met 19 en 21): de dag volgend op de dag van de omstandigheid. Voor art. 25
+    lid 3 wijst het besluit niets aan: dan None.
+
+    Zes weken na 1 januari is 1 januari plus 42 dagen, dezelfde telling die onderdeel
+    9.5 Leidraad Invordering 2008 voor een termijn van zes weken hanteert.
+    """
+    if grond in ("25-5", "25-8"):
+        return date(gebeurtenis.year + 1, 1, 1) + timedelta(weeks=6)
+    if grond in HERLEVING_NA_UITSTEL:
+        return gebeurtenis + timedelta(days=1)
+    return None
+
+
+def uitstel_uitsluiting(grond: str, van: date, tot: date | None, beeindigd: bool,
+                        gebeurtenis: date | None, betaaldatum: date) -> dict:
+    """De dagen die art. 28 lid 3 en 4 van het rentetijdvak aftrekken.
+
+    Geeft {'uitgesloten': [(van, tot)], 'herleving': date | None, 'blokkade': str | None}.
+    Bij een 'blokkade' geeft de aanroeper geen bedrag.
+
+    - Uitstel niet beëindigd: lid 3, geen rente over de tijd waarvoor uitstel is
+      verleend. Zonder einddatum loopt het uitstel tot de betaling door.
+    - Uitstel beëindigd door de ontvanger (alleen de gronden van lid 4): de rente
+      loopt weer vanaf de herlevingsdatum van art. 6 Uitvoeringsbesluit; de dagen
+      van het begin van het uitstel tot die dag blijven buiten de berekening.
+    - Betaling na het verstrijken van de uitsteltermijn: lid 4 laat het tijdvak aan
+      een AMvB, en art. 6 Uitvoeringsbesluit regelt alleen de beëindiging. Voor de
+      gronden van lid 4 is daarom geen uitkomst te geven. Voor art. 25 lid 3 staat
+      lid 4 niet, dus tellen de dagen ná de termijn gewoon mee.
+      Er is wel beleid: onderdeel 74.5 en 74.5a Leidraad Invordering 2008 (lid 9 en
+      11, rente vanaf het verschijnen van een niet tijdig betaalde termijn) en 74.10
+      en 74.11 (lid 17 tot en met 19, rente vanaf de dag na het einde van het
+      uitstel). Die rekent deze tool niet, omdat de Leidraad "vervallen" uitstel
+      noemt en niet zeker is dat daar het gewoon aflopen van de termijn onder valt.
+    """
+    if beeindigd:
+        if grond not in HERLEVING_NA_UITSTEL:
+            return {"uitgesloten": [], "herleving": None, "blokkade": (
+                "Art. 28 lid 4 IW 1990 noemt art. 25 lid 3 niet en art. 6 van het "
+                "Uitvoeringsbesluit IW 1990 wijst er geen herlevingstijdvak voor aan. "
+                "Voor een beëindigd uitstel op die grond is geen bedrag te geven.")}
+        if gebeurtenis is None:
+            return {"uitgesloten": [], "herleving": None, "blokkade": (
+                "Vul de datum in van de handeling of gebeurtenis waarop het uitstel is "
+                "beëindigd.")}
+        herleving = herlevingsdatum(grond, gebeurtenis)
+        if herleving <= van:
+            return {"uitgesloten": [], "herleving": herleving, "blokkade": (
+                f"De rente herleeft op {nl_date(herleving)}, niet na het begin van het "
+                f"uitstel ({nl_date(van)}). Controleer de datums.")}
+        return {"uitgesloten": [(van, herleving - timedelta(days=1))],
+                "herleving": herleving, "blokkade": None}
+
+    if tot is None or betaaldatum <= tot:
+        eind = betaaldatum if tot is None else tot
+        return {"uitgesloten": [(van, eind)], "herleving": None, "blokkade": None}
+
+    if grond in HERLEVING_NA_UITSTEL:
+        return {"uitgesloten": [], "herleving": None, "blokkade": (
+            "De betaling is gedaan na het einde van de termijn waarvoor uitstel is "
+            "verleend. Art. 28 lid 4 IW 1990 laat het tijdvak waarover dan rente wordt "
+            "berekend aan een algemene maatregel van bestuur, en art. 6 van het "
+            "Uitvoeringsbesluit IW 1990 regelt alleen de beëindiging van het uitstel. "
+            "De Leidraad Invordering 2008 kent beleid voor art. 25 lid 9, 11 en 17 "
+            "tot en met 19 (onderdeel 74.5, 74.5a, 74.10 en 74.11: rente vanaf het "
+            "verschijnen van de termijn of de dag na het einde van het uitstel), maar "
+            "dat rekent deze tool niet. Voor dit geval is dus geen bedrag te geven.")}
+    return {"uitgesloten": [(van, tot)], "herleving": None, "blokkade": None}
 
 __all__ = [name for name in dir() if not name.startswith("_")] + [
     "nl_euro", "nl_euro_heel", "nl_date", "nl_pct",
