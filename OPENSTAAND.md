@@ -1,18 +1,177 @@
 # Openstaande punten
 
-Laatst bijgewerkt: 04-10-2026 15:57 CEST. Eerste versie van dit bestand op 29-09-2026; eerder stonden
-openstaande punten alleen in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging) en, voor
-dit ene punt, in de nu gearchiveerde berichtenmap `PostbusClaude`.
+Formaat: per punt
 
-**Stand:** van de 16 punten zijn er 16 gesloten en staat er niets open. Op 04-10-2026 zijn punt 2, 3, 4, 5, 6, 10, 11 en 15 gesloten, in een sessie die alle open punten afrondde: punt 4 en 5 zijn daarbij gebouwd, de andere zijn met een besluit van Sylvain gesloten. Punt 13 sloot op 04-10-2026, nadat hij het bericht aan Wolters Kluwer had verstuurd. Punt 12 tot en met 16 zijn op 29-09-2026 toegevoegd bij de gelijkwaardigheidstoets tegen model 02-04. De zeven fiscale punten van de pagina Invorderingsrente zijn op 20-09-2026 uit `WIJZIGINGSRAPPORT.md` hierheen gehaald, en punt 11 is op 27-09-2026 toegevoegd bij de portefeuillebrede inventarisatie van de uitgangen.
+> Dit document is de bron voor de openstaande punten van deze tool. Elk punt heeft een
+> status (open of gesloten), een eigenaar (Sylvain of sessie) en een vindplaats. Een
+> gesloten punt blijft staan, met datum en reden. Het overzicht in
+> `AI_kopgroep/OPEN-PUNTEN.md` leest de regel "Formaat: per punt" hierboven en toont dan
+> alleen de open punten met eigenaar Sylvain. Wat een sessie zelf kan doen, staat hier
+> wel maar niet in dat overzicht.
+>
+> De vrijgavenotities, `update-bram.md` en `WIJZIGINGSRAPPORT.md` in deze map zijn
+> verslag. Een punt dat daarin nog open staat, hoort hier.
+>
+> Eerste versie van dit bestand op 29-09-2026; eerder stonden de openstaande punten alleen
+> in `WIJZIGINGSRAPPORT.md` (de actielijst per wijziging).
+>
+> Omgezet naar deze vorm op 04-10-2026 22:46 CEST. De tekst van daarvoor staat in de Git-historie (laatste
+> versie in commit 027f7d1). De 16 bestaande punten staan hieronder woordelijk met hun
+> bestaande nummer; ze kregen alleen de drie veldregels erbij (Status, Eigenaar,
+> Vindplaats), afgeleid uit hun eigen tekst. De punten 17 t/m 30 zijn bij de omzetting
+> toegevoegd uit de zeven actiedocumenten van deze map (`OPENSTAAND.md` zelf, `update-bram.md`,
+> vier vrijgavenotities en `WIJZIGINGSRAPPORT.md`) en uit `README.md`,
+> `UC_belastingtooljoindk.md`, `AGENTS.md` en het concept
+> `terugmelding-wolters-kluwer-model-02-04.md`. Waar elk punt uit die documenten is
+> gebleven staat in `omzetting-actiedocumenten-2026-10-04.md`. Nummers worden nooit hergebruikt.
+
+**Over eigenaarschap.** De POC is van Sylvain en hij beslist alles wat erin zit. Bram
+bouwt de tool daarna op de kantooromgeving en kijkt niet in deze repository. Alle open
+punten staan op sessie: er is geen besluit of handeling die alleen Sylvain kan nemen of
+doen. Wat de tool bewust niet doet en zelf meldt, staat als achtergrond gemarkeerd. Bij
+punt 28 en punt 30 hangt de uitkomst van een meting af die daarna een besluit voor Sylvain
+kan opleveren.
 
 ## Open
 
-Geen. Alle punten zijn gesloten.
+### 17. Gebreken in de specificaties van de Belastingdienst, correctie niet vastgelegd
+- **Status:** open, vermoedelijk gemeld en afgehandeld, zonder vastlegging
+- **Eigenaar:** sessie
+- **Vindplaats:** `update-bram.md`, r.52 en r.151 tot r.159; `WIJZIGINGSRAPPORT.md`, r.191, r.236, r.256 en r.523
+
+In `update-bram.md` staan gebreken in de specificaties die Bram moet corrigeren voordat een ontwikkelaar ze meebouwt. 1. Paragraaf 12 van de specificatie van de rekenmodule telt eerst alle deelbedragen op en rondt daarna één keer af: € 103 waar de Belastingdienst € 102 publiceert. Paragraaf 11 zegt het goed (r.52). 2. Het controlecijfer op positie 1 wordt in de specificatie Betalingskenmerk_bepaling niet beschreven (r.151). 3. Drie van de 27 voorbeelden zijn inconsistent met zichzelf (r.153). 4. Paragraaf 4 zegt "pos 3" waar "pos 13" bedoeld wordt (r.159). Daarnaast geeft de specificatie geen codetabel voor het SOORT-cijfer: de tool labelt alleen 0 en 6 en toont bij een andere waarde niets in plaats van een gok (r.157 en `WIJZIGINGSRAPPORT.md` r.236 en r.523).
+
+Het document draagt het label afgerond (18-09-2026) en paragraaf 7 van het wijzigingsrapport verklaart alle actiepunten gehandeld, maar nergens staat vastgelegd dat de specificaties zijn gecorrigeerd of dat Bram dat heeft bevestigd. Het vermoeden is dat het is gemeld en afgehandeld. Zonder bewijs blijft het punt open.
+
+**Te sluiten wanneer:** vastgelegd is dat Bram de specificaties heeft gecorrigeerd of de terugkoppeling heeft ontvangen, of Sylvain heeft besloten dat het verslag volstaat.
+
+### 19. De automatische tarievencontrole leest de voetnoten niet
+- **Status:** bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
+- **Eigenaar:** sessie
+- **Vindplaats:** `vrijgave-belastingtooljoindk-2026-09-07.md`, r.41 en r.77; `WIJZIGINGSRAPPORT.md`, r.774 en r.784; `README.md`, r.114
+
+De controle die bij elke paginaweergave de tarieventabel op belastingdienst.nl vergelijkt, leest de tabel en niet de voetnoten eronder, en juist daar staan de uitzonderingen. De coronaverlaging voor de inkomstenbelasting per 1 juli 2020 staat in voetnoot ***. De tool meldt dat zelf: de IB-pagina geeft haar niet-gedekte deel mee (`NIET_GEDEKT`) en de voettekst zegt bij elke weergave wat er is gecontroleerd. Gekozen is voor een controle die zegt wat zij niet dekt, in plaats van een tweede parser voor één afgesloten uitzondering uit 2020. De toeslagenpercentages uit de voetnoten * en ** zijn niet gecontroleerd, omdat deze pagina's ze niet gebruiken. Twee tests bewaken de bewuste afwijking en het bestaan van de voetnoot op de bronpagina.
+
+**Te sluiten wanneer:** besloten is of een voetnootcontrole erin komt, of vastgelegd is dat de melding volstaat.
+
+### 20. De nulemissiereeks staat op twee plekken zonder bewaking
+- **Status:** open, wacht op de eerstvolgende jaarwisseling
+- **Eigenaar:** sessie
+- **Vindplaats:** `vrijgave-belastingtooljoindk-2026-09-20.md`, r.35, r.39 en r.108; `WIJZIGINGSRAPPORT.md`, r.330; `_auto_calc.py`, `KORTING_NULEMISSIE`
+
+De tabel `KORTING_NULEMISSIE` in `_auto_calc.py` staat in een andere vorm ook in de zustertool `auto-fiscaal-2027`. Beide vormen zijn op 20-09-2026 naast elkaar gelegd en komen voor alle jaarschijven overeen, maar niets bewaakt dat zij gelijk blijven. Voor de belastingrentereeks is die bewaking wel gebouwd (punt 1); hier is bewust alleen aangevuld.
+
+De reeks verandert vaker dan je zou denken. De Wet fiscale maatregelen Klimaatakkoord liet de korting per 2026 vervallen, terwijl de jaarpagina van de Belastingdienst voor 2026 18 procent tot € 30.000 noemt: voor 2026 is de jaarpagina dus de bron. Voor 2027 staat 20 procent tot € 30.000 in art. 3.20 lid 2 Wet IB 2001 (toestand 01-01-2027). Voor een later regimejaar waarschuwt de tool vanaf 2028. Die vervaldatum is al eens met latere wetgeving opgeschoven, dus de melding blijft staan tot iemand haar opnieuw bij de bron heeft gezien.
+
+**Te sluiten wanneer:** bij de eerstvolgende jaarwisseling beide reeksen naast elkaar zijn gelegd en de grens van 2028 opnieuw bij de bron is gelezen, of er een bewaking is gebouwd.
+
+### 21. Het bewijs tegen model 02-04 dekt niet alles, en uitstel en art. 28c hebben geen model
+- **Status:** bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
+- **Eigenaar:** sessie
+- **Vindplaats:** `vrijgave-belastingtooljoindk-2026-09-29.md`, r.86, r.89 en r.90; `vrijgave-belastingtooljoindk-2026-10-04.md`, r.55; `WIJZIGINGSRAPPORT.md`, r.1024, r.1087 en r.1097
+
+Niet vergeleken bij de gelijkwaardigheidstoets van 29-09-2026: de einddatum van de belastingrente (het model vraagt hem als invoer; die logica is getoetst aan de voorbeelden van de Belastingdienst), art. 28a en 28b (het model rekent ze niet), BTW en naheffing (rekent de tool niet) en 105 VpB-gevallen met het HR-arrest uit (de tool past het arrest altijd toe).
+
+Uitstel en art. 28c zijn op 04-10-2026 gebouwd en hebben geen rekenmodel. Zij zijn getoetst aan de wettekst, door de bron-controleur en met doorgerekende gevallen. Paragraaf L10.6 van het wijzigingsrapport (18-09-2026) zegt dat er geen gepubliceerd rekenvoorbeeld voor de invorderingsrente bestaat en dat het bewijs daardoor zwakker is. Voor art. 28 is dat achterhaald, want sinds 29-09-2026 test de tool het rekenvoorbeeld van de Belastingdienst (240 dagen, 143 euro, L11.3) en is er het model. Voor art. 28a, 28b, 28c en uitstel blijft de wettekst het bewijs.
+
+**Te sluiten wanneer:** besloten is of het bewijs wordt uitgebreid, of vastgelegd is dat de afbakening volstaat.
+
+### 22. Herleving van de rente bij uitstel: 12 of 13 februari
+- **Status:** open, aanname zonder bron, vastgelegd bij het sluiten van punt 4 op 04-10-2026
+- **Eigenaar:** sessie
+- **Vindplaats:** `vrijgave-belastingtooljoindk-2026-10-04.md`, r.49; `OPENSTAAND.md`, punt 4
+
+Bij uitstel op grond van art. 25 lid 5 of 8 neemt de tool "de dag waarop zes weken zijn verstreken na de eerste dag van het jaar" als die dag zelf: 1 januari plus 42 dagen, dus 12 februari, en niet een dag later. Art. 6 lid 1 van het Uitvoeringsbesluit IW 1990 zegt "met ingang van de dag waarop" en lid 2 zegt "de dag volgende op". Geen gelezen bron beslist het, en het verschil is één dag rente. De bron-controleur kon het op 04-10-2026 niet sluiten. De nota van toelichting bij de oorspronkelijke tekst (Stb. 1991, 718) is alleen als scan beschikbaar en niet gelezen.
+
+**Te sluiten wanneer:** de nota van toelichting is gelezen en de dag daarmee vaststaat, of Sylvain de lezing heeft vastgelegd.
+
+### 23. Wat de tool bij uitstel bewust niet rekent
+- **Status:** bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
+- **Eigenaar:** sessie
+- **Vindplaats:** `vrijgave-belastingtooljoindk-2026-10-04.md`, r.24 en r.57; `WIJZIGINGSRAPPORT.md`, r.962 en r.1178; `README.md`, r.173; `OPENSTAAND.md`, punt 4
+
+De tool geeft geen bedrag en wel een melding in twee gevallen. 1. Betaling na afloop van de uitsteltermijn bij de gronden van art. 28 lid 4: de wet legt dat tijdvak niet vast en art. 6 Uitvoeringsbesluit regelt alleen de beëindiging. De Leidraad Invordering 2008 kent beleid voor lid 9, 11 en 17 tot en met 19 (onderdeel 74.5, 74.5a, 74.10 en 74.11). Dat beleid is niet gebouwd en of het ook het gewoon aflopen van de termijn dekt is uitleg. Voor lid 5, 8 en 21 is niets gevonden. 2. Een beëindigd uitstel op grond van art. 25 lid 3: lid 4 en art. 6 Uitvoeringsbesluit noemen die grond niet, dus er is geen herlevingstijdvak aangewezen en de tool doet daarover geen uitspraak.
+
+**Te sluiten wanneer:** besloten is of het Leidraadbeleid wordt gebouwd, of vastgelegd is dat de melding volstaat.
+
+### 24. Auto BTW privé: twee gevallen die de tool niet toepast
+- **Status:** bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
+- **Eigenaar:** sessie
+- **Vindplaats:** `update-bram.md`, r.132 en r.133; `WIJZIGINGSRAPPORT.md`, r.287; `README.md`, r.199 en r.208
+
+1. Bij een IB-ondernemer is de bijtelling nooit hoger dan de totale autokosten van het jaar. Dat staat in het rekenvoorbeeld van de Belastingdienst, maar de tool kent die kosten niet, past het maximum niet toe en meldt dat. 2. Een auto die volledig op geïntegreerde zonnecellen rijdt valt ook onder de plafondvrijstelling, maar dat is volgens de terugkoppeling aan Bram niet uit de RDW-gegevens af te leiden. De README noemt de zonnecelauto in de regel voor waterstof. Wat de tool in de praktijk doet is bij de omzetting niet in de code nagelezen.
+
+**Te sluiten wanneer:** besloten is of de autokosten als invoer erbij komen en hoe de zonnecelauto wordt herkend, of vastgelegd is dat de melding volstaat.
+
+### 25. De rentereeks eindigt bij december 2026
+- **Status:** open, wacht op het vastgestelde percentage voor 2027
+- **Eigenaar:** sessie
+- **Vindplaats:** `OPENSTAAND.md`, punt 1 (slot); `WIJZIGINGSRAPPORT.md`, r.854; `belastingrente-ib-reeks.txt`
+
+De reeks van de belastingrente eindigt bewust bij december 2026. Het percentage wordt jaarlijks per 1 januari vastgesteld, dus bij de eerstvolgende jaarwisseling moeten `belastingrente-ib-reeks.txt` in beide repositories (hier en in `Berekeningen`) en beide tools worden verlengd nadat het nieuwe percentage is teruggevonden. Tot dan noemt de tool een uitkomst waarvan het rente-einde na vandaag ligt een raming met het laatst opgenomen percentage, want de ingangsdatum van dat percentage garandeert geen geldigheid voor het hele jaar. Of een geplande taak van de portefeuille dit punt dekt is bij de omzetting niet gemeten.
+
+**Te sluiten wanneer:** het percentage voor 2027 is teruggevonden en het bestand en beide tools zijn verlengd.
+
+### 26. Invorderingsrente: uitzonderingen en verrekening waarvan de tool de omvang niet bepaalt
+- **Status:** bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
+- **Eigenaar:** sessie
+- **Vindplaats:** `WIJZIGINGSRAPPORT.md`, r.948, r.952 en r.984; `README.md`, r.176
+
+1. Art. 28 lid 5: de twee aangewezen gevallen (art. 6bis, het aanhoudaanbod bij een in 2022 gedagtekende voorlopige aanslag IB 2022 met box 3, en art. 6ter, de hersteloperatie toeslagen) staan als aanvinkbare regel op de pagina. Aanvinken blokkeert de uitkomst, omdat de tool niet bepaalt over welke dagen de uitzondering precies loopt. 2. De beleidsregel van art. 28.3a Leidraad Invordering 2008 (rente tot nihil over de periode van uitstel op grond van art. 25.4.6 van de Leidraad) staat als derde regel in die lijst en blokkeert op dezelfde manier. 3. Art. 28 lid 1: geen rente voor zover met de aanslag een aanslag wordt verrekend die op dezelfde belasting en hetzelfde tijdvak ziet. De pagina waarschuwt daarvoor en bepaalt dat deel niet.
+
+**Te sluiten wanneer:** besloten is of de dagen of het verrekende deel erin komen, of vastgelegd is dat de blokkade en de waarschuwing volstaan.
+
+### 27. Eén bronhash komt niet overeen met het manifest
+- **Status:** open, raakt de uitkomst niet
+- **Eigenaar:** sessie
+- **Vindplaats:** `WIJZIGINGSRAPPORT.md`, r.1006
+
+Voor de expressie van het Besluit wettelijke rente (BWBR0002744, versie 2015-01-01_0) die 2 procent vaststelt, kwam de zelf berekende hash niet overeen met de hashcode in het manifest van de KOOP-repository. De meting is herhaald na opnieuw downloaden en gaf dezelfde uitkomst. Het raakt de uitkomst niet: dat percentage telt alleen mee via de bodem van 4 procent in art. 2 lid 2 van het Besluit belasting- en invorderingsrente, en elk percentage onder de 4 geeft na die bodem dezelfde 4. Het is wel het enige losse eind in de bronketen van de invorderingsrente.
+
+**Te sluiten wanneer:** de hash opnieuw is gemeten en overeenkomt, of vastgelegd is waar de afwijking vandaan komt.
+
+### 28. Samenvoegen met de WWFT-app
+- **Status:** open, mogelijk achterhaald
+- **Eigenaar:** sessie
+- **Vindplaats:** `AGENTS.md`, r.89; `claude-pos/scripts/open-punten.py`, `GEEN_REGISTERVRAAG`
+
+`AGENTS.md` noemt als open punt dat samenvoegen met de WWFT multi-page app (`pages/` plus losse modules meeverhuizen) een overweging voor later is en niet moet gebeuren zonder opdracht. Volgens het overzichtsscript van de portefeuille is `wwft-check` vervallen per 01-09-2026 en gearchiveerd. Het punt kan daardoor achterhaald zijn. Dat is bij de omzetting niet gemeten.
+
+**Te sluiten wanneer:** gemeten is of de WWFT multi-page app nog bestaat. Bestaat zij niet meer, dan sluit dit punt met die meting. Bestaat zij wel, dan komt er een besluit van Sylvain.
+
+### 29. Teksten lopen achter op het besluit over het portaal
+- **Status:** open, nog niet aangepast
+- **Eigenaar:** sessie
+- **Vindplaats:** `README.md`, r.9; `WIJZIGINGSRAPPORT.md`, r.15; `UC_belastingtooljoindk.md`, r.35, r.43 en r.44; `update-bram.md`, r.27 (verslag)
+
+Het besluit van 04-10-2026 (punt 10) laat de tegel in het portaal staan en `AGENTS.md` is daarop aangepast. Andere teksten zeggen nog het omgekeerde of lopen achter. `README.md` r.9 en `WIJZIGINGSRAPPORT.md` r.15 zeggen dat de app niet bij bouwman.tools hoort. `UC_belastingtooljoindk.md` noemt zes tools terwijl de app er zeven heeft (r.35) en een statische pagina `betalingskenmerk.html` op bouwman.tools die volgens het document verouderd is en niet meer wordt bijgewerkt (r.43 en r.44). Of die pagina nog bestaat is niet gemeten. `update-bram.md` r.27 draagt dezelfde zin over het portaal, maar is verslag met het label afgerond en blijft zoals het is. Bij de omzetting is alleen OPENSTAAND.md gewijzigd.
+
+**Te sluiten wanneer:** de teksten in lijn zijn met het besluit en gemeten is of `betalingskenmerk.html` nog op bouwman.tools staat.
+
+### 30. Inhoudelijke accordering: stand van `laatst_beoordeeld` niet vastgelegd
+- **Status:** open, nog niet gemeten
+- **Eigenaar:** sessie
+- **Vindplaats:** `vrijgave-belastingtooljoindk-2026-09-07.md`, r.80; `WIJZIGINGSRAPPORT.md`, r.856; `bouwman-tools/tools.json`, `laatst_beoordeeld` van `belastingtool-joindk`
+
+De vrijgavenotitie van 07-09-2026 zegt dat `status` op `beta` blijft en `laatst_beoordeeld` op `null`: die merge publiceert en accordeert niet. Paragraaf L09 van het wijzigingsrapport zegt dat technische review en publicatie afzonderlijk blijven en dat er geen nieuwe fiscale accordering of modelvergelijking was. Sindsdien zijn de gelijkwaardigheidstoets (29-09-2026) en de uitbreiding van 04-10-2026 opgeleverd, maar nergens in deze repository staat of de tool is geaccordeerd. Het register ligt buiten deze repository en is bij de omzetting niet gelezen.
+
+**Te sluiten wanneer:** gemeten is wat `laatst_beoordeeld` voor deze tool in `bouwman-tools/tools.json` zegt. Staat die leeg, dan komt er een punt voor Sylvain over de accordering.
 
 ## Gesloten
 
+### 18. Moet er worden herberekend wat met de versie van 15-07-2026 voor klanten is gerekend?
+- **Status:** gesloten 04-10-2026 (besluit van 18-08-2026 in de README)
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `WIJZIGINGSRAPPORT.md`, r.109; `README.md`, r.315
+
+Actiepunt 4 van het wijzigingsrapport (r.109) vroeg na te gaan of er met de oude versie die in DK/Join draait (commit `821b575` van 15-07-2026) voor klanten is gerekend. Die versie rekent aantoonbaar onjuist (paragraaf 1a van het wijzigingsrapport). Het punt stond alleen daar en niet in dit bestand.
+
+Gesloten 04-10-2026. Bewijs: de README legt op r.315 het besluit van 18-08-2026 vast dat herziening van eerdere berekeningen niet nodig is, omdat de tool in de testfase zit. Dat besluit staat daar met datum.
+
 ### 13. Fouten in model 02-04, terug te melden aan Wolters Kluwer
+- **Status:** gesloten 04-10-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `vrijgave-belastingtooljoindk-2026-09-29.md`, `WIJZIGINGSRAPPORT.md` L11, `terugmelding-wolters-kluwer-model-02-04.md`; lokaal (genegeerd) `.local-testdata/gelijkwaardigheid-02-04/run4-na-broncontrole/vergelijking-02-04.xlsx`
 
 **Gesloten op 04-10-2026.** Sylvain Bouwman heeft het bericht met de drie bevindingen op 04-10-2026 per e-mail aan Wolters Kluwer verstuurd. De tekst is die van `terugmelding-wolters-kluwer-model-02-04.md`. Een antwoord van Wolters Kluwer wordt niet afgewacht; komt er een reactie, dan start die als eigen sessie.
 
@@ -47,6 +206,9 @@ dag van de invorderingsrente en een consequente afronding naar beneden.
 Niet zelf gedaan: dat is een bericht naar buiten.
 
 ### 2. Hoe telt een gedeeltelijke maand die niet de vervalmaand is?
+- **Status:** gesloten 04-10-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `_invorderingsrente.py`; `WIJZIGINGSRAPPORT.md` L10.7 punt 2
 
 **Gesloten op 04-10-2026, besluit van Sylvain Bouwman.** De bron-controleur zocht in de
 wettekst, de Leidraad Invordering 2008 (art. 28 en 28a/28b), belastingdienst.nl en
@@ -69,6 +231,9 @@ maandlengte van 30, dezelfde systematiek die `dagen_30_360()` gebruikt. Dat volg
 onderdeel b maar staat er niet letterlijk.
 
 ### 3. Welke formule geldt voor een vergoeding?
+- **Status:** gesloten 04-10-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `_invorderingsrente.py`; `WIJZIGINGSRAPPORT.md` L10.7 punt 3
 
 **Gesloten op 04-10-2026, besluit van Sylvain Bouwman.** De grondslag (het uit te betalen
 respectievelijk terug te geven bedrag) is bevestigd door art. 28b lid 2, slot, en door
@@ -88,6 +253,9 @@ dezelfde enkelvoudige formule met het uit te betalen respectievelijk het terug t
 bedrag als grondslag; de wet noemt die grondslag zelf in art. 28b lid 2, slot.
 
 ### 4. Uitstel wordt niet doorgerekend
+- **Status:** gesloten 04-10-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `_invorderingsrente.uitstel_uitsluiting`, `herlevingsdatum`; `WIJZIGINGSRAPPORT.md` L10.7 punt 5
 
 **Gesloten op 04-10-2026: gebouwd, op besluit van Sylvain Bouwman ("alsnog bouwen").** De
 pagina rekent nu de opschorting van art. 28 lid 3 en de herleving van lid 4 met art. 6
@@ -122,6 +290,9 @@ voor een aanslag waarvoor uitstel is verleend geeft de tool geen bedrag. Staat h
 zichtbaar blijft wat de tool niet doet.
 
 ### 5. Art. 28c wordt niet gerekend
+- **Status:** gesloten 04-10-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `_invorderingsrente.periode_art28c`; `WIJZIGINGSRAPPORT.md` L10.7 punt 6
 
 **Gesloten op 04-10-2026: gebouwd, op besluit van Sylvain Bouwman.** Art. 28c staat nu in de
 keuzelijst (`_invorderingsrente.periode_art28c`). Het tijdvak loopt van de dag na de betaling
@@ -140,6 +311,9 @@ Ook een keuze van Sylvain. De pagina signaleert wel de grond en de verzoektermij
 weken, maar rekent het bedrag niet uit.
 
 ### 6. De vier tijdvakken zijn niet aan uitvoeringsbeleid of rechtspraak getoetst
+- **Status:** gesloten 04-10-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `_invorderingsrente.periode_art28b`; `WIJZIGINGSRAPPORT.md` L10.7 punt 7
 
 **Gesloten op 04-10-2026.** Beoordeeld als de vier tijdvakken van art. 28, 28a, 28b en 28c.
 De bron-controleur toetste ze aan de wet, de Leidraad, KG:207:2022:2 (Kennisgroep
@@ -160,6 +334,9 @@ Invordering 2008 is wel nagelezen op afwijkingen en gaf er op dit punt geen. Wat
 is een toets aan rechtspraak en aan gepubliceerd uitvoeringsbeleid daarbuiten.
 
 ### 10. Hoort deze tool in het portaal van bouwman.tools, of niet?
+- **Status:** gesloten 04-10-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `AGENTS.md`; `bouwman-tools/tools.json`, `in_portal`
 
 **Gesloten op 04-10-2026, besluit van Sylvain Bouwman: de tegel blijft in het portaal.** Het
 register (`in_portal: true`, met een link naar de Streamlit-app) klopt dus. De zin in
@@ -183,6 +360,9 @@ portaal, dan moet die zin uit `AGENTS.md`. Hoort hij er niet in, dan moet `in_po
 `false` en verdwijnt de kaart. Niet zelf gekozen, want het raakt wie de tool te zien krijgt.
 
 ### 11. Krijgt deze tool (of zijn zes onderdelen) een dossierstuk, Excel-export of dossierbestand?
+- **Status:** gesloten 04-10-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `bouwman-tools/tools.json`, uitgangen van `belastingtool-joindk`
 
 **Gesloten op 04-10-2026, besluit van Sylvain Bouwman.** Punt 10 is beslist: de tool blijft
 in het portaal. De Streamlit-app krijgt in deze testomgeving geen dossierstuk, Excel-export
@@ -208,6 +388,9 @@ belastingrente/revisierente-onderdelen definitief wonen, opnieuw beoordelen of e
 uitgang per onderdeel zinvol is, en zo ja, hoe dat in Streamlit vorm krijgt.
 
 ### 15. Twee rekenvoorbeelden van de Belastingdienst spreken elkaar tegen
+- **Status:** gesloten 04-10-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** belastingdienst.nl, "Belastingrente betalen bij inkomstenbelasting", geraadpleegd 29-09-2026
 
 **Gesloten op 04-10-2026, besluit van Sylvain Bouwman.** Er verandert niets in de tool: die
 volgt de wet (art. 30fc lid 2 AWR met art. 9 IW 1990 en onderdeel 9.5 Leidraad) en het
@@ -229,6 +412,9 @@ pagina tot en met 9 augustus 2024, dagtekening plus 43 dagen; de tool komt op 8 
 aanpast of uitlegt; eventueel melden bij de Belastingdienst.
 
 ### 16. Een naam uit model 02-04 stond in punt 1 van dit bestand
+- **Status:** gesloten 29-09-2026
+- **Eigenaar:** sessie
+- **Vindplaats:** `OPENSTAAND.md`, punt 1; zoektocht over de hele repository op 29-09-2026
 
 **Status:** gesloten op 29-09-2026, op verzoek van Sylvain Bouwman. **Gevonden** diezelfde dag
 door de publicatiepoort.
@@ -245,6 +431,9 @@ om één woord en geen rekenmateriaal, en een herschreven publieke historie wist
 gegarandeerd uit kopieën en caches.
 
 ### 14. Vanaf welk boekjaar geldt belastingrente in plaats van heffingsrente?
+- **Status:** gesloten 29-09-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `pages/Belastingrente_VpB.py`
 
 **Status:** gesloten op 29-09-2026. **Eigenaar:** Sylvain Bouwman. **Vindplaats:**
 `pages/Belastingrente_VpB.py`.
@@ -271,6 +460,9 @@ lid 4 Wet Vpb 1969 noemt geen maximum. Een verlengd eerste boekjaar dat vóór 2
 niet verder uitgebouwd. Opgemerkt door de bron-controleur bij de herkeuring.
 
 ### 12. Vier rekenkeuzes uit de gelijkwaardigheidstoets tegen model 02-04
+- **Status:** gesloten 29-09-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `_rente.py`; `_invorderingsrente.py`; `vrijgave-belastingtooljoindk-2026-09-29.md`
 
 **Status:** gesloten op 29-09-2026, besluit van Sylvain Bouwman. **Vindplaats:**
 `_rente.py`, `_invorderingsrente.py`, `vrijgave-belastingtooljoindk-2026-09-29.md`.
@@ -301,6 +493,9 @@ een keuze liet. Voorgelegd met advies; alle vier volgens advies beslist.
 als punt 15.
 
 ### 7. Geldt art. 31 onderdeel a ook bij art. 28a?
+- **Status:** gesloten 20-09-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `WIJZIGINGSRAPPORT.md` L10.7 punt 1
 
 **Status:** gesloten op 20-09-2026. **Eigenaar:** Sylvain Bouwman. **Herkomst:**
 `WIJZIGINGSRAPPORT.md` L10.7 punt 1.
@@ -322,6 +517,9 @@ rechtspraak of gepubliceerd beleid over gevonden. De melding bij de uitkomst bli
 staan. Heroverwegen zodra beleid of een uitspraak hierover verschijnt.
 
 ### 8. Deelbetalingen worden niet toegerekend
+- **Status:** gesloten 20-09-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `WIJZIGINGSRAPPORT.md` L10.7 punt 4
 
 **Status:** gesloten op 20-09-2026. **Eigenaar:** Sylvain Bouwman. **Herkomst:**
 `WIJZIGINGSRAPPORT.md` L10.7 punt 4.
@@ -340,6 +538,9 @@ dan opnieuw moet als de testgroep haar toch mist. Komt die vraag uit het testen,
 het punt om te heropenen.
 
 ### 9. De verwijzing naar "openstaand punt A" wees nergens heen
+- **Status:** gesloten 20-09-2026
+- **Eigenaar:** sessie
+- **Vindplaats:** `WIJZIGINGSRAPPORT.md`, Auto BTW privé
 
 **Status:** gesloten op 20-09-2026, opgeruimd.
 
@@ -350,6 +551,9 @@ opruiming, maar de tekst beloofde wel een punt dat er niet was. De verwijzing is
 door wat er feitelijk over de nulemissietabel te zeggen valt.
 
 ### 1. Waar hoort de belastingrente te worden gerekend: `belastingtooljoindk` of `Berekeningen`
+- **Status:** gesloten 20-09-2026
+- **Eigenaar:** Sylvain
+- **Vindplaats:** `PostbusClaude/archief/2026-09/VRAGEN-07-09-2026.md`; `WIJZIGINGSRAPPORT.md` paragraaf 9.7; `Berekeningen/OPENSTAAND.md`
 
 **Status:** gesloten op 20-09-2026. **Eigenaar:** Sylvain Bouwman.
 
