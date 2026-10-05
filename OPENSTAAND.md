@@ -46,7 +46,7 @@ Het document draagt het label afgerond (18-09-2026) en paragraaf 7 van het wijzi
 **Te sluiten wanneer:** vastgelegd is dat Bram de specificaties heeft gecorrigeerd of de terugkoppeling heeft ontvangen, of Sylvain heeft besloten dat het verslag volstaat.
 
 ### 19. De automatische tarievencontrole leest de voetnoten niet
-- **Status:** bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
+- **Status:** open, bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
 - **Eigenaar:** sessie
 - **Vindplaats:** `vrijgave-belastingtooljoindk-2026-09-07.md`, r.41 en r.77; `WIJZIGINGSRAPPORT.md`, r.774 en r.784; `README.md`, r.114
 
@@ -66,7 +66,7 @@ De reeks verandert vaker dan je zou denken. De Wet fiscale maatregelen Klimaatak
 **Te sluiten wanneer:** bij de eerstvolgende jaarwisseling beide reeksen naast elkaar zijn gelegd en de grens van 2028 opnieuw bij de bron is gelezen, of er een bewaking is gebouwd.
 
 ### 21. Het bewijs tegen model 02-04 dekt niet alles, en uitstel en art. 28c hebben geen model
-- **Status:** bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
+- **Status:** open, bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
 - **Eigenaar:** sessie
 - **Vindplaats:** `vrijgave-belastingtooljoindk-2026-09-29.md`, r.86, r.89 en r.90; `vrijgave-belastingtooljoindk-2026-10-04.md`, r.55; `WIJZIGINGSRAPPORT.md`, r.1024, r.1087 en r.1097
 
@@ -86,7 +86,7 @@ Bij uitstel op grond van art. 25 lid 5 of 8 neemt de tool "de dag waarop zes wek
 **Te sluiten wanneer:** de nota van toelichting is gelezen en de dag daarmee vaststaat, of Sylvain de lezing heeft vastgelegd.
 
 ### 23. Wat de tool bij uitstel bewust niet rekent
-- **Status:** bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
+- **Status:** open, bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
 - **Eigenaar:** sessie
 - **Vindplaats:** `vrijgave-belastingtooljoindk-2026-10-04.md`, r.24 en r.57; `WIJZIGINGSRAPPORT.md`, r.962 en r.1178; `README.md`, r.173; `OPENSTAAND.md`, punt 4
 
@@ -95,7 +95,7 @@ De tool geeft geen bedrag en wel een melding in twee gevallen. 1. Betaling na af
 **Te sluiten wanneer:** besloten is of het Leidraadbeleid wordt gebouwd, of vastgelegd is dat de melding volstaat.
 
 ### 24. Auto BTW privé: twee gevallen die de tool niet toepast
-- **Status:** bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
+- **Status:** open, bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
 - **Eigenaar:** sessie
 - **Vindplaats:** `update-bram.md`, r.132 en r.133; `WIJZIGINGSRAPPORT.md`, r.287; `README.md`, r.199 en r.208
 
@@ -113,7 +113,7 @@ De reeks van de belastingrente eindigt bewust bij december 2026. Het percentage 
 **Te sluiten wanneer:** het percentage voor 2027 is teruggevonden en het bestand en beide tools zijn verlengd.
 
 ### 26. Invorderingsrente: uitzonderingen en verrekening waarvan de tool de omvang niet bepaalt
-- **Status:** bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
+- **Status:** open, bewuste beperking, als achtergrond gemarkeerd op 04-10-2026
 - **Eigenaar:** sessie
 - **Vindplaats:** `WIJZIGINGSRAPPORT.md`, r.948, r.952 en r.984; `README.md`, r.176
 
