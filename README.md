@@ -105,7 +105,8 @@ synthetische gevallen: nul onverklaarde verschillen. Zie `vrijgave-belastingtool
 verschillen op één punt bewust van elkaar. De coronaverlaging naar 0,01% ging voor de
 **inkomstenbelasting in op 1 juli 2020** en voor de **VpB en de overige belastingen op
 1 juni 2020**; voor beide liep zij tot 1 oktober 2020. Juni 2020 valt voor de IB dus nog
-onder 4,00%. Grondslag: Verzamelspoedwet COVID-19, Stb. 2020, 200; de Belastingdienst
+onder 4,00%. Grondslag: Verzamelspoedwet COVID-19, art. 3 onderdelen A en B (Stb. 2020,
+195), in werking volgens Stb. 2020, 196; de Belastingdienst
 vermeldt het in een voetnoot onder de tabel "Percentages alle belastingen". Dat verschil
 tussen de twee tabellen is geen fout en mag niet worden gelijkgetrokken.
 

@@ -96,7 +96,8 @@ def test_reeks_sluit_aan_zonder_gat_of_overlap():
 
 def test_de_ib_uitzondering_van_juli_2020_staat_erin():
     # De verlaging naar 0,01 procent ging voor de meeste belastingen per 1 juni 2020 in,
-    # voor de inkomstenbelasting pas per 1 juli (Verzamelspoedwet COVID-19, Stb. 2020, 200).
+    # voor de inkomstenbelasting pas per 1 juli (Verzamelspoedwet COVID-19, art. 3
+    # onderdelen A en B, Stb. 2020, 195, in werking volgens Stb. 2020, 196).
     # Die ene maand verschil is in september 2026 aantoonbaar een keer fout gegaan, dus
     # hij wordt hier apart vastgelegd in plaats van alleen in de reeks mee te lopen.
     regels = _regels_uit_bestand()

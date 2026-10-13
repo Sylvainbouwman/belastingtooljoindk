@@ -1,23 +1,25 @@
 # Percentages belastingrente inkomstenbelasting
 #
-# Dit bestand staat woordelijk gelijk in twee repository's: Berekeningen en
-# belastingtooljoindk. Beide tools gebruiken dezelfde percentagereeks, maar doen
-# er iets anders mee: Berekeningen past de tegenbewijsregeling van art. 30i lid 3
-# AWR toe in hele maanden, belastingtooljoindk rekent een aanslag met dagtelling
-# en aanslagtermijnen. De reeks is daarmee gedeeld gegeven, geen gedeelde code.
+# Dit bestand staat woordelijk gelijk bij elke tool die deze percentagereeks
+# gebruikt. Die tools doen er iets anders mee: de een past de tegenbewijsregeling
+# van art. 30i lid 3 AWR toe in hele maanden, de ander rekent een aanslag met
+# dagtelling en aanslagtermijnen. De reeks is daarmee gedeeld gegeven, geen
+# gedeelde code.
 #
-# Elke repository heeft een test die haar eigen constante tegen dit bestand legt.
-# Die test faalt zodra de code en dit bestand uiteenlopen. Of de twee BESTANDEN
-# nog gelijk zijn kan een test niet zien, want de repository's zien elkaar niet;
-# daarvoor is de losse controle in PostbusClaude/controle_rentereeks.py.
+# Elke tool heeft een test die haar eigen constante tegen dit bestand legt. Die
+# test faalt zodra de code en dit bestand uiteenlopen. Of de bestanden zelf nog
+# gelijk zijn kan zo'n test niet zien; dat meet een afzonderlijke controle die
+# alle exemplaren naast elkaar legt.
 #
-# Wijzig je de reeks, doe het dan in beide repository's en draai die controle.
+# Wijzig je de reeks, doe het dan in elk exemplaar en draai die controle.
 #
 # Bron: belastingdienst.nl, "Overzicht percentages belastingrente", tabel
 # "Percentages alle belastingen (m.u.v. toeslagen en vennootschapsbelasting)".
 # De ingangsdatum 1 juli 2020 is de uitzondering voor de inkomstenbelasting uit de
-# Verzamelspoedwet COVID-19, Stb. 2020, 200; voor de meeste andere belastingen ging
-# die verlaging per 1 juni 2020 in.
+# Verzamelspoedwet COVID-19, art. 3 onderdelen A en B (Stb. 2020, 195), in werking
+# volgens Stb. 2020, 196; in juni 2020 gold voor de inkomstenbelasting nog 4 procent
+# (art. 3 onderdeel A, lid 2). Voor de meeste andere belastingen ging de verlaging
+# per 1 juni 2020 in.
 #
 # De reeks eindigt bewust bij december 2026. Het percentage wordt jaarlijks per
 # 1 januari vastgesteld; verleng haar pas nadat het nieuwe percentage is

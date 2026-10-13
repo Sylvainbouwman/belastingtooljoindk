@@ -31,8 +31,9 @@ from _ui import paginakop, paginastijl
 # inkomstenbelasting pas op 1 juli 2020. Op de bronpagina staat bij deze rij in
 # de VpB-tabel geen voetnoot, en bij dezelfde rij in de algemene tabel juist wel
 # ("Voor de inkomstenbelasting ging de tijdelijke verlaging in vanaf 1-7-2020").
-# Grondslag: Verzamelspoedwet COVID-19, Stb. 2020, 200 —
-# https://zoek.officielebekendmakingen.nl/stb-2020-200.html. Het verschil tussen
+# Grondslag: Verzamelspoedwet COVID-19, art. 3 onderdelen A en B (Stb. 2020, 195),
+# in werking volgens Stb. 2020, 196 —
+# https://zoek.officielebekendmakingen.nl/stb-2020-195.html. Het verschil tussen
 # de twee tabellen is dus bedoeld; trek het niet recht.
 TARIEVEN = [
     (date(2026, 1, 1),  5.00),
@@ -58,7 +59,8 @@ TARIEVEN = [
 #
 # Controle op 7 september 2026: alle zestien rijen zijn regel voor regel
 # vergeleken met de tekst van die tabel zoals die op 7 september 2026 online
-# stond, en de rij van 1 juni 2020 is daarnaast getoetst aan Stb. 2020, 200.
+# stond, en de rij van 1 juni 2020 is daarnaast getoetst aan de Verzamelspoedwet
+# COVID-19 (vindplaats op 13 oktober 2026 hersteld naar Stb. 2020, 195 en 196).
 # Anders dan bij de IB leunt deze reeks niet op een voetnoot: de automatische
 # controle hieronder dekt de hele tabel, dus `niet_gedekt` blijft leeg.
 _controle = controleer_nieuwe_tarieven(TARIEVEN, KOP_VPB)

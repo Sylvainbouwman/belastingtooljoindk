@@ -175,7 +175,8 @@ def test_de_bewuste_afwijkingen_bestaan_nog_op_de_bronpagina(module, kop, afwijk
 def test_de_ib_uitzondering_staat_nog_als_voetnoot_op_de_bronpagina():
     """De grondslag van de IB-afwijking, aan de bron zelf getoetst.
 
-    Niet als vervanging van Stb. 2020, 200 — dat is de wettelijke grondslag —
+    Niet als vervanging van de Verzamelspoedwet COVID-19 (Stb. 2020, 195 en 196),
+    want dat is de wettelijke grondslag,
     maar zodat opvalt wanneer de Belastingdienst de uitzondering herformuleert
     of intrekt.
     """
