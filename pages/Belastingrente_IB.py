@@ -42,7 +42,12 @@ TARIEVEN = [
 #   /overzicht_percentages_belastingrente
 #
 # Grondslag van de IB-uitzondering per 1 juli 2020: Verzamelspoedwet COVID-19,
-# Stb. 2020, 200 — https://zoek.officielebekendmakingen.nl/stb-2020-200.html.
+# art. 3 onderdelen A en B (Stb. 2020, 195), in werking volgens Stb. 2020, 196;
+# in juni 2020 gold voor de IB nog 4% (art. 3 onderdeel A, lid 2).
+#   https://zoek.officielebekendmakingen.nl/stb-2020-195.html
+#   https://zoek.officielebekendmakingen.nl/stb-2020-196.html
+# Tot 13 oktober 2026 stond hier Stb. 2020, 200; dat is het Besluit belasting-
+# en invorderingsrente en niet de grondslag (bron-controleur, 12-10-2026).
 # Die regeling stelt het percentage voor de meeste belastingen per 1 juni 2020
 # op 0,01% vast en voor de inkomstenbelasting per 1 juli 2020; voor beide gold
 # de verlaging tot 1 oktober 2020. De Belastingdienst vermeldt het zelf in
@@ -52,8 +57,9 @@ TARIEVEN = [
 # Controle op 7 september 2026. Toen zijn nagelopen:
 #   (a) alle twaalf rijen van de algemene tabel, tegen de tekst van die pagina
 #       zoals die op 7 september 2026 online stond;
-#   (b) de ingangsdatum van 1 juli 2020 voor de IB, tegen Stb. 2020, 200 en
-#       tegen voetnoot *** op die pagina.
+#   (b) de ingangsdatum van 1 juli 2020 voor de IB, tegen voetnoot *** op die
+#       pagina en de Verzamelspoedwet COVID-19 (Stb. 2020, 195 en 196); die
+#       wettelijke vindplaats is op 13 oktober 2026 hersteld.
 # Buiten de controle gebleven: de afwijkende toeslagenpercentages uit voetnoot *
 # en ** op die pagina, die deze rekenpagina niet gebruikt.
 
@@ -66,7 +72,7 @@ NIET_GEDEKT = (
     "\"Percentages alle belastingen\" op belastingdienst.nl. De IB-uitzondering "
     "per 1 juli 2020 staat daar in een voetnoot ónder die tabel en valt dus "
     "buiten die vergelijking; die ingangsdatum is met de hand gecontroleerd "
-    "tegen Stb. 2020, 200 op 7 september 2026."
+    "tegen de Verzamelspoedwet COVID-19 (Stb. 2020, 195 en 196)."
 )
 
 _controle = controleer_nieuwe_tarieven(TARIEVEN, KOP_ALGEMEEN, NIET_GEDEKT)

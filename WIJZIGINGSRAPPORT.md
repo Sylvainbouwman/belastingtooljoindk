@@ -1202,3 +1202,22 @@ stand per punt staat in `OPENSTAAND.md`.
 uitsluiting van art. 28c, de herlevingsdatum voor beide leden van art. 6, de vier takken van
 `uitstel_uitsluiting`, twee doorgerekende gevallen met uitstel, en de pagina-blokkades.
 
+
+## L13 — vindplaats coronaverlaging IB hersteld, 13-10-2026 08:12 CEST
+
+De bron-controleur stelde op 12-10-2026 in de repository Berekeningen vast dat de vindplaats
+"Stb. 2020, 200" bij de verlaging van de belastingrente naar 0,01% fout is: Stb. 2020, 200 is
+het Besluit belasting- en invorderingsrente. Juist is de Verzamelspoedwet COVID-19, art. 3
+onderdelen A en B (Stb. 2020, 195), in werking volgens Stb. 2020, 196; in juni 2020 gold voor
+de inkomstenbelasting nog 4% (art. 3 onderdeel A, lid 2). De percentages en de ingangsdata
+zijn juist en veranderen niet.
+
+1. `belastingrente-ib-reeks.txt` is woordelijk overgenomen uit Berekeningen (main, commit
+   becc0f4), inclusief de neutrale kop zonder repositorynamen. `cmp` meldt geen verschil.
+2. De vindplaats is aangepast in `pages/Belastingrente_IB.py` (commentaar en de melding
+   `NIET_GEDEKT` die de gebruiker ziet), `pages/Belastingrente_VpB.py`, de README en drie
+   testbestanden. De vrijgavenotitie van 07-09-2026 en L-paragrafen hierboven blijven staan
+   zoals zij toen zijn geschreven; daar staat de oude vindplaats als historisch gegeven.
+
+**Getest:** `python -m pytest -q`: 516 geslaagd. `PostbusClaude/controle_rentereeks.py`:
+gelijk, 12 perioden, exitcode 0.

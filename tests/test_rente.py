@@ -473,7 +473,8 @@ def test_navordering_startdatum_volgt_het_boekjaar(boekjaar_eind, verwachte_star
 # ── De coronaverlaging: voor de IB een maand later dan voor de rest ─────────
 # De verlaging naar 0,01% ging voor de inkomstenbelasting in op 1 juli 2020 en
 # voor de overige belastingen, waaronder de VpB, op 1 juni 2020. Voor beide liep
-# zij tot 1 oktober 2020. Grondslag: Verzamelspoedwet COVID-19, Stb. 2020, 200;
+# zij tot 1 oktober 2020. Grondslag: Verzamelspoedwet COVID-19, art. 3 onderdelen
+# A en B (Stb. 2020, 195), in werking volgens Stb. 2020, 196;
 # de Belastingdienst vermeldt het in voetnoot *** onder de algemene tabel.
 #
 # Deze tests lezen de reeksen uit de pagina's zelf, zodat zij de werkelijk
